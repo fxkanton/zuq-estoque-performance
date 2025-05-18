@@ -10,7 +10,7 @@ interface MainLayoutProps {
 
 export function MainLayout({ children, title }: MainLayoutProps) {
   return (
-    <SidebarProvider collapsedWidth={56}>
+    <SidebarProvider>
       <div className="flex min-h-screen w-full bg-zuq-gray/10">
         <AppSidebar />
         <div className="flex flex-col flex-1">

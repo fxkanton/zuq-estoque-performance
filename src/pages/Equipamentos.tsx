@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { SearchInput } from "@/components/ui/search-input";
 import { 
   Select,
   SelectContent,
@@ -120,7 +121,7 @@ const Equipamentos = () => {
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div>
-              <Input
+              <SearchInput
                 placeholder="Pesquisar..."
                 className="w-full"
                 icon={<Search className="h-4 w-4" />}

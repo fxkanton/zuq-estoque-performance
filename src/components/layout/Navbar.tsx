@@ -17,7 +17,8 @@ import {
 import { Input } from "@/components/ui/input";
 
 export function Navbar({ title }: { title: string }) {
-  const { collapsed } = useSidebar();
+  const { state } = useSidebar();
+  const isCollapsed = state === "collapsed";
 
   return (
     <header className="border-b border-gray-200 bg-white p-4 flex justify-between items-center">

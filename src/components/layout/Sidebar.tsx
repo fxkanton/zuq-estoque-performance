@@ -26,25 +26,26 @@ import {
 } from "@/components/ui/sidebar";
 
 export function AppSidebar() {
-  const { collapsed } = useSidebar();
+  const { state } = useSidebar();
+  const isCollapsed = state === "collapsed";
 
   return (
     <Sidebar
-      className={`transition-all duration-300 ease-in-out ${collapsed ? "w-14" : "w-60"}`}
-      collapsible
+      className={`transition-all duration-300 ease-in-out ${isCollapsed ? "w-14" : "w-60"}`}
+      collapsible="icon"
     >
       <SidebarContent>
-        <div className={`flex justify-center items-center my-6 ${collapsed ? "px-2" : "px-6"}`}>
+        <div className={`flex justify-center items-center my-6 ${isCollapsed ? "px-2" : "px-6"}`}>
           <img 
-            src={collapsed ? "/lovable-uploads/b063f862-dfa6-4ec2-bf1e-f6ba630f97b6.png" : "/lovable-uploads/d23c7cfe-f31c-48e7-853d-9336a829189d.png"} 
+            src={isCollapsed ? "/lovable-uploads/b063f862-dfa6-4ec2-bf1e-f6ba630f97b6.png" : "/lovable-uploads/d23c7cfe-f31c-48e7-853d-9336a829189d.png"} 
             alt="ZUQ Performance" 
-            className={`${collapsed ? "w-8 h-8" : "w-36"}`}
+            className={`${isCollapsed ? "w-8 h-8" : "w-36"}`}
           />
         </div>
 
-        <SidebarGroup defaultOpen>
+        <SidebarGroup>
           <SidebarGroupLabel className="text-zuq-darkblue font-medium">
-            {!collapsed && "Principal"}
+            {!isCollapsed && "Principal"}
           </SidebarGroupLabel>
 
           <SidebarGroupContent>
@@ -53,43 +54,43 @@ export function AppSidebar() {
                 to="/"
                 icon={<BarChart3 className="h-5 w-5" />}
                 label="Dashboard"
-                collapsed={collapsed}
+                isCollapsed={isCollapsed}
               />
               <NavItem
                 to="/equipamentos"
                 icon={<Package2 className="h-5 w-5" />}
                 label="Equipamentos"
-                collapsed={collapsed}
+                isCollapsed={isCollapsed}
               />
               <NavItem
                 to="/fornecedores"
                 icon={<Users className="h-5 w-5" />}
                 label="Fornecedores"
-                collapsed={collapsed}
+                isCollapsed={isCollapsed}
               />
               <NavItem
                 to="/movimentacoes"
                 icon={<ArrowDownUp className="h-5 w-5" />}
                 label="Entradas e Saídas"
-                collapsed={collapsed}
+                isCollapsed={isCollapsed}
               />
               <NavItem
                 to="/leitoras"
                 icon={<Database className="h-5 w-5" />}
                 label="Leitoras"
-                collapsed={collapsed}
+                isCollapsed={isCollapsed}
               />
               <NavItem
                 to="/pedidos"
                 icon={<ClipboardCheck className="h-5 w-5" />}
                 label="Pedidos"
-                collapsed={collapsed}
+                isCollapsed={isCollapsed}
               />
               <NavItem
                 to="/manutencao"
                 icon={<Settings className="h-5 w-5" />}
                 label="Manutenção"
-                collapsed={collapsed}
+                isCollapsed={isCollapsed}
               />
             </SidebarMenu>
           </SidebarGroupContent>
@@ -103,10 +104,10 @@ type NavItemProps = {
   to: string;
   icon: React.ReactNode;
   label: string;
-  collapsed: boolean;
+  isCollapsed: boolean;
 };
 
-const NavItem = ({ to, icon, label, collapsed }: NavItemProps) => {
+const NavItem = ({ to, icon, label, isCollapsed }: NavItemProps) => {
   return (
     <SidebarMenuItem>
       <SidebarMenuButton asChild>
@@ -123,7 +124,7 @@ const NavItem = ({ to, icon, label, collapsed }: NavItemProps) => {
         >
           <div className="flex items-center">
             {icon}
-            {!collapsed && <span className="ml-3">{label}</span>}
+            {!isCollapsed && <span className="ml-3">{label}</span>}
           </div>
         </NavLink>
       </SidebarMenuButton>
