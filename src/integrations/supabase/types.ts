@@ -9,7 +9,307 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      equipment: {
+        Row: {
+          average_price: number | null
+          brand: string
+          category: Database["public"]["Enums"]["equipment_category"]
+          created_at: string | null
+          id: string
+          image_url: string | null
+          min_stock: number | null
+          model: string
+          name: string
+          supplier_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          average_price?: number | null
+          brand: string
+          category: Database["public"]["Enums"]["equipment_category"]
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          min_stock?: number | null
+          model: string
+          name: string
+          supplier_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          average_price?: number | null
+          brand?: string
+          category?: Database["public"]["Enums"]["equipment_category"]
+          created_at?: string | null
+          id?: string
+          image_url?: string | null
+          min_stock?: number | null
+          model?: string
+          name?: string
+          supplier_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipment_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inventory_movements: {
+        Row: {
+          created_at: string | null
+          equipment_id: string
+          id: string
+          movement_date: string | null
+          movement_type: string
+          notes: string | null
+          quantity: number
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          equipment_id: string
+          id?: string
+          movement_date?: string | null
+          movement_type: string
+          notes?: string | null
+          quantity: number
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          equipment_id?: string
+          id?: string
+          movement_date?: string | null
+          movement_type?: string
+          notes?: string | null
+          quantity?: number
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inventory_movements_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "equipment"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      maintenance_records: {
+        Row: {
+          created_at: string | null
+          equipment_id: string
+          id: string
+          notes: string | null
+          quantity: number
+          send_date: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          equipment_id: string
+          id?: string
+          notes?: string | null
+          quantity: number
+          send_date: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          equipment_id?: string
+          id?: string
+          notes?: string | null
+          quantity?: number
+          send_date?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_records_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "equipment"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_batches: {
+        Row: {
+          created_at: string | null
+          id: string
+          invoice_number: string | null
+          notes: string | null
+          order_id: string
+          received_date: string | null
+          received_quantity: number
+          shipping_date: string | null
+          tracking_code: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          invoice_number?: string | null
+          notes?: string | null
+          order_id: string
+          received_date?: string | null
+          received_quantity: number
+          shipping_date?: string | null
+          tracking_code?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          invoice_number?: string | null
+          notes?: string | null
+          order_id?: string
+          received_date?: string | null
+          received_quantity?: number
+          shipping_date?: string | null
+          tracking_code?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_batches_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          created_at: string | null
+          equipment_id: string
+          expected_arrival_date: string | null
+          id: string
+          invoice_number: string | null
+          notes: string | null
+          quantity: number
+          status: Database["public"]["Enums"]["order_status"] | null
+          supplier_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          equipment_id: string
+          expected_arrival_date?: string | null
+          id?: string
+          invoice_number?: string | null
+          notes?: string | null
+          quantity: number
+          status?: Database["public"]["Enums"]["order_status"] | null
+          supplier_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          equipment_id?: string
+          expected_arrival_date?: string | null
+          id?: string
+          invoice_number?: string | null
+          notes?: string | null
+          quantity?: number
+          status?: Database["public"]["Enums"]["order_status"] | null
+          supplier_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "equipment"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "orders_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      readers: {
+        Row: {
+          code: string
+          condition: Database["public"]["Enums"]["equipment_condition"] | null
+          created_at: string | null
+          equipment_id: string
+          id: string
+          status: Database["public"]["Enums"]["equipment_status"] | null
+          updated_at: string | null
+        }
+        Insert: {
+          code: string
+          condition?: Database["public"]["Enums"]["equipment_condition"] | null
+          created_at?: string | null
+          equipment_id: string
+          id?: string
+          status?: Database["public"]["Enums"]["equipment_status"] | null
+          updated_at?: string | null
+        }
+        Update: {
+          code?: string
+          condition?: Database["public"]["Enums"]["equipment_condition"] | null
+          created_at?: string | null
+          equipment_id?: string
+          id?: string
+          status?: Database["public"]["Enums"]["equipment_status"] | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "readers_equipment_id_fkey"
+            columns: ["equipment_id"]
+            isOneToOne: false
+            referencedRelation: "equipment"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      suppliers: {
+        Row: {
+          address: string | null
+          average_delivery_days: number | null
+          cnpj: string
+          created_at: string | null
+          id: string
+          name: string
+          phone: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          average_delivery_days?: number | null
+          cnpj: string
+          created_at?: string | null
+          id?: string
+          name: string
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          average_delivery_days?: number | null
+          cnpj?: string
+          created_at?: string | null
+          id?: string
+          name?: string
+          phone?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -18,7 +318,10 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      equipment_category: "Leitora" | "Sensor" | "Rastreador" | "Acessório"
+      equipment_condition: "Novo" | "Recondicionado"
+      equipment_status: "Disponível" | "Em Uso" | "Em Manutenção"
+      order_status: "Pendente" | "Parcialmente Recebido" | "Recebido"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -133,6 +436,11 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      equipment_category: ["Leitora", "Sensor", "Rastreador", "Acessório"],
+      equipment_condition: ["Novo", "Recondicionado"],
+      equipment_status: ["Disponível", "Em Uso", "Em Manutenção"],
+      order_status: ["Pendente", "Parcialmente Recebido", "Recebido"],
+    },
   },
 } as const
