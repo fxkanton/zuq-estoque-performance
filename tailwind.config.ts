@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,7 +62,13 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+                // ZUQ Performance colors
+                zuq: {
+                    blue: '#00B3DA',
+                    darkblue: '#242A57',
+                    gray: '#E6E6E6',
+                }
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
