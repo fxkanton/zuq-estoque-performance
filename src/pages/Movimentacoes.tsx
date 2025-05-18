@@ -187,7 +187,7 @@ const Movimentacoes = () => {
                   <SelectValue placeholder="Tipo de Movimento" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="Entrada">Entradas</SelectItem>
                   <SelectItem value="Saída">Saídas</SelectItem>
                 </SelectContent>
