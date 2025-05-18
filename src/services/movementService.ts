@@ -1,15 +1,14 @@
 
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/components/ui/sonner";
 import { Equipment } from "./equipmentService";
 
-export type MovementType = 'Entrada' | 'Saída';
+export type MovementType = "Entrada" | "Saída";
 
 export interface Movement {
   id: string;
   equipment_id: string;
-  movement_type: MovementType;
   quantity: number;
+  movement_type: MovementType;
   movement_date: string;
   notes?: string;
   created_at?: string;
@@ -20,136 +19,167 @@ export interface MovementWithEquipment extends Movement {
   equipment: Equipment;
 }
 
+export interface MovementFormData {
+  equipment_id: string;
+  quantity: number;
+  movement_type: MovementType;
+  movement_date: string;
+  notes?: string;
+}
+
 export const fetchMovements = async (): Promise<MovementWithEquipment[]> => {
-  const { data, error } = await supabase
-    .from('inventory_movements')
-    .select(`
-      *,
-      equipment:equipment_id (*)
-    `)
-    .order('movement_date', { ascending: false });
+  try {
+    const { data, error } = await supabase
+      .from('inventory_movements')
+      .select(`
+        *,
+        equipment:equipment_id(*)
+      `)
+      .order('movement_date', { ascending: false });
 
-  if (error) {
-    toast.error('Erro ao carregar movimentações', {
-      description: error.message
-    });
-    return [];
+    if (error) {
+      throw error;
+    }
+
+    // Ensure movement_type is properly typed
+    return data.map(movement => ({
+      ...movement,
+      movement_type: movement.movement_type as MovementType,
+      equipment: movement.equipment as Equipment
+    }));
+  } catch (error) {
+    console.error("Error fetching movements:", error);
+    throw error;
   }
-
-  return data || [];
 };
 
-export const createMovement = async (movement: Omit<Movement, 'id' | 'created_at' | 'updated_at'>): Promise<Movement | null> => {
-  const { data, error } = await supabase
-    .from('inventory_movements')
-    .insert([movement])
-    .select()
-    .single();
+export const createMovement = async (movementData: MovementFormData): Promise<Movement> => {
+  try {
+    const { data, error } = await supabase
+      .from('inventory_movements')
+      .insert([movementData])
+      .select()
+      .single();
 
-  if (error) {
-    toast.error(`Erro ao registrar ${movement.movement_type.toLowerCase()}`, {
-      description: error.message
-    });
-    return null;
+    if (error) {
+      throw error;
+    }
+
+    // Ensure movement_type is properly typed
+    return {
+      ...data,
+      movement_type: data.movement_type as MovementType
+    };
+  } catch (error) {
+    console.error("Error creating movement:", error);
+    throw error;
   }
-
-  toast.success(`${movement.movement_type} registrada com sucesso`);
-  return data;
 };
 
-export const getMonthlyMovements = async (): Promise<{
-  entries: number;
-  exits: number;
-  entriesChange: number;
-  exitsChange: number;
+export const updateMovement = async (id: string, movementData: Partial<MovementFormData>): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('inventory_movements')
+      .update(movementData)
+      .eq('id', id);
+
+    if (error) {
+      throw error;
+    }
+  } catch (error) {
+    console.error("Error updating movement:", error);
+    throw error;
+  }
+};
+
+export const deleteMovement = async (id: string): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('inventory_movements')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      throw error;
+    }
+  } catch (error) {
+    console.error("Error deleting movement:", error);
+    throw error;
+  }
+};
+
+export const getMovementsByType = async (type: MovementType): Promise<MovementWithEquipment[]> => {
+  try {
+    const { data, error } = await supabase
+      .from('inventory_movements')
+      .select(`
+        *,
+        equipment:equipment_id(*)
+      `)
+      .eq('movement_type', type)
+      .order('movement_date', { ascending: false });
+
+    if (error) {
+      throw error;
+    }
+
+    // Ensure movement_type is properly typed
+    return data.map(movement => ({
+      ...movement,
+      movement_type: movement.movement_type as MovementType,
+      equipment: movement.equipment as Equipment
+    }));
+  } catch (error) {
+    console.error(`Error fetching ${type} movements:`, error);
+    throw error;
+  }
+};
+
+export const getMovementSummary = async (): Promise<{ 
+  totalEntradas: number;
+  totalSaidas: number; 
+  recentMovements: MovementWithEquipment[];
 }> => {
-  // Get current month movements
-  const now = new Date();
-  const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-  const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString();
-  
-  // Get previous month movements
-  const firstDayOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
-  const lastDayOfPrevMonth = new Date(now.getFullYear(), now.getMonth(), 0).toISOString();
-  
-  // Current month
-  const { data: currentMonthData, error: currentError } = await supabase
-    .from('inventory_movements')
-    .select('movement_type, quantity')
-    .gte('movement_date', firstDayOfMonth)
-    .lte('movement_date', lastDayOfMonth);
+  try {
+    // Get counts
+    const { data: entradaCount, error: entradaError } = await supabase
+      .from('inventory_movements')
+      .select('quantity', { count: 'exact', head: false })
+      .eq('movement_type', 'Entrada');
+    
+    const { data: saidaCount, error: saidaError } = await supabase
+      .from('inventory_movements')
+      .select('quantity', { count: 'exact', head: false })
+      .eq('movement_type', 'Saída');
+    
+    // Get recent movements
+    const { data: recentData, error: recentError } = await supabase
+      .from('inventory_movements')
+      .select(`
+        *,
+        equipment:equipment_id(*)
+      `)
+      .order('created_at', { ascending: false })
+      .limit(5);
 
-  if (currentError) {
-    toast.error('Erro ao carregar estatísticas de movimentação', {
-      description: currentError.message
-    });
-    return { entries: 0, exits: 0, entriesChange: 0, exitsChange: 0 };
-  }
-  
-  // Previous month
-  const { data: prevMonthData, error: prevError } = await supabase
-    .from('inventory_movements')
-    .select('movement_type, quantity')
-    .gte('movement_date', firstDayOfPrevMonth)
-    .lte('movement_date', lastDayOfPrevMonth);
-
-  if (prevError) {
-    toast.error('Erro ao carregar estatísticas de movimentação', {
-      description: prevError.message
-    });
-    return { entries: 0, exits: 0, entriesChange: 0, exitsChange: 0 };
-  }
-  
-  // Calculate totals for current month
-  let currentEntries = 0;
-  let currentExits = 0;
-  
-  currentMonthData.forEach(item => {
-    if (item.movement_type === 'Entrada') {
-      currentEntries += item.quantity;
-    } else {
-      currentExits += item.quantity;
+    if (entradaError || saidaError || recentError) {
+      throw entradaError || saidaError || recentError;
     }
-  });
-  
-  // Calculate totals for previous month
-  let prevEntries = 0;
-  let prevExits = 0;
-  
-  prevMonthData.forEach(item => {
-    if (item.movement_type === 'Entrada') {
-      prevEntries += item.quantity;
-    } else {
-      prevExits += item.quantity;
-    }
-  });
-  
-  // Calculate percentage changes
-  const entriesChange = prevEntries === 0 ? 100 : ((currentEntries - prevEntries) / prevEntries) * 100;
-  const exitsChange = prevExits === 0 ? 0 : ((currentExits - prevExits) / prevExits) * 100;
-  
-  return {
-    entries: currentEntries,
-    exits: currentExits,
-    entriesChange,
-    exitsChange
-  };
-};
 
-export const getRecentMovements = async (limit: number = 5): Promise<MovementWithEquipment[]> => {
-  const { data, error } = await supabase
-    .from('inventory_movements')
-    .select(`
-      *,
-      equipment:equipment_id (*)
-    `)
-    .order('created_at', { ascending: false })
-    .limit(limit);
+    // Ensure movement_type is properly typed in recent movements
+    const typedRecentMovements = recentData.map(movement => ({
+      ...movement,
+      movement_type: movement.movement_type as MovementType,
+      equipment: movement.equipment as Equipment
+    }));
 
-  if (error) {
-    console.error('Error fetching recent movements:', error);
-    return [];
+    return {
+      totalEntradas: entradaCount?.length || 0,
+      totalSaidas: saidaCount?.length || 0,
+      recentMovements: typedRecentMovements
+    };
+  } catch (error) {
+    console.error("Error getting movement summary:", error);
+    throw error;
   }
-
-  return data || [];
 };

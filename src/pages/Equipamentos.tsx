@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -211,13 +210,13 @@ const Equipamentos = () => {
       );
     }
     
-    if (categoryFilter && categoryFilter !== 'todos') {
+    if (categoryFilter && categoryFilter !== 'all') {
       filtered = filtered.filter(item => 
         item.category.toLowerCase() === categoryFilter.toLowerCase()
       );
     }
     
-    if (supplierFilter && supplierFilter !== 'todos') {
+    if (supplierFilter && supplierFilter !== 'all') {
       filtered = filtered.filter(item => 
         item.supplier_id === supplierFilter
       );
@@ -270,7 +269,7 @@ const Equipamentos = () => {
                   <SelectValue placeholder="Categoria" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="leitora">Leitora</SelectItem>
                   <SelectItem value="sensor">Sensor</SelectItem>
                   <SelectItem value="rastreador">Rastreador</SelectItem>
@@ -284,7 +283,7 @@ const Equipamentos = () => {
                   <SelectValue placeholder="Fornecedor" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="all">Todos</SelectItem>
                   {suppliers.map(supplier => (
                     <SelectItem key={supplier.id} value={supplier.id}>
                       {supplier.name}
@@ -666,7 +665,7 @@ const getCategoryBadgeStyle = (category: string) => {
       return 'bg-green-100 text-green-800';
     case 'rastreador':
       return 'bg-purple-100 text-purple-800';
-    case 'acessório':
+    case 'acessorio':
     default:
       return 'bg-gray-100 text-gray-800';
   }

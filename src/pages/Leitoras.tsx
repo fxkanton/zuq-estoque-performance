@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -179,7 +178,7 @@ const Leitoras = () => {
       );
     }
     
-    if (statusFilter) {
+    if (statusFilter && statusFilter !== 'all') {
       filtered = filtered.filter(item => item.status === statusFilter);
     }
     
@@ -219,7 +218,7 @@ const Leitoras = () => {
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
+                  <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="Disponível">Disponível</SelectItem>
                   <SelectItem value="Em Uso">Em Uso</SelectItem>
                   <SelectItem value="Em Manutenção">Em Manutenção</SelectItem>

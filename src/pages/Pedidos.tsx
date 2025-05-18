@@ -1,9 +1,8 @@
-
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ClipboardCheck, Plus, Search, FileText } from "lucide-react";
+import { Database, Plus, Search } from "lucide-react";
 import { 
   Dialog, 
   DialogContent, 
@@ -14,7 +13,6 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { SearchInput } from "@/components/ui/search-input";
-import { Textarea } from "@/components/ui/textarea";
 import { 
   Select, 
   SelectTrigger, 
@@ -22,76 +20,49 @@ import {
   SelectContent, 
   SelectItem 
 } from "@/components/ui/select";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
-import { Progress } from "@/components/ui/progress";
 import { 
-  fetchOrders, 
-  createOrder, 
-  updateOrder, 
-  deleteOrder,
-  fetchOrderBatches,
-  createOrderBatch,
-  OrderWithDetails,
-  OrderBatch
-} from "@/services/orderService";
-import { fetchEquipment } from "@/services/equipmentService";
-import { fetchSuppliers } from "@/services/supplierService";
+  fetchReaders, 
+  createReader, 
+  updateReader, 
+  deleteReader,
+  ReaderWithEquipment, 
+  EquipmentCondition, 
+  EquipmentStatus 
+} from "@/services/readerService";
+import { fetchEquipment, Equipment } from "@/services/equipmentService";
 import { supabase } from "@/integrations/supabase/client";
 
-const Pedidos = () => {
-  const [orders, setOrders] = useState<OrderWithDetails[]>([]);
-  const [filteredOrders, setFilteredOrders] = useState<OrderWithDetails[]>([]);
-  const [equipment, setEquipment] = useState<any[]>([]);
-  const [suppliers, setSuppliers] = useState<any[]>([]);
+const Leitoras = () => {
+  const [readers, setReaders] = useState<ReaderWithEquipment[]>([]);
+  const [filteredReaders, setFilteredReaders] = useState<ReaderWithEquipment[]>([]);
+  const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
-  const [isAddBatchDialogOpen, setIsAddBatchDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   
-  // Selected order for operations
-  const [currentOrder, setCurrentOrder] = useState<OrderWithDetails | null>(null);
-  const [orderBatches, setOrderBatches] = useState<OrderBatch[]>([]);
-  
-  // Form states
-  const [orderFormData, setOrderFormData] = useState({
+  // Form state
+  const [currentReader, setCurrentReader] = useState<ReaderWithEquipment | null>(null);
+  const [formData, setFormData] = useState({
+    code: '',
     equipment_id: '',
-    supplier_id: '',
-    quantity: 1,
-    expected_arrival_date: '',
-    invoice_number: '',
-    notes: ''
-  });
-  
-  const [batchFormData, setBatchFormData] = useState({
-    shipping_date: '',
-    tracking_code: '',
-    received_date: '',
-    received_quantity: 1,
-    invoice_number: '',
-    notes: ''
+    status: 'Disponível' as EquipmentStatus,
+    condition: 'Novo' as EquipmentCondition
   });
 
   const loadData = async () => {
     try {
-      const ordersData = await fetchOrders();
-      setOrders(ordersData);
-      setFilteredOrders(ordersData);
-
-      const equipmentData = await fetchEquipment();
-      setEquipment(equipmentData);
+      const readersData = await fetchReaders();
+      setReaders(readersData);
+      setFilteredReaders(readersData);
       
-      const suppliersData = await fetchSuppliers();
-      setSuppliers(suppliersData);
+      // Only load equipment that are leitoras
+      const equipmentData = await fetchEquipment();
+      setEquipment(equipmentData.filter(item => item.category === 'Leitora'));
     } catch (error) {
-      console.error("Error loading orders data:", error);
+      console.error("Error loading readers data:", error);
     }
   };
 
@@ -99,212 +70,142 @@ const Pedidos = () => {
     loadData();
 
     // Subscribe to realtime updates
-    const ordersChannel = supabase
-      .channel('public:orders')
+    const readersChannel = supabase
+      .channel('public:readers')
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
-        table: 'orders'
+        table: 'readers'
       }, () => {
         loadData();
       })
       .subscribe();
 
-    const batchesChannel = supabase
-      .channel('public:order_batches')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'order_batches'
-      }, () => {
-        if (currentOrder) {
-          loadOrderBatches(currentOrder.id);
-        }
-        loadData(); // Also reload orders as status may have changed
-      })
-      .subscribe();
-
     return () => {
-      supabase.removeChannel(ordersChannel);
-      supabase.removeChannel(batchesChannel);
+      supabase.removeChannel(readersChannel);
     };
-  }, [currentOrder]);
+  }, []);
 
-  const loadOrderBatches = async (orderId: string) => {
-    try {
-      const batches = await fetchOrderBatches(orderId);
-      setOrderBatches(batches);
-    } catch (error) {
-      console.error("Error loading order batches:", error);
-    }
-  };
-
-  const handleOrderInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
-    
-    if (id === 'quantity') {
-      setOrderFormData(prev => ({
-        ...prev,
-        [id]: value === '' ? 1 : parseInt(value)
-      }));
-    } else {
-      setOrderFormData(prev => ({
-        ...prev,
-        [id]: value
-      }));
-    }
-  };
-  
-  const handleBatchInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { id, value } = e.target;
-    
-    if (id === 'received_quantity') {
-      setBatchFormData(prev => ({
-        ...prev,
-        [id]: value === '' ? 1 : parseInt(value)
-      }));
-    } else {
-      setBatchFormData(prev => ({
-        ...prev,
-        [id]: value
-      }));
-    }
+    setFormData(prev => ({
+      ...prev,
+      [id]: value
+    }));
   };
 
-  const handleOrderSelectChange = (field: string, value: string) => {
-    setOrderFormData(prev => ({
+  const handleSelectChange = (field: string, value: string) => {
+    setFormData(prev => ({
       ...prev,
       [field]: value
     }));
   };
 
-  const resetOrderForm = () => {
-    setOrderFormData({
+  const resetForm = () => {
+    setFormData({
+      code: '',
       equipment_id: '',
-      supplier_id: '',
-      quantity: 1,
-      expected_arrival_date: '',
-      invoice_number: '',
-      notes: ''
+      status: 'Disponível',
+      condition: 'Novo'
     });
-  };
-  
-  const resetBatchForm = () => {
-    setBatchFormData({
-      shipping_date: '',
-      tracking_code: '',
-      received_date: '',
-      received_quantity: 1,
-      invoice_number: '',
-      notes: ''
-    });
+    setCurrentReader(null);
   };
 
-  const handleOpenAddOrderDialog = () => {
-    resetOrderForm();
+  const handleOpenAddDialog = () => {
+    resetForm();
     setIsAddDialogOpen(true);
   };
-  
-  const handleOpenViewDialog = (order: OrderWithDetails) => {
-    setCurrentOrder(order);
-    loadOrderBatches(order.id);
-    setIsViewDialogOpen(true);
+
+  const handleOpenEditDialog = (reader: ReaderWithEquipment) => {
+    setCurrentReader(reader);
+    setFormData({
+      code: reader.code,
+      equipment_id: reader.equipment_id,
+      status: reader.status,
+      condition: reader.condition
+    });
+    setIsEditDialogOpen(true);
   };
-  
-  const handleOpenAddBatchDialog = () => {
-    resetBatchForm();
-    setIsAddBatchDialogOpen(true);
-  };
-  
-  const handleOpenDeleteDialog = (order: OrderWithDetails) => {
-    setCurrentOrder(order);
+
+  const handleOpenDeleteDialog = (reader: ReaderWithEquipment) => {
+    setCurrentReader(reader);
     setIsDeleteDialogOpen(true);
   };
 
-  const handleCreateOrder = async () => {
+  const handleSaveReader = async () => {
     try {
-      await createOrder(orderFormData);
+      await createReader(formData);
       setIsAddDialogOpen(false);
-      resetOrderForm();
+      resetForm();
     } catch (error) {
-      console.error("Error creating order:", error);
-    }
-  };
-  
-  const handleCreateBatch = async () => {
-    if (!currentOrder) return;
-    
-    try {
-      await createOrderBatch({
-        ...batchFormData,
-        order_id: currentOrder.id
-      });
-      setIsAddBatchDialogOpen(false);
-      resetBatchForm();
-      loadOrderBatches(currentOrder.id); // Refresh batches
-    } catch (error) {
-      console.error("Error creating batch:", error);
-    }
-  };
-  
-  const handleDeleteOrder = async () => {
-    if (!currentOrder) return;
-    
-    try {
-      await deleteOrder(currentOrder.id);
-      setIsDeleteDialogOpen(false);
-      setCurrentOrder(null);
-    } catch (error) {
-      console.error("Error deleting order:", error);
+      console.error("Error creating reader:", error);
     }
   };
 
-  // Filter orders based on search term and status
+  const handleUpdateReader = async () => {
+    if (!currentReader) return;
+    
+    try {
+      await updateReader(currentReader.id, formData);
+      setIsEditDialogOpen(false);
+      resetForm();
+    } catch (error) {
+      console.error("Error updating reader:", error);
+    }
+  };
+
+  const handleDeleteReader = async () => {
+    if (!currentReader) return;
+    
+    try {
+      await deleteReader(currentReader.id);
+      setIsDeleteDialogOpen(false);
+      resetForm();
+    } catch (error) {
+      console.error("Error deleting reader:", error);
+    }
+  };
+
+  // Filter readers based on search term and status
   useEffect(() => {
-    let filtered = orders;
+    let filtered = readers;
     
     if (searchTerm) {
       filtered = filtered.filter(item => 
+        item.code.toLowerCase().includes(searchTerm.toLowerCase()) || 
         item.equipment.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (item.invoice_number && item.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()))
+        item.equipment.model.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
     
-    if (statusFilter) {
+    if (statusFilter && statusFilter !== 'all') {
       filtered = filtered.filter(item => item.status === statusFilter);
     }
     
-    setFilteredOrders(filtered);
-  }, [searchTerm, statusFilter, orders]);
-
-  // Calculate total received quantity for an order
-  const calculateReceivedPercentage = (order: OrderWithDetails) => {
-    const totalReceived = orderBatches.reduce((total, batch) => total + batch.received_quantity, 0);
-    return (totalReceived / order.quantity) * 100;
-  };
+    setFilteredReaders(filtered);
+  }, [searchTerm, statusFilter, readers]);
 
   return (
-    <MainLayout title="Gestão de Pedidos">
+    <MainLayout title="Controle de Leitoras">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-zuq-darkblue">Gestão de Pedidos</h1>
+        <h1 className="text-2xl font-bold text-zuq-darkblue">Controle Individual de Leitoras</h1>
         <Button 
           className="bg-zuq-blue hover:bg-zuq-blue/80"
-          onClick={handleOpenAddOrderDialog}
+          onClick={handleOpenAddDialog}
         >
-          <Plus className="h-4 w-4 mr-2" /> Criar Novo Pedido
+          <Plus className="h-4 w-4 mr-2" /> Cadastrar Nova Leitora
         </Button>
       </div>
       
       <Card className="mb-6">
         <CardHeader className="pb-3">
-          <CardTitle>Filtrar Pedidos</CardTitle>
+          <CardTitle>Filtrar Leitoras</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <SearchInput
-                placeholder="Pesquisar por produto, fornecedor..."
+                placeholder="Pesquisar por código ou modelo..."
                 className="w-full"
                 icon={<Search className="h-4 w-4" />}
                 value={searchTerm}
@@ -317,10 +218,10 @@ const Pedidos = () => {
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
-                  <SelectItem value="Pendente">Pendente</SelectItem>
-                  <SelectItem value="Parcialmente Recebido">Parcialmente Recebido</SelectItem>
-                  <SelectItem value="Recebido">Recebido</SelectItem>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="Disponível">Disponível</SelectItem>
+                  <SelectItem value="Em Uso">Em Uso</SelectItem>
+                  <SelectItem value="Em Manutenção">Em Manutenção</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -335,7 +236,7 @@ const Pedidos = () => {
               >
                 Limpar
               </Button>
-              <Button className="bg-zuq-blue hover:bg-zuq-blue/80 flex-1">Ver Histórico</Button>
+              <Button className="bg-zuq-blue hover:bg-zuq-blue/80 flex-1">Gerar Relatório</Button>
             </div>
           </div>
         </CardContent>
@@ -346,40 +247,40 @@ const Pedidos = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Produto</TableHead>
-                <TableHead>Fornecedor</TableHead>
-                <TableHead className="text-center">Quantidade</TableHead>
-                <TableHead>Previsão de Entrega</TableHead>
+                <TableHead>Código</TableHead>
+                <TableHead>Equipamento</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Condição</TableHead>
                 <TableHead>Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredOrders.length === 0 ? (
+              {filteredReaders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
-                    Nenhum pedido encontrado
+                  <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
+                    Nenhuma leitora encontrada
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredOrders.map((order) => (
-                  <TableRow key={order.id}>
+                filteredReaders.map((reader) => (
+                  <TableRow key={reader.id}>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <div className="bg-zuq-gray/30 p-2 rounded-md">
-                          <ClipboardCheck className="h-4 w-4 text-zuq-blue" />
+                          <Database className="h-4 w-4 text-zuq-blue" />
                         </div>
-                        {order.equipment.name} {order.equipment.model}
+                        {reader.code}
                       </div>
                     </TableCell>
-                    <TableCell>{order.supplier.name}</TableCell>
-                    <TableCell className="text-center">{order.quantity}</TableCell>
+                    <TableCell>{reader.equipment.name} {reader.equipment.model}</TableCell>
                     <TableCell>
-                      {order.expected_arrival_date ? new Date(order.expected_arrival_date).toLocaleDateString('pt-BR') : 'N/A'}
+                      <span className={`px-2 py-1 rounded-full text-xs ${getStatusBadgeStyle(reader.status)}`}>
+                        {reader.status}
+                      </span>
                     </TableCell>
                     <TableCell>
-                      <span className={`px-2 py-1 rounded-full text-xs ${getStatusBadgeStyle(order.status)}`}>
-                        {order.status}
+                      <span className={`px-2 py-1 rounded-full text-xs ${getConditionBadgeStyle(reader.condition)}`}>
+                        {reader.condition}
                       </span>
                     </TableCell>
                     <TableCell>
@@ -387,15 +288,15 @@ const Pedidos = () => {
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => handleOpenViewDialog(order)}
+                          onClick={() => handleOpenEditDialog(reader)}
                         >
-                          Detalhes
+                          Editar
                         </Button>
                         <Button 
                           variant="outline" 
                           size="sm" 
                           className="text-red-500"
-                          onClick={() => handleOpenDeleteDialog(order)}
+                          onClick={() => handleOpenDeleteDialog(reader)}
                         >
                           Excluir
                         </Button>
@@ -409,336 +310,162 @@ const Pedidos = () => {
         </CardContent>
       </Card>
 
-      {/* Create Order Dialog */}
+      {/* Add Reader Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Criar Novo Pedido</DialogTitle>
+            <DialogTitle>Cadastrar Nova Leitora</DialogTitle>
             <DialogDescription>
-              Preencha os detalhes do novo pedido
+              Informe os detalhes da leitora para cadastro
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="equipment_id">Equipamento</Label>
-                <Select 
-                  value={orderFormData.equipment_id} 
-                  onValueChange={(value) => handleOrderSelectChange('equipment_id', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um equipamento" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {equipment.map(item => (
-                      <SelectItem key={item.id} value={item.id}>
-                        {item.name} {item.model}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="supplier_id">Fornecedor</Label>
-                <Select 
-                  value={orderFormData.supplier_id} 
-                  onValueChange={(value) => handleOrderSelectChange('supplier_id', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione um fornecedor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {suppliers.map(item => (
-                      <SelectItem key={item.id} value={item.id}>
-                        {item.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="quantity">Quantidade</Label>
-                <Input 
-                  id="quantity" 
-                  type="number"
-                  min="1"
-                  value={orderFormData.quantity}
-                  onChange={handleOrderInputChange}
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="expected_arrival_date">Previsão de Entrega</Label>
-                <Input 
-                  id="expected_arrival_date" 
-                  type="date"
-                  value={orderFormData.expected_arrival_date}
-                  onChange={handleOrderInputChange}
-                />
-              </div>
-            </div>
-            
             <div className="flex flex-col gap-2">
-              <Label htmlFor="invoice_number">Número da Nota Fiscal</Label>
+              <Label htmlFor="code">Código da Leitora</Label>
               <Input 
-                id="invoice_number" 
-                placeholder="Se já disponível" 
-                value={orderFormData.invoice_number}
-                onChange={handleOrderInputChange}
+                id="code" 
+                placeholder="Insira o código único" 
+                value={formData.code}
+                onChange={handleInputChange}
               />
             </div>
             
             <div className="flex flex-col gap-2">
-              <Label htmlFor="notes">Observações</Label>
-              <Textarea 
-                id="notes" 
-                placeholder="Detalhes adicionais do pedido..." 
-                value={orderFormData.notes}
-                onChange={handleOrderInputChange}
-              />
+              <Label htmlFor="equipment_id">Modelo de Equipamento</Label>
+              <Select 
+                value={formData.equipment_id} 
+                onValueChange={(value) => handleSelectChange('equipment_id', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o modelo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {equipment.map(item => (
+                    <SelectItem key={item.id} value={item.id}>
+                      {item.name} {item.model}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="status">Status</Label>
+                <Select 
+                  value={formData.status} 
+                  onValueChange={(value) => handleSelectChange('status', value as EquipmentStatus)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Disponível">Disponível</SelectItem>
+                    <SelectItem value="Em Uso">Em Uso</SelectItem>
+                    <SelectItem value="Em Manutenção">Em Manutenção</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="condition">Condição</Label>
+                <Select 
+                  value={formData.condition} 
+                  onValueChange={(value) => handleSelectChange('condition', value as EquipmentCondition)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Condição" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Novo">Novo</SelectItem>
+                    <SelectItem value="Recondicionado">Recondicionado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancelar</Button>
-            <Button className="bg-zuq-blue hover:bg-zuq-blue/80" onClick={handleCreateOrder}>Salvar</Button>
+            <Button className="bg-zuq-blue hover:bg-zuq-blue/80" onClick={handleSaveReader}>Salvar</Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* View Order Dialog */}
-      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen} className="max-w-4xl">
-        <DialogContent className="sm:max-w-[800px]">
-          <DialogHeader>
-            <DialogTitle>Detalhes do Pedido</DialogTitle>
-            <DialogDescription>
-              Informações completas e acompanhamento do pedido
-            </DialogDescription>
-          </DialogHeader>
-          
-          {currentOrder && (
-            <>
-              <div className="grid grid-cols-2 gap-6 py-4">
-                <div>
-                  <h3 className="font-semibold mb-2">Informações do Pedido</h3>
-                  <dl className="space-y-2">
-                    <div className="grid grid-cols-2">
-                      <dt className="text-sm text-muted-foreground">Equipamento:</dt>
-                      <dd className="text-sm font-medium">{currentOrder.equipment.name} {currentOrder.equipment.model}</dd>
-                    </div>
-                    <div className="grid grid-cols-2">
-                      <dt className="text-sm text-muted-foreground">Fornecedor:</dt>
-                      <dd className="text-sm font-medium">{currentOrder.supplier.name}</dd>
-                    </div>
-                    <div className="grid grid-cols-2">
-                      <dt className="text-sm text-muted-foreground">Quantidade:</dt>
-                      <dd className="text-sm font-medium">{currentOrder.quantity} unidades</dd>
-                    </div>
-                    <div className="grid grid-cols-2">
-                      <dt className="text-sm text-muted-foreground">Nota Fiscal:</dt>
-                      <dd className="text-sm font-medium">{currentOrder.invoice_number || 'N/A'}</dd>
-                    </div>
-                    <div className="grid grid-cols-2">
-                      <dt className="text-sm text-muted-foreground">Data do Pedido:</dt>
-                      <dd className="text-sm font-medium">{new Date(currentOrder.created_at || '').toLocaleDateString('pt-BR')}</dd>
-                    </div>
-                    <div className="grid grid-cols-2">
-                      <dt className="text-sm text-muted-foreground">Previsão de Entrega:</dt>
-                      <dd className="text-sm font-medium">
-                        {currentOrder.expected_arrival_date ? new Date(currentOrder.expected_arrival_date).toLocaleDateString('pt-BR') : 'N/A'}
-                      </dd>
-                    </div>
-                    <div className="grid grid-cols-2">
-                      <dt className="text-sm text-muted-foreground">Status:</dt>
-                      <dd>
-                        <span className={`px-2 py-1 rounded-full text-xs ${getStatusBadgeStyle(currentOrder.status)}`}>
-                          {currentOrder.status}
-                        </span>
-                      </dd>
-                    </div>
-                  </dl>
-                  
-                  {currentOrder.notes && (
-                    <div className="mt-4">
-                      <h4 className="text-sm font-semibold mb-1">Observações:</h4>
-                      <p className="text-sm text-muted-foreground">{currentOrder.notes}</p>
-                    </div>
-                  )}
-                </div>
-                
-                <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <h3 className="font-semibold">Progresso de Recebimento</h3>
-                    <span className="text-sm text-muted-foreground">
-                      {calculateReceivedPercentage(currentOrder).toFixed(0)}% concluído
-                    </span>
-                  </div>
-                  <Progress value={calculateReceivedPercentage(currentOrder)} className="mb-6" />
-                  
-                  <Button 
-                    className="w-full mb-4 bg-green-600 hover:bg-green-700" 
-                    onClick={handleOpenAddBatchDialog}
-                  >
-                    <Plus className="h-4 w-4 mr-2" /> Registrar Nova Entrega
-                  </Button>
-                </div>
-              </div>
-              
-              <Tabs defaultValue="batches" className="mt-2">
-                <TabsList className="grid grid-cols-2">
-                  <TabsTrigger value="batches">Entregas Recebidas</TabsTrigger>
-                  <TabsTrigger value="history">Histórico do Pedido</TabsTrigger>
-                </TabsList>
-                <TabsContent value="batches" className="pt-4">
-                  <div className="border rounded-md">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Data de Recebimento</TableHead>
-                          <TableHead className="text-center">Quantidade</TableHead>
-                          <TableHead>Nota Fiscal</TableHead>
-                          <TableHead>Código de Rastreio</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {orderBatches.length === 0 ? (
-                          <TableRow>
-                            <TableCell colSpan={4} className="text-center py-6 text-muted-foreground">
-                              Nenhuma entrega registrada
-                            </TableCell>
-                          </TableRow>
-                        ) : (
-                          orderBatches.map((batch) => (
-                            <TableRow key={batch.id}>
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  <div className="bg-green-100 p-1 rounded-full">
-                                    <FileText className="h-3 w-3 text-green-600" />
-                                  </div>
-                                  {batch.received_date ? new Date(batch.received_date).toLocaleDateString('pt-BR') : 'N/A'}
-                                </div>
-                              </TableCell>
-                              <TableCell className="text-center">{batch.received_quantity}</TableCell>
-                              <TableCell>{batch.invoice_number || 'N/A'}</TableCell>
-                              <TableCell>{batch.tracking_code || 'N/A'}</TableCell>
-                            </TableRow>
-                          ))
-                        )}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </TabsContent>
-                <TabsContent value="history" className="pt-4">
-                  <div className="space-y-4">
-                    <div className="border-l-2 border-green-500 pl-4 py-2">
-                      <p className="text-sm font-medium">Pedido criado</p>
-                      <p className="text-xs text-muted-foreground">
-                        {new Date(currentOrder.created_at || '').toLocaleDateString('pt-BR')} às {new Date(currentOrder.created_at || '').toLocaleTimeString('pt-BR')}
-                      </p>
-                    </div>
-                    
-                    {orderBatches.map((batch, index) => (
-                      <div key={batch.id} className="border-l-2 border-blue-500 pl-4 py-2">
-                        <p className="text-sm font-medium">Entrega registrada - {batch.received_quantity} unidades</p>
-                        <p className="text-xs text-muted-foreground">
-                          {batch.received_date ? new Date(batch.received_date).toLocaleDateString('pt-BR') : 'Data não informada'}
-                        </p>
-                      </div>
-                    ))}
-                    
-                    {currentOrder.status === 'Recebido' && (
-                      <div className="border-l-2 border-purple-500 pl-4 py-2">
-                        <p className="text-sm font-medium">Pedido concluído</p>
-                        <p className="text-xs text-muted-foreground">
-                          {new Date(currentOrder.updated_at || '').toLocaleDateString('pt-BR')} às {new Date(currentOrder.updated_at || '').toLocaleTimeString('pt-BR')}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Add Batch Dialog */}
-      <Dialog open={isAddBatchDialogOpen} onOpenChange={setIsAddBatchDialogOpen}>
+      {/* Edit Reader Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Registrar Nova Entrega</DialogTitle>
+            <DialogTitle>Editar Leitora</DialogTitle>
             <DialogDescription>
-              Informe os detalhes da entrega recebida
+              Atualize as informações da leitora
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="received_quantity">Quantidade Recebida</Label>
-                <Input 
-                  id="received_quantity" 
-                  type="number"
-                  min="1"
-                  value={batchFormData.received_quantity}
-                  onChange={handleBatchInputChange}
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="received_date">Data de Recebimento</Label>
-                <Input 
-                  id="received_date" 
-                  type="date"
-                  value={batchFormData.received_date}
-                  onChange={handleBatchInputChange}
-                />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="invoice_number">Nota Fiscal</Label>
-                <Input 
-                  id="invoice_number" 
-                  placeholder="Número da NF" 
-                  value={batchFormData.invoice_number}
-                  onChange={handleBatchInputChange}
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="tracking_code">Código de Rastreio</Label>
-                <Input 
-                  id="tracking_code" 
-                  placeholder="Se disponível" 
-                  value={batchFormData.tracking_code}
-                  onChange={handleBatchInputChange}
-                />
-              </div>
-            </div>
-            
             <div className="flex flex-col gap-2">
-              <Label htmlFor="shipping_date">Data de Envio</Label>
+              <Label htmlFor="edit-code">Código da Leitora</Label>
               <Input 
-                id="shipping_date" 
-                type="date"
-                value={batchFormData.shipping_date}
-                onChange={handleBatchInputChange}
+                id="code" 
+                placeholder="Insira o código único" 
+                value={formData.code}
+                onChange={handleInputChange}
               />
             </div>
             
             <div className="flex flex-col gap-2">
-              <Label htmlFor="notes">Observações</Label>
-              <Textarea 
-                id="notes" 
-                placeholder="Detalhes da entrega..." 
-                value={batchFormData.notes}
-                onChange={handleBatchInputChange}
-              />
+              <Label htmlFor="edit-equipment">Modelo de Equipamento</Label>
+              <Select 
+                value={formData.equipment_id} 
+                onValueChange={(value) => handleSelectChange('equipment_id', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o modelo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {equipment.map(item => (
+                    <SelectItem key={item.id} value={item.id}>
+                      {item.name} {item.model}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="edit-status">Status</Label>
+                <Select 
+                  value={formData.status} 
+                  onValueChange={(value) => handleSelectChange('status', value as EquipmentStatus)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Disponível">Disponível</SelectItem>
+                    <SelectItem value="Em Uso">Em Uso</SelectItem>
+                    <SelectItem value="Em Manutenção">Em Manutenção</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="edit-condition">Condição</Label>
+                <Select 
+                  value={formData.condition} 
+                  onValueChange={(value) => handleSelectChange('condition', value as EquipmentCondition)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Condição" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Novo">Novo</SelectItem>
+                    <SelectItem value="Recondicionado">Recondicionado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setIsAddBatchDialogOpen(false)}>Cancelar</Button>
-            <Button className="bg-green-600 hover:bg-green-700" onClick={handleCreateBatch}>Registrar</Button>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancelar</Button>
+            <Button className="bg-zuq-blue hover:bg-zuq-blue/80" onClick={handleUpdateReader}>Salvar</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -749,25 +476,22 @@ const Pedidos = () => {
           <DialogHeader>
             <DialogTitle>Confirmar Exclusão</DialogTitle>
             <DialogDescription>
-              Tem certeza que deseja excluir este pedido? Esta ação não pode ser desfeita.
+              Tem certeza que deseja excluir esta leitora? Esta ação não pode ser desfeita.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            {currentOrder && (
+            {currentReader && (
               <div className="border-l-4 border-red-500 pl-4">
-                <p className="font-medium">{currentOrder.equipment.name} {currentOrder.equipment.model}</p>
+                <p className="font-medium">Código: {currentReader.code}</p>
                 <p className="text-sm text-muted-foreground">
-                  Fornecedor: {currentOrder.supplier.name}
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  Quantidade: {currentOrder.quantity} unidades
+                  {currentReader.equipment.name} {currentReader.equipment.model}
                 </p>
               </div>
             )}
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>Cancelar</Button>
-            <Button variant="destructive" onClick={handleDeleteOrder}>Excluir</Button>
+            <Button variant="destructive" onClick={handleDeleteReader}>Excluir</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -777,15 +501,26 @@ const Pedidos = () => {
 
 const getStatusBadgeStyle = (status: string) => {
   switch (status) {
-    case 'Pendente':
-      return 'bg-amber-100 text-amber-800';
-    case 'Parcialmente Recebido':
-      return 'bg-blue-100 text-blue-800';
-    case 'Recebido':
+    case 'Disponível':
       return 'bg-green-100 text-green-800';
+    case 'Em Uso':
+      return 'bg-blue-100 text-blue-800';
+    case 'Em Manutenção':
+      return 'bg-red-100 text-red-800';
     default:
       return 'bg-gray-100 text-gray-800';
   }
 };
 
-export default Pedidos;
+const getConditionBadgeStyle = (condition: string) => {
+  switch (condition) {
+    case 'Novo':
+      return 'bg-purple-100 text-purple-800';
+    case 'Recondicionado':
+      return 'bg-amber-100 text-amber-800';
+    default:
+      return 'bg-gray-100 text-gray-800';
+  }
+};
+
+export default Leitoras;
