@@ -12,6 +12,7 @@ export interface Reader {
   equipment_id: string;
   status: EquipmentStatus;
   condition: EquipmentCondition;
+  acquisition_date?: string;
   created_at?: string;
   updated_at?: string;
 }

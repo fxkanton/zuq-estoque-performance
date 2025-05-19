@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -49,7 +50,8 @@ const Leitoras = () => {
     code: '',
     equipment_id: '',
     status: 'Disponível' as EquipmentStatus,
-    condition: 'Novo' as EquipmentCondition
+    condition: 'Novo' as EquipmentCondition,
+    acquisition_date: new Date().toISOString().split('T')[0]
   });
 
   const loadData = async () => {
@@ -106,7 +108,8 @@ const Leitoras = () => {
       code: '',
       equipment_id: '',
       status: 'Disponível',
-      condition: 'Novo'
+      condition: 'Novo',
+      acquisition_date: new Date().toISOString().split('T')[0]
     });
     setCurrentReader(null);
   };
@@ -122,7 +125,8 @@ const Leitoras = () => {
       code: reader.code,
       equipment_id: reader.equipment_id,
       status: reader.status,
-      condition: reader.condition
+      condition: reader.condition,
+      acquisition_date: reader.acquisition_date || new Date().toISOString().split('T')[0]
     });
     setIsEditDialogOpen(true);
   };
@@ -251,13 +255,14 @@ const Leitoras = () => {
                 <TableHead>Equipamento</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Condição</TableHead>
+                <TableHead>Data de Aquisição</TableHead>
                 <TableHead>Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredReaders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
+                  <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
                     Nenhuma leitora encontrada
                   </TableCell>
                 </TableRow>
@@ -282,6 +287,9 @@ const Leitoras = () => {
                       <span className={`px-2 py-1 rounded-full text-xs ${getConditionBadgeStyle(reader.condition)}`}>
                         {reader.condition}
                       </span>
+                    </TableCell>
+                    <TableCell>
+                      {reader.acquisition_date ? new Date(reader.acquisition_date).toLocaleDateString('pt-BR') : 'N/A'}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-2">
@@ -347,6 +355,16 @@ const Leitoras = () => {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="acquisition_date">Data de Aquisição</Label>
+              <Input 
+                id="acquisition_date" 
+                type="date" 
+                value={formData.acquisition_date}
+                onChange={handleInputChange}
+              />
             </div>
             
             <div className="grid grid-cols-2 gap-4">
@@ -427,6 +445,16 @@ const Leitoras = () => {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="acquisition_date">Data de Aquisição</Label>
+              <Input 
+                id="acquisition_date" 
+                type="date" 
+                value={formData.acquisition_date}
+                onChange={handleInputChange}
+              />
             </div>
             
             <div className="grid grid-cols-2 gap-4">

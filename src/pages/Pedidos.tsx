@@ -1,8 +1,9 @@
+
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Database, Plus, Search } from "lucide-react";
+import { ClipboardCheck, Plus, Search } from "lucide-react";
 import { 
   Dialog, 
   DialogContent, 
@@ -13,6 +14,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { SearchInput } from "@/components/ui/search-input";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   Select, 
   SelectTrigger, 
@@ -22,21 +24,22 @@ import {
 } from "@/components/ui/select";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { 
-  fetchReaders, 
-  createReader, 
-  updateReader, 
-  deleteReader,
-  ReaderWithEquipment, 
-  EquipmentCondition, 
-  EquipmentStatus 
-} from "@/services/readerService";
-import { fetchEquipment, Equipment } from "@/services/equipmentService";
+  fetchOrders, 
+  createOrder, 
+  updateOrder, 
+  deleteOrder,
+  OrderWithDetails, 
+  OrderStatus 
+} from "@/services/orderService";
+import { fetchEquipment } from "@/services/equipmentService";
+import { fetchSuppliers } from "@/services/supplierService";
 import { supabase } from "@/integrations/supabase/client";
 
-const Leitoras = () => {
-  const [readers, setReaders] = useState<ReaderWithEquipment[]>([]);
-  const [filteredReaders, setFilteredReaders] = useState<ReaderWithEquipment[]>([]);
-  const [equipment, setEquipment] = useState<Equipment[]>([]);
+const Pedidos = () => {
+  const [orders, setOrders] = useState<OrderWithDetails[]>([]);
+  const [filteredOrders, setFilteredOrders] = useState<OrderWithDetails[]>([]);
+  const [equipment, setEquipment] = useState<any[]>([]);
+  const [suppliers, setSuppliers] = useState<any[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -44,25 +47,30 @@ const Leitoras = () => {
   const [statusFilter, setStatusFilter] = useState('');
   
   // Form state
-  const [currentReader, setCurrentReader] = useState<ReaderWithEquipment | null>(null);
+  const [currentOrder, setCurrentOrder] = useState<OrderWithDetails | null>(null);
   const [formData, setFormData] = useState({
-    code: '',
     equipment_id: '',
-    status: 'Disponível' as EquipmentStatus,
-    condition: 'Novo' as EquipmentCondition
+    supplier_id: '',
+    quantity: 1,
+    expected_arrival_date: new Date().toISOString().split('T')[0],
+    invoice_number: '',
+    notes: '',
+    status: 'Pendente' as OrderStatus
   });
 
   const loadData = async () => {
     try {
-      const readersData = await fetchReaders();
-      setReaders(readersData);
-      setFilteredReaders(readersData);
+      const ordersData = await fetchOrders();
+      setOrders(ordersData);
+      setFilteredOrders(ordersData);
       
-      // Only load equipment that are leitoras
       const equipmentData = await fetchEquipment();
-      setEquipment(equipmentData.filter(item => item.category === 'Leitora'));
+      setEquipment(equipmentData);
+      
+      const suppliersData = await fetchSuppliers();
+      setSuppliers(suppliersData);
     } catch (error) {
-      console.error("Error loading readers data:", error);
+      console.error("Error loading orders data:", error);
     }
   };
 
@@ -70,28 +78,36 @@ const Leitoras = () => {
     loadData();
 
     // Subscribe to realtime updates
-    const readersChannel = supabase
-      .channel('public:readers')
+    const ordersChannel = supabase
+      .channel('public:orders')
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
-        table: 'readers'
+        table: 'orders'
       }, () => {
         loadData();
       })
       .subscribe();
 
     return () => {
-      supabase.removeChannel(readersChannel);
+      supabase.removeChannel(ordersChannel);
     };
   }, []);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [id]: value
-    }));
+    
+    if (id === 'quantity') {
+      setFormData(prev => ({
+        ...prev,
+        [id]: value === '' ? 1 : parseInt(value)
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [id]: value
+      }));
+    }
   };
 
   const handleSelectChange = (field: string, value: string) => {
@@ -103,12 +119,15 @@ const Leitoras = () => {
 
   const resetForm = () => {
     setFormData({
-      code: '',
       equipment_id: '',
-      status: 'Disponível',
-      condition: 'Novo'
+      supplier_id: '',
+      quantity: 1,
+      expected_arrival_date: new Date().toISOString().split('T')[0],
+      invoice_number: '',
+      notes: '',
+      status: 'Pendente'
     });
-    setCurrentReader(null);
+    setCurrentOrder(null);
   };
 
   const handleOpenAddDialog = () => {
@@ -116,65 +135,69 @@ const Leitoras = () => {
     setIsAddDialogOpen(true);
   };
 
-  const handleOpenEditDialog = (reader: ReaderWithEquipment) => {
-    setCurrentReader(reader);
+  const handleOpenEditDialog = (order: OrderWithDetails) => {
+    setCurrentOrder(order);
     setFormData({
-      code: reader.code,
-      equipment_id: reader.equipment_id,
-      status: reader.status,
-      condition: reader.condition
+      equipment_id: order.equipment_id,
+      supplier_id: order.supplier_id,
+      quantity: order.quantity,
+      expected_arrival_date: order.expected_arrival_date || new Date().toISOString().split('T')[0],
+      invoice_number: order.invoice_number || '',
+      notes: order.notes || '',
+      status: order.status
     });
     setIsEditDialogOpen(true);
   };
 
-  const handleOpenDeleteDialog = (reader: ReaderWithEquipment) => {
-    setCurrentReader(reader);
+  const handleOpenDeleteDialog = (order: OrderWithDetails) => {
+    setCurrentOrder(order);
     setIsDeleteDialogOpen(true);
   };
 
-  const handleSaveReader = async () => {
+  const handleSaveOrder = async () => {
     try {
-      await createReader(formData);
+      await createOrder(formData);
       setIsAddDialogOpen(false);
       resetForm();
     } catch (error) {
-      console.error("Error creating reader:", error);
+      console.error("Error creating order:", error);
     }
   };
 
-  const handleUpdateReader = async () => {
-    if (!currentReader) return;
+  const handleUpdateOrder = async () => {
+    if (!currentOrder) return;
     
     try {
-      await updateReader(currentReader.id, formData);
+      await updateOrder(currentOrder.id, formData);
       setIsEditDialogOpen(false);
       resetForm();
     } catch (error) {
-      console.error("Error updating reader:", error);
+      console.error("Error updating order:", error);
     }
   };
 
-  const handleDeleteReader = async () => {
-    if (!currentReader) return;
+  const handleDeleteOrder = async () => {
+    if (!currentOrder) return;
     
     try {
-      await deleteReader(currentReader.id);
+      await deleteOrder(currentOrder.id);
       setIsDeleteDialogOpen(false);
       resetForm();
     } catch (error) {
-      console.error("Error deleting reader:", error);
+      console.error("Error deleting order:", error);
     }
   };
 
-  // Filter readers based on search term and status
+  // Filter orders based on search term and status
   useEffect(() => {
-    let filtered = readers;
+    let filtered = orders;
     
     if (searchTerm) {
       filtered = filtered.filter(item => 
-        item.code.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        item.equipment.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.equipment.model.toLowerCase().includes(searchTerm.toLowerCase())
+        item.equipment.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        item.equipment.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (item.invoice_number && item.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
     
@@ -182,30 +205,30 @@ const Leitoras = () => {
       filtered = filtered.filter(item => item.status === statusFilter);
     }
     
-    setFilteredReaders(filtered);
-  }, [searchTerm, statusFilter, readers]);
+    setFilteredOrders(filtered);
+  }, [searchTerm, statusFilter, orders]);
 
   return (
-    <MainLayout title="Controle de Leitoras">
+    <MainLayout title="Controle de Pedidos">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-zuq-darkblue">Controle Individual de Leitoras</h1>
+        <h1 className="text-2xl font-bold text-zuq-darkblue">Controle de Pedidos</h1>
         <Button 
           className="bg-zuq-blue hover:bg-zuq-blue/80"
           onClick={handleOpenAddDialog}
         >
-          <Plus className="h-4 w-4 mr-2" /> Cadastrar Nova Leitora
+          <Plus className="h-4 w-4 mr-2" /> Cadastrar Novo Pedido
         </Button>
       </div>
       
       <Card className="mb-6">
         <CardHeader className="pb-3">
-          <CardTitle>Filtrar Leitoras</CardTitle>
+          <CardTitle>Filtrar Pedidos</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <SearchInput
-                placeholder="Pesquisar por código ou modelo..."
+                placeholder="Pesquisar por equipamento, fornecedor ou nota fiscal..."
                 className="w-full"
                 icon={<Search className="h-4 w-4" />}
                 value={searchTerm}
@@ -215,13 +238,13 @@ const Leitoras = () => {
             <div>
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Status" />
+                  <SelectValue placeholder="Status do Pedido" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Todos</SelectItem>
-                  <SelectItem value="Disponível">Disponível</SelectItem>
-                  <SelectItem value="Em Uso">Em Uso</SelectItem>
-                  <SelectItem value="Em Manutenção">Em Manutenção</SelectItem>
+                  <SelectItem value="Pendente">Pendente</SelectItem>
+                  <SelectItem value="Parcialmente Recebido">Parcialmente Recebido</SelectItem>
+                  <SelectItem value="Recebido">Recebido</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -247,40 +270,40 @@ const Leitoras = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Código</TableHead>
                 <TableHead>Equipamento</TableHead>
+                <TableHead>Fornecedor</TableHead>
+                <TableHead className="text-center">Quantidade</TableHead>
+                <TableHead>Previsão de Chegada</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Condição</TableHead>
                 <TableHead>Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredReaders.length === 0 ? (
+              {filteredOrders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
-                    Nenhuma leitora encontrada
+                  <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
+                    Nenhum pedido encontrado
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredReaders.map((reader) => (
-                  <TableRow key={reader.id}>
+                filteredOrders.map((order) => (
+                  <TableRow key={order.id}>
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <div className="bg-zuq-gray/30 p-2 rounded-md">
-                          <Database className="h-4 w-4 text-zuq-blue" />
+                          <ClipboardCheck className="h-4 w-4 text-zuq-blue" />
                         </div>
-                        {reader.code}
+                        {order.equipment.name} {order.equipment.model}
                       </div>
                     </TableCell>
-                    <TableCell>{reader.equipment.name} {reader.equipment.model}</TableCell>
+                    <TableCell>{order.supplier.name}</TableCell>
+                    <TableCell className="text-center">{order.quantity}</TableCell>
                     <TableCell>
-                      <span className={`px-2 py-1 rounded-full text-xs ${getStatusBadgeStyle(reader.status)}`}>
-                        {reader.status}
-                      </span>
+                      {order.expected_arrival_date ? new Date(order.expected_arrival_date).toLocaleDateString('pt-BR') : 'N/A'}
                     </TableCell>
                     <TableCell>
-                      <span className={`px-2 py-1 rounded-full text-xs ${getConditionBadgeStyle(reader.condition)}`}>
-                        {reader.condition}
+                      <span className={`px-2 py-1 rounded-full text-xs ${getStatusBadgeStyle(order.status)}`}>
+                        {order.status}
                       </span>
                     </TableCell>
                     <TableCell>
@@ -288,7 +311,7 @@ const Leitoras = () => {
                         <Button 
                           variant="outline" 
                           size="sm"
-                          onClick={() => handleOpenEditDialog(reader)}
+                          onClick={() => handleOpenEditDialog(order)}
                         >
                           Editar
                         </Button>
@@ -296,7 +319,7 @@ const Leitoras = () => {
                           variant="outline" 
                           size="sm" 
                           className="text-red-500"
-                          onClick={() => handleOpenDeleteDialog(reader)}
+                          onClick={() => handleOpenDeleteDialog(order)}
                         >
                           Excluir
                         </Button>
@@ -310,34 +333,24 @@ const Leitoras = () => {
         </CardContent>
       </Card>
 
-      {/* Add Reader Dialog */}
+      {/* Add Order Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Cadastrar Nova Leitora</DialogTitle>
+            <DialogTitle>Cadastrar Novo Pedido</DialogTitle>
             <DialogDescription>
-              Informe os detalhes da leitora para cadastro
+              Informe os detalhes do pedido para cadastro
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="code">Código da Leitora</Label>
-              <Input 
-                id="code" 
-                placeholder="Insira o código único" 
-                value={formData.code}
-                onChange={handleInputChange}
-              />
-            </div>
-            
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="equipment_id">Modelo de Equipamento</Label>
+              <Label htmlFor="equipment_id">Equipamento</Label>
               <Select 
                 value={formData.equipment_id} 
                 onValueChange={(value) => handleSelectChange('equipment_id', value)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione o modelo" />
+                  <SelectValue placeholder="Selecione o equipamento" />
                 </SelectTrigger>
                 <SelectContent>
                   {equipment.map(item => (
@@ -349,75 +362,92 @@ const Leitoras = () => {
               </Select>
             </div>
             
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="supplier_id">Fornecedor</Label>
+              <Select 
+                value={formData.supplier_id} 
+                onValueChange={(value) => handleSelectChange('supplier_id', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o fornecedor" />
+                </SelectTrigger>
+                <SelectContent>
+                  {suppliers.map(supplier => (
+                    <SelectItem key={supplier.id} value={supplier.id}>
+                      {supplier.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
-                <Label htmlFor="status">Status</Label>
-                <Select 
-                  value={formData.status} 
-                  onValueChange={(value) => handleSelectChange('status', value as EquipmentStatus)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Disponível">Disponível</SelectItem>
-                    <SelectItem value="Em Uso">Em Uso</SelectItem>
-                    <SelectItem value="Em Manutenção">Em Manutenção</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="quantity">Quantidade</Label>
+                <Input 
+                  id="quantity" 
+                  type="number"
+                  min="1"
+                  value={formData.quantity}
+                  onChange={handleInputChange}
+                />
               </div>
               <div className="flex flex-col gap-2">
-                <Label htmlFor="condition">Condição</Label>
-                <Select 
-                  value={formData.condition} 
-                  onValueChange={(value) => handleSelectChange('condition', value as EquipmentCondition)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Condição" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Novo">Novo</SelectItem>
-                    <SelectItem value="Recondicionado">Recondicionado</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="expected_arrival_date">Previsão de Chegada</Label>
+                <Input 
+                  id="expected_arrival_date" 
+                  type="date"
+                  value={formData.expected_arrival_date}
+                  onChange={handleInputChange}
+                />
               </div>
+            </div>
+            
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="invoice_number">Nota Fiscal</Label>
+              <Input 
+                id="invoice_number" 
+                placeholder="Número da nota fiscal (opcional)" 
+                value={formData.invoice_number}
+                onChange={handleInputChange}
+              />
+            </div>
+            
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="notes">Observações</Label>
+              <Textarea 
+                id="notes" 
+                placeholder="Detalhes adicionais do pedido..." 
+                value={formData.notes}
+                onChange={handleInputChange}
+              />
             </div>
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancelar</Button>
-            <Button className="bg-zuq-blue hover:bg-zuq-blue/80" onClick={handleSaveReader}>Salvar</Button>
+            <Button className="bg-zuq-blue hover:bg-zuq-blue/80" onClick={handleSaveOrder}>Salvar</Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Edit Reader Dialog */}
+      {/* Edit Order Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Editar Leitora</DialogTitle>
+            <DialogTitle>Editar Pedido</DialogTitle>
             <DialogDescription>
-              Atualize as informações da leitora
+              Atualize as informações do pedido
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="edit-code">Código da Leitora</Label>
-              <Input 
-                id="code" 
-                placeholder="Insira o código único" 
-                value={formData.code}
-                onChange={handleInputChange}
-              />
-            </div>
-            
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="edit-equipment">Modelo de Equipamento</Label>
+              <Label htmlFor="edit-equipment">Equipamento</Label>
               <Select 
                 value={formData.equipment_id} 
                 onValueChange={(value) => handleSelectChange('equipment_id', value)}
               >
                 <SelectTrigger>
-                  <SelectValue placeholder="Selecione o modelo" />
+                  <SelectValue placeholder="Selecione o equipamento" />
                 </SelectTrigger>
                 <SelectContent>
                   {equipment.map(item => (
@@ -429,43 +459,87 @@ const Leitoras = () => {
               </Select>
             </div>
             
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="edit-supplier">Fornecedor</Label>
+              <Select 
+                value={formData.supplier_id} 
+                onValueChange={(value) => handleSelectChange('supplier_id', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o fornecedor" />
+                </SelectTrigger>
+                <SelectContent>
+                  {suppliers.map(supplier => (
+                    <SelectItem key={supplier.id} value={supplier.id}>
+                      {supplier.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
-                <Label htmlFor="edit-status">Status</Label>
-                <Select 
-                  value={formData.status} 
-                  onValueChange={(value) => handleSelectChange('status', value as EquipmentStatus)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Disponível">Disponível</SelectItem>
-                    <SelectItem value="Em Uso">Em Uso</SelectItem>
-                    <SelectItem value="Em Manutenção">Em Manutenção</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="quantity">Quantidade</Label>
+                <Input 
+                  id="quantity" 
+                  type="number"
+                  min="1"
+                  value={formData.quantity}
+                  onChange={handleInputChange}
+                />
               </div>
               <div className="flex flex-col gap-2">
-                <Label htmlFor="edit-condition">Condição</Label>
-                <Select 
-                  value={formData.condition} 
-                  onValueChange={(value) => handleSelectChange('condition', value as EquipmentCondition)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Condição" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Novo">Novo</SelectItem>
-                    <SelectItem value="Recondicionado">Recondicionado</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="expected_arrival_date">Previsão de Chegada</Label>
+                <Input 
+                  id="expected_arrival_date" 
+                  type="date"
+                  value={formData.expected_arrival_date}
+                  onChange={handleInputChange}
+                />
               </div>
+            </div>
+            
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="invoice_number">Nota Fiscal</Label>
+              <Input 
+                id="invoice_number" 
+                placeholder="Número da nota fiscal (opcional)" 
+                value={formData.invoice_number}
+                onChange={handleInputChange}
+              />
+            </div>
+            
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="status">Status</Label>
+              <Select 
+                value={formData.status} 
+                onValueChange={(value) => handleSelectChange('status', value as OrderStatus)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Pendente">Pendente</SelectItem>
+                  <SelectItem value="Parcialmente Recebido">Parcialmente Recebido</SelectItem>
+                  <SelectItem value="Recebido">Recebido</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="notes">Observações</Label>
+              <Textarea 
+                id="notes" 
+                placeholder="Detalhes adicionais do pedido..." 
+                value={formData.notes}
+                onChange={handleInputChange}
+              />
             </div>
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancelar</Button>
-            <Button className="bg-zuq-blue hover:bg-zuq-blue/80" onClick={handleUpdateReader}>Salvar</Button>
+            <Button className="bg-zuq-blue hover:bg-zuq-blue/80" onClick={handleUpdateOrder}>Salvar</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -476,22 +550,22 @@ const Leitoras = () => {
           <DialogHeader>
             <DialogTitle>Confirmar Exclusão</DialogTitle>
             <DialogDescription>
-              Tem certeza que deseja excluir esta leitora? Esta ação não pode ser desfeita.
+              Tem certeza que deseja excluir este pedido? Esta ação não pode ser desfeita.
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            {currentReader && (
+            {currentOrder && (
               <div className="border-l-4 border-red-500 pl-4">
-                <p className="font-medium">Código: {currentReader.code}</p>
+                <p className="font-medium">{currentOrder.equipment.name} {currentOrder.equipment.model}</p>
                 <p className="text-sm text-muted-foreground">
-                  {currentReader.equipment.name} {currentReader.equipment.model}
+                  Fornecedor: {currentOrder.supplier.name} - Quantidade: {currentOrder.quantity}
                 </p>
               </div>
             )}
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>Cancelar</Button>
-            <Button variant="destructive" onClick={handleDeleteReader}>Excluir</Button>
+            <Button variant="destructive" onClick={handleDeleteOrder}>Excluir</Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -501,26 +575,15 @@ const Leitoras = () => {
 
 const getStatusBadgeStyle = (status: string) => {
   switch (status) {
-    case 'Disponível':
-      return 'bg-green-100 text-green-800';
-    case 'Em Uso':
-      return 'bg-blue-100 text-blue-800';
-    case 'Em Manutenção':
-      return 'bg-red-100 text-red-800';
-    default:
-      return 'bg-gray-100 text-gray-800';
-  }
-};
-
-const getConditionBadgeStyle = (condition: string) => {
-  switch (condition) {
-    case 'Novo':
-      return 'bg-purple-100 text-purple-800';
-    case 'Recondicionado':
+    case 'Pendente':
       return 'bg-amber-100 text-amber-800';
+    case 'Parcialmente Recebido':
+      return 'bg-blue-100 text-blue-800';
+    case 'Recebido':
+      return 'bg-green-100 text-green-800';
     default:
       return 'bg-gray-100 text-gray-800';
   }
 };
 
-export default Leitoras;
+export default Pedidos;

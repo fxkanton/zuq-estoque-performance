@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import { 
   Package2, 
@@ -28,6 +28,17 @@ import {
 export function AppSidebar() {
   const { state } = useSidebar();
   const isCollapsed = state === "collapsed";
+  const logoFullRef = useRef<HTMLImageElement>(null);
+  const logoSmallRef = useRef<HTMLImageElement>(null);
+  
+  useEffect(() => {
+    // Preload images to prevent flashing
+    const logoFullImg = new Image();
+    logoFullImg.src = "/lovable-uploads/d23c7cfe-f31c-48e7-853d-9336a829189d.png";
+    
+    const logoSmallImg = new Image();
+    logoSmallImg.src = "/lovable-uploads/b063f862-dfa6-4ec2-bf1e-f6ba630f97b6.png";
+  }, []);
 
   return (
     <Sidebar
@@ -36,11 +47,23 @@ export function AppSidebar() {
     >
       <SidebarContent>
         <div className={`flex justify-center items-center my-6 ${isCollapsed ? "px-2" : "px-6"}`}>
-          <img 
-            src={isCollapsed ? "/lovable-uploads/b063f862-dfa6-4ec2-bf1e-f6ba630f97b6.png" : "/lovable-uploads/d23c7cfe-f31c-48e7-853d-9336a829189d.png"} 
-            alt="ZUQ Performance" 
-            className={`${isCollapsed ? "w-8 h-8" : "w-36"}`}
-          />
+          {isCollapsed ? (
+            <img 
+              ref={logoSmallRef}
+              src="/lovable-uploads/b063f862-dfa6-4ec2-bf1e-f6ba630f97b6.png" 
+              alt="ZUQ Performance" 
+              className="w-8 h-8"
+              loading="eager"
+            />
+          ) : (
+            <img 
+              ref={logoFullRef}
+              src="/lovable-uploads/d23c7cfe-f31c-48e7-853d-9336a829189d.png" 
+              alt="ZUQ Performance" 
+              className="w-36"
+              loading="eager"
+            />
+          )}
         </div>
 
         <SidebarGroup>

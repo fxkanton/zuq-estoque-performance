@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { Equipment } from "./equipmentService";
 
@@ -208,89 +207,101 @@ export const getRecentMovements = async (limit = 5): Promise<MovementWithEquipme
     }));
   } catch (error) {
     console.error("Error fetching recent movements:", error);
-    throw error;
+    return [];
   }
 };
 
-export const getMonthlyMovements = async (): Promise<{
+export const getMonthlyMovements = async (startDate?: string, endDate?: string): Promise<{
   entries: number;
   exits: number;
   entriesChange: number;
   exitsChange: number;
+  entriesCount: number;
+  exitsCount: number;
 }> => {
   try {
-    // Get current month data
     const now = new Date();
-    const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    // Current period
+    const currentPeriodStart = startDate ? new Date(startDate) : new Date(now.getFullYear(), now.getMonth(), 1);
+    const currentPeriodEnd = endDate ? new Date(endDate) : new Date(now.getFullYear(), now.getMonth() + 1, 0);
     
     // Format dates for Supabase query
-    const currentMonthStartStr = currentMonthStart.toISOString();
-    const currentMonthEndStr = currentMonthEnd.toISOString();
+    const currentStartStr = currentPeriodStart.toISOString();
+    const currentEndStr = currentPeriodEnd.toISOString();
     
-    // Get previous month data
-    const prevMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const prevMonthEnd = new Date(now.getFullYear(), now.getMonth(), 0);
+    // Previous period of equal duration
+    const durationInDays = Math.round((currentPeriodEnd.getTime() - currentPeriodStart.getTime()) / (1000 * 60 * 60 * 24));
+    const prevPeriodEnd = new Date(currentPeriodStart);
+    prevPeriodEnd.setDate(prevPeriodEnd.getDate() - 1);
+    const prevPeriodStart = new Date(prevPeriodEnd);
+    prevPeriodStart.setDate(prevPeriodStart.getDate() - durationInDays);
     
-    // Format dates for Supabase query
-    const prevMonthStartStr = prevMonthStart.toISOString();
-    const prevMonthEndStr = prevMonthEnd.toISOString();
+    // Format dates for previous period
+    const prevStartStr = prevPeriodStart.toISOString();
+    const prevEndStr = prevPeriodEnd.toISOString();
     
-    // Current month entries
+    // Current period entries
     const { data: currentEntries, error: currentEntriesError } = await supabase
       .from('inventory_movements')
       .select('quantity')
       .eq('movement_type', 'Entrada')
-      .gte('movement_date', currentMonthStartStr)
-      .lte('movement_date', currentMonthEndStr);
+      .gte('movement_date', currentStartStr)
+      .lte('movement_date', currentEndStr);
     
-    // Current month exits
+    // Current period exits
     const { data: currentExits, error: currentExitsError } = await supabase
       .from('inventory_movements')
       .select('quantity')
       .eq('movement_type', 'Saída')
-      .gte('movement_date', currentMonthStartStr)
-      .lte('movement_date', currentMonthEndStr);
+      .gte('movement_date', currentStartStr)
+      .lte('movement_date', currentEndStr);
     
-    // Previous month entries
+    // Previous period entries
     const { data: prevEntries, error: prevEntriesError } = await supabase
       .from('inventory_movements')
       .select('quantity')
       .eq('movement_type', 'Entrada')
-      .gte('movement_date', prevMonthStartStr)
-      .lte('movement_date', prevMonthEndStr);
+      .gte('movement_date', prevStartStr)
+      .lte('movement_date', prevEndStr);
     
-    // Previous month exits
+    // Previous period exits
     const { data: prevExits, error: prevExitsError } = await supabase
       .from('inventory_movements')
       .select('quantity')
       .eq('movement_type', 'Saída')
-      .gte('movement_date', prevMonthStartStr)
-      .lte('movement_date', prevMonthEndStr);
+      .gte('movement_date', prevStartStr)
+      .lte('movement_date', prevEndStr);
     
     if (currentEntriesError || currentExitsError || prevEntriesError || prevExitsError) {
       throw currentEntriesError || currentExitsError || prevEntriesError || prevExitsError;
     }
     
-    const currentEntriesCount = currentEntries?.length || 0;
-    const currentExitsCount = currentExits?.length || 0;
-    const prevEntriesCount = prevEntries?.length || 0;
-    const prevExitsCount = prevExits?.length || 0;
+    // Count records
+    const entriesCount = currentEntries?.length || 0;
+    const exitsCount = currentExits?.length || 0;
+    
+    // Sum total quantities
+    const currentEntriesTotal = currentEntries.reduce((sum, item) => sum + (item.quantity || 0), 0);
+    const currentExitsTotal = currentExits.reduce((sum, item) => sum + (item.quantity || 0), 0);
+    const prevEntriesTotal = prevEntries.reduce((sum, item) => sum + (item.quantity || 0), 0);
+    const prevExitsTotal = prevExits.reduce((sum, item) => sum + (item.quantity || 0), 0);
     
     // Calculate percentage change
-    const entriesChange = prevEntriesCount === 0 
-      ? currentEntriesCount > 0 ? 100 : 0 
-      : ((currentEntriesCount - prevEntriesCount) / prevEntriesCount) * 100;
+    const entriesChange = prevEntriesTotal === 0 
+      ? currentEntriesTotal > 0 ? 100 : 0 
+      : ((currentEntriesTotal - prevEntriesTotal) / prevEntriesTotal) * 100;
       
-    const exitsChange = prevExitsCount === 0 
-      ? currentExitsCount > 0 ? 100 : 0 
-      : ((currentExitsCount - prevExitsCount) / prevExitsCount) * 100;
+    const exitsChange = prevExitsTotal === 0 
+      ? currentExitsTotal > 0 ? 100 : 0 
+      : ((currentExitsTotal - prevExitsTotal) / prevExitsTotal) * 100;
     
     return {
-      entries: currentEntriesCount,
-      exits: currentExitsCount,
+      entries: currentEntriesTotal,
+      exits: currentExitsTotal,
       entriesChange,
-      exitsChange
+      exitsChange,
+      entriesCount,
+      exitsCount
     };
   } catch (error) {
     console.error("Error getting monthly movements:", error);
@@ -298,7 +309,9 @@ export const getMonthlyMovements = async (): Promise<{
       entries: 0,
       exits: 0,
       entriesChange: 0,
-      exitsChange: 0
+      exitsChange: 0,
+      entriesCount: 0,
+      exitsCount: 0
     };
   }
 };

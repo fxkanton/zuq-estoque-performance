@@ -3,17 +3,38 @@ import { useEffect, useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { ArrowDown, ArrowUp, AlertTriangle, Activity, PackageCheck } from "lucide-react";
+import { ArrowDown, ArrowUp, AlertTriangle, Activity, PackageCheck, Calendar } from "lucide-react";
 import { getEquipmentWithStock } from "@/services/equipmentService";
 import { getMonthlyMovements, getRecentMovements } from "@/services/movementService";
 import { getPendingOrders } from "@/services/orderService";
 import { getReadersByStatus, EquipmentStatus } from "@/services/readerService";
 import { getMaintenceCount } from "@/services/maintenanceService";
 import { supabase } from "@/integrations/supabase/client";
+import { 
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
+} from "recharts";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 
 const Dashboard = () => {
+  // Date range state 
+  const today = new Date();
+  const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  
+  const [startDate, setStartDate] = useState(firstDayOfMonth.toISOString().split('T')[0]);
+  const [endDate, setEndDate] = useState(lastDayOfMonth.toISOString().split('T')[0]);
+  
   const [totalEquipment, setTotalEquipment] = useState(0);
-  const [monthlyMovements, setMonthlyMovements] = useState({ entries: 0, exits: 0, entriesChange: 0, exitsChange: 0 });
+  const [monthlyMovements, setMonthlyMovements] = useState({ entries: 0, exits: 0, entriesChange: 0, exitsChange: 0, entriesCount: 0, exitsCount: 0 });
   const [maintenanceCount, setMaintenanceCount] = useState(0);
   const [pendingOrders, setPendingOrders] = useState<any[]>([]);
   const [lowStockItems, setLowStockItems] = useState<any[]>([]);
@@ -22,15 +43,16 @@ const Dashboard = () => {
     'Em Uso': 0,
     'Em Manutenção': 0
   });
+  const [dailyMovements, setDailyMovements] = useState<any[]>([]);
 
   const loadDashboardData = async () => {
     try {
       // Get equipment with stock count
       const equipmentWithStock = await getEquipmentWithStock();
-      setTotalEquipment(equipmentWithStock.length);
+      setTotalEquipment(equipmentWithStock.reduce((total, item) => total + (item.stock || 0), 0));
       
-      // Get monthly movements
-      const movements = await getMonthlyMovements();
+      // Get monthly movements with date range
+      const movements = await getMonthlyMovements(startDate, endDate);
       setMonthlyMovements(movements);
       
       // Get maintenance count
@@ -50,6 +72,60 @@ const Dashboard = () => {
       // Get reader statistics
       const readerStatistics = await getReadersByStatus();
       setReaderStats(readerStatistics);
+      
+      // Get daily movements for the chart
+      const { data: entryData, error: entryError } = await supabase
+        .from('inventory_movements')
+        .select('movement_date, quantity')
+        .eq('movement_type', 'Entrada')
+        .gte('movement_date', startDate)
+        .lte('movement_date', endDate);
+        
+      const { data: exitData, error: exitError } = await supabase
+        .from('inventory_movements')
+        .select('movement_date, quantity')
+        .eq('movement_type', 'Saída')
+        .gte('movement_date', startDate)
+        .lte('movement_date', endDate);
+        
+      if (entryError || exitError) {
+        console.error("Error fetching movement data:", entryError || exitError);
+        return;
+      }
+      
+      // Process daily movement data for the chart
+      const daysMap = new Map();
+      
+      // Initialize with all days in the range
+      const dateStart = new Date(startDate);
+      const dateEnd = new Date(endDate);
+      for (let d = new Date(dateStart); d <= dateEnd; d.setDate(d.getDate() + 1)) {
+        const dateStr = d.toISOString().split('T')[0];
+        daysMap.set(dateStr, { date: dateStr, entries: 0, exits: 0 });
+      }
+      
+      // Add entry data
+      entryData.forEach(entry => {
+        const dateStr = new Date(entry.movement_date).toISOString().split('T')[0];
+        if (daysMap.has(dateStr)) {
+          const day = daysMap.get(dateStr);
+          day.entries += entry.quantity;
+        }
+      });
+      
+      // Add exit data
+      exitData.forEach(exit => {
+        const dateStr = new Date(exit.movement_date).toISOString().split('T')[0];
+        if (daysMap.has(dateStr)) {
+          const day = daysMap.get(dateStr);
+          day.exits += exit.quantity;
+        }
+      });
+      
+      // Convert to array for the chart
+      const chartData = Array.from(daysMap.values());
+      setDailyMovements(chartData);
+      
     } catch (error) {
       console.error("Error loading dashboard data:", error);
     }
@@ -111,10 +187,42 @@ const Dashboard = () => {
       supabase.removeChannel(readersChannel);
       supabase.removeChannel(maintenanceChannel);
     };
-  }, []);
+  }, [startDate, endDate]);
 
   return (
     <MainLayout title="Dashboard">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-zuq-darkblue">Dashboard</h1>
+        <div className="flex items-center gap-4">
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="start-date">Data Inicial</Label>
+            <Input 
+              id="start-date" 
+              type="date" 
+              value={startDate} 
+              onChange={(e) => setStartDate(e.target.value)} 
+              className="w-40"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <Label htmlFor="end-date">Data Final</Label>
+            <Input 
+              id="end-date" 
+              type="date" 
+              value={endDate} 
+              onChange={(e) => setEndDate(e.target.value)} 
+              className="w-40"
+            />
+          </div>
+          <Button 
+            className="mt-6 bg-zuq-blue hover:bg-zuq-blue/80"
+            onClick={loadDashboardData}
+          >
+            <Calendar className="h-4 w-4 mr-2" /> Atualizar
+          </Button>
+        </div>
+      </div>
+      
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         <StatsCard 
           title="Total de Equipamentos" 
@@ -123,15 +231,15 @@ const Dashboard = () => {
           icon={<PackageCheck className="h-8 w-8 text-zuq-blue" />}
         />
         <StatsCard 
-          title="Entradas no Mês" 
+          title="Entradas no Período" 
           value={monthlyMovements.entries.toString()} 
-          trend={{ value: `${monthlyMovements.entriesChange.toFixed(1)}%`, positive: monthlyMovements.entriesChange >= 0 }}
+          trend={{ value: `${monthlyMovements.entriesCount} inserções`, positive: monthlyMovements.entriesChange >= 0 }}
           icon={<ArrowDown className="h-8 w-8 text-green-500" />}
         />
         <StatsCard 
-          title="Saídas no Mês" 
+          title="Saídas no Período" 
           value={monthlyMovements.exits.toString()} 
-          trend={{ value: `${monthlyMovements.exitsChange.toFixed(1)}%`, positive: monthlyMovements.exitsChange < 0 }}
+          trend={{ value: `${monthlyMovements.exitsCount} inserções`, positive: monthlyMovements.exitsChange < 0 }}
           icon={<ArrowUp className="h-8 w-8 text-amber-500" />}
         />
         <StatsCard 
@@ -140,6 +248,35 @@ const Dashboard = () => {
           trend={{ value: `de ${Object.values(readerStats).reduce((a, b) => a + b, 0)} total`, positive: false }}
           icon={<Activity className="h-8 w-8 text-red-500" />}
         />
+      </div>
+      
+      <div className="grid grid-cols-1 mb-8">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg font-medium text-zuq-darkblue">Movimentações Diárias</CardTitle>
+          </CardHeader>
+          <CardContent className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart
+                data={dailyMovements}
+                margin={{
+                  top: 5,
+                  right: 30,
+                  left: 20,
+                  bottom: 5,
+                }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="date" />
+                <YAxis />
+                <Tooltip />
+                <Legend />
+                <Bar dataKey="entries" name="Entradas" fill="#4ade80" />
+                <Bar dataKey="exits" name="Saídas" fill="#f59e0b" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
@@ -297,7 +434,7 @@ const StatsCard = ({ title, value, trend, icon }: StatsCardProps) => {
             <p className="text-2xl font-bold mt-1 text-zuq-darkblue">{value}</p>
             <p className={`text-xs mt-2 flex items-center ${trend.positive ? 'text-green-600' : 'text-red-600'}`}>
               {trend.positive ? <ArrowUp className="h-3 w-3 mr-1" /> : <ArrowDown className="h-3 w-3 mr-1" />}
-              {trend.value} {trend.positive ? 'aumento' : 'redução'}
+              {trend.value}
             </p>
           </div>
           <div className="bg-zuq-gray/30 p-3 rounded-full">
