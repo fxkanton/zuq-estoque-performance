@@ -23,6 +23,28 @@ export interface MaintenanceWithEquipment extends Maintenance {
   equipment: Equipment;
 }
 
+// Helper function to validate status
+const validateMaintenanceStatus = (status: string): MaintenanceStatus => {
+  const validStatuses: MaintenanceStatus[] = [
+    'Em Andamento', 
+    'Aguardando Peças', 
+    'Concluída', 
+    'Cancelada'
+  ];
+  
+  return validStatuses.includes(status as MaintenanceStatus) 
+    ? status as MaintenanceStatus 
+    : 'Em Andamento';
+};
+
+// Helper to convert record to MaintenanceWithEquipment with proper types
+const convertToMaintenanceWithEquipment = (record: any): MaintenanceWithEquipment => {
+  return {
+    ...record,
+    status: validateMaintenanceStatus(record.status)
+  };
+};
+
 export const fetchMaintenanceRecords = async (): Promise<MaintenanceWithEquipment[]> => {
   const { data, error } = await supabase
     .from('maintenance_records')
@@ -39,7 +61,7 @@ export const fetchMaintenanceRecords = async (): Promise<MaintenanceWithEquipmen
     return [];
   }
 
-  return data || [];
+  return data ? data.map(convertToMaintenanceWithEquipment) : [];
 };
 
 export const getMaintenanceById = async (id: string): Promise<MaintenanceWithEquipment | null> => {
@@ -59,7 +81,7 @@ export const getMaintenanceById = async (id: string): Promise<MaintenanceWithEqu
     return null;
   }
 
-  return data;
+  return data ? convertToMaintenanceWithEquipment(data) : null;
 };
 
 export const createMaintenance = async (maintenance: Omit<Maintenance, 'id' | 'created_at' | 'updated_at'>): Promise<Maintenance | null> => {
@@ -92,7 +114,7 @@ export const createMaintenance = async (maintenance: Omit<Maintenance, 'id' | 'c
   }
 
   toast.success('Manutenção registrada com sucesso');
-  return data;
+  return data ? { ...data, status: validateMaintenanceStatus(data.status) } : null;
 };
 
 export const updateMaintenance = async (id: string, maintenance: Partial<Maintenance>): Promise<Maintenance | null> => {
@@ -125,7 +147,7 @@ export const updateMaintenance = async (id: string, maintenance: Partial<Mainten
   }
 
   toast.success('Manutenção atualizada com sucesso');
-  return data;
+  return data ? { ...data, status: validateMaintenanceStatus(data.status) } : null;
 };
 
 export const getMaintenceCount = async (): Promise<number> => {
