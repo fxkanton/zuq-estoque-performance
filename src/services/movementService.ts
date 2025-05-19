@@ -20,6 +20,21 @@ export interface MovementWithEquipment extends Movement {
   equipment: Equipment;
 }
 
+// Helper function to validate movement type
+const isValidMovementType = (type: string): type is MovementType => {
+  return type === 'Entrada' || type === 'Saída';
+};
+
+// Helper function to convert database records to MovementWithEquipment
+const convertToMovementWithEquipment = (record: any): MovementWithEquipment => {
+  const movementType = isValidMovementType(record.movement_type) ? record.movement_type : 'Entrada';
+  
+  return {
+    ...record,
+    movement_type: movementType,
+  };
+};
+
 // Fetch all movements
 export const fetchMovements = async (): Promise<MovementWithEquipment[]> => {
   const { data, error } = await supabase
@@ -37,7 +52,7 @@ export const fetchMovements = async (): Promise<MovementWithEquipment[]> => {
     return [];
   }
 
-  return data || [];
+  return data ? data.map(convertToMovementWithEquipment) : [];
 };
 
 // Get movement by ID
@@ -58,14 +73,17 @@ export const getMovementById = async (id: string): Promise<MovementWithEquipment
     return null;
   }
 
-  return data;
+  return data ? convertToMovementWithEquipment(data) : null;
 };
 
 // Create new movement
 export const createMovement = async (movement: Omit<Movement, 'id' | 'created_at' | 'updated_at'>): Promise<Movement | null> => {
   const { data, error } = await supabase
     .from('inventory_movements')
-    .insert([movement])
+    .insert([{ 
+      ...movement, 
+      movement_type: isValidMovementType(movement.movement_type) ? movement.movement_type : 'Entrada'
+    }])
     .select()
     .single();
 
@@ -77,14 +95,24 @@ export const createMovement = async (movement: Omit<Movement, 'id' | 'created_at
   }
 
   toast.success('Movimentação registrada com sucesso');
-  return data;
+  return data as Movement;
 };
 
 // Update movement
 export const updateMovement = async (id: string, movement: Partial<Movement>): Promise<Movement | null> => {
+  // Ensure that if movement_type is provided, it's valid
+  const validatedMovement = { 
+    ...movement,
+    ...(movement.movement_type && { 
+      movement_type: isValidMovementType(movement.movement_type) 
+        ? movement.movement_type 
+        : 'Entrada' 
+    })
+  };
+
   const { data, error } = await supabase
     .from('inventory_movements')
-    .update(movement)
+    .update(validatedMovement)
     .eq('id', id)
     .select()
     .single();
@@ -97,7 +125,7 @@ export const updateMovement = async (id: string, movement: Partial<Movement>): P
   }
 
   toast.success('Movimentação atualizada com sucesso');
-  return data;
+  return data as Movement;
 };
 
 // Delete movement
@@ -177,5 +205,5 @@ export const getRecentMovements = async (limit: number = 5): Promise<MovementWit
     return [];
   }
 
-  return data || [];
+  return data ? data.map(convertToMovementWithEquipment) : [];
 };

@@ -333,7 +333,11 @@ export type Database = {
       equipment_category: "Leitora" | "Sensor" | "Rastreador" | "Acessório"
       equipment_condition: "Novo" | "Recondicionado"
       equipment_status: "Disponível" | "Em Uso" | "Em Manutenção"
-      order_status: "Pendente" | "Parcialmente Recebido" | "Recebido"
+      order_status:
+        | "Pendente"
+        | "Parcialmente Recebido"
+        | "Recebido"
+        | "Arquivado"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -452,7 +456,12 @@ export const Constants = {
       equipment_category: ["Leitora", "Sensor", "Rastreador", "Acessório"],
       equipment_condition: ["Novo", "Recondicionado"],
       equipment_status: ["Disponível", "Em Uso", "Em Manutenção"],
-      order_status: ["Pendente", "Parcialmente Recebido", "Recebido"],
+      order_status: [
+        "Pendente",
+        "Parcialmente Recebido",
+        "Recebido",
+        "Arquivado",
+      ],
     },
   },
 } as const
