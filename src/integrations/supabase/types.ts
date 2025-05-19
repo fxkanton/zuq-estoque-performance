@@ -102,30 +102,42 @@ export type Database = {
       }
       maintenance_records: {
         Row: {
+          completion_date: string | null
           created_at: string | null
           equipment_id: string
+          expected_completion_date: string | null
           id: string
           notes: string | null
           quantity: number
           send_date: string
+          status: string
+          technician_notes: string | null
           updated_at: string | null
         }
         Insert: {
+          completion_date?: string | null
           created_at?: string | null
           equipment_id: string
+          expected_completion_date?: string | null
           id?: string
           notes?: string | null
           quantity: number
           send_date: string
+          status?: string
+          technician_notes?: string | null
           updated_at?: string | null
         }
         Update: {
+          completion_date?: string | null
           created_at?: string | null
           equipment_id?: string
+          expected_completion_date?: string | null
           id?: string
           notes?: string | null
           quantity?: number
           send_date?: string
+          status?: string
+          technician_notes?: string | null
           updated_at?: string | null
         }
         Relationships: [
