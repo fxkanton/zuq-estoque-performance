@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,7 +32,7 @@ const Dashboard = () => {
   const [startDate, setStartDate] = useState(firstDayOfMonth.toISOString().split('T')[0]);
   const [endDate, setEndDate] = useState(lastDayOfMonth.toISOString().split('T')[0]);
   
-  const [totalEquipment, setTotalEquipment] = useState(0);
+  const [equipmentBalance, setEquipmentBalance] = useState(0);
   const [monthlyMovements, setMonthlyMovements] = useState({ entries: 0, exits: 0, entriesChange: 0, exitsChange: 0, entriesCount: 0, exitsCount: 0 });
   const [maintenanceCount, setMaintenanceCount] = useState(0);
   const [pendingOrders, setPendingOrders] = useState<any[]>([]);
@@ -47,33 +46,63 @@ const Dashboard = () => {
 
   const loadDashboardData = async () => {
     try {
-      // Get equipment with stock count
-      const equipmentWithStock = await getEquipmentWithStock();
-      setTotalEquipment(equipmentWithStock.reduce((total, item) => total + (item.stock || 0), 0));
+      // Calcular saldo de equipamentos para o período selecionado
+      const { data: movementsData, error: movementsError } = await supabase
+        .from('inventory_movements')
+        .select('movement_type, quantity')
+        .gte('movement_date', startDate)
+        .lte('movement_date', endDate);
+        
+      if (movementsError) {
+        console.error("Error fetching movements data:", movementsError);
+        return;
+      }
       
-      // Get monthly movements with date range
-      const movements = await getMonthlyMovements(startDate, endDate);
-      setMonthlyMovements(movements);
+      // Calcular o saldo baseado nas movimentações do período
+      let balance = 0;
+      let entries = 0;
+      let exits = 0;
+      let entriesCount = 0;
+      let exitsCount = 0;
       
-      // Get maintenance count
-      const maintenance = await getMaintenceCount();
-      setMaintenanceCount(maintenance);
+      movementsData.forEach(movement => {
+        if (movement.movement_type === 'Entrada') {
+          balance += movement.quantity;
+          entries += movement.quantity;
+          entriesCount++;
+        } else if (movement.movement_type === 'Saída') {
+          balance -= movement.quantity;
+          exits += movement.quantity;
+          exitsCount++;
+        }
+      });
       
-      // Get pending orders
+      setEquipmentBalance(balance);
+      setMonthlyMovements({
+        entries,
+        exits,
+        entriesCount,
+        exitsCount,
+        entriesChange: 0, // Mantendo esses valores, podem ser calculados se necessário
+        exitsChange: 0
+      });
+      
+      // Obter pedidos pendentes
       const orders = await getPendingOrders();
       setPendingOrders(orders);
       
-      // Get low stock items
+      // Obter itens com estoque baixo
+      const equipmentWithStock = await getEquipmentWithStock();
       const lowStock = equipmentWithStock.filter(item => 
         (item.min_stock || 0) > 0 && item.stock < (item.min_stock || 0)
       ).slice(0, 4);
       setLowStockItems(lowStock);
       
-      // Get reader statistics
+      // Obter estatísticas de leitoras
       const readerStatistics = await getReadersByStatus();
       setReaderStats(readerStatistics);
       
-      // Get daily movements for the chart
+      // Obter movimentações diárias para o gráfico
       const { data: entryData, error: entryError } = await supabase
         .from('inventory_movements')
         .select('movement_date, quantity')
@@ -223,11 +252,11 @@ const Dashboard = () => {
         </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <StatsCard 
-          title="Total de Equipamentos" 
-          value={totalEquipment.toString()} 
-          trend={{ value: "Cadastrados", positive: true }}
+          title="Saldo de Equipamentos" 
+          value={equipmentBalance.toString()} 
+          trend={{ value: `No período selecionado`, positive: equipmentBalance >= 0 }}
           icon={<PackageCheck className="h-8 w-8 text-zuq-blue" />}
         />
         <StatsCard 
@@ -241,12 +270,6 @@ const Dashboard = () => {
           value={monthlyMovements.exits.toString()} 
           trend={{ value: `${monthlyMovements.exitsCount} inserções`, positive: monthlyMovements.exitsChange < 0 }}
           icon={<ArrowUp className="h-8 w-8 text-amber-500" />}
-        />
-        <StatsCard 
-          title="Leitoras em Manutenção" 
-          value={readerStats['Em Manutenção'].toString()} 
-          trend={{ value: `de ${Object.values(readerStats).reduce((a, b) => a + b, 0)} total`, positive: false }}
-          icon={<Activity className="h-8 w-8 text-red-500" />}
         />
       </div>
       
@@ -324,40 +347,6 @@ const Dashboard = () => {
         
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg font-medium text-zuq-darkblue">Movimentações Recentes</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {pendingOrders.length === 0 ? (
-                <div className="text-center py-6 text-muted-foreground">
-                  Não há movimentações recentes
-                </div>
-              ) : (
-                <>
-                  {pendingOrders.map((order) => (
-                    <div key={order.id} className="flex items-center justify-between border-b pb-2">
-                      <div>
-                        <p className="font-medium">{order.equipment.name}</p>
-                        <p className="text-sm text-muted-foreground">{order.supplier.name}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm">{order.quantity} unidades</p>
-                        <p className="text-xs text-muted-foreground">
-                          Previsão: {order.expected_arrival_date ? new Date(order.expected_arrival_date).toLocaleDateString('pt-BR') : 'N/A'}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-      
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="col-span-1 lg:col-span-2">
-          <CardHeader>
             <CardTitle className="text-lg font-medium text-zuq-darkblue">Pedidos Pendentes</CardTitle>
           </CardHeader>
           <CardContent>
@@ -383,7 +372,9 @@ const Dashboard = () => {
             </div>
           </CardContent>
         </Card>
-        
+      </div>
+      
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
             <CardTitle className="text-lg font-medium text-zuq-darkblue">Alertas de Estoque</CardTitle>

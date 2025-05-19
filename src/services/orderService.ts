@@ -4,7 +4,7 @@ import { toast } from "@/components/ui/sonner";
 import { Equipment } from "./equipmentService";
 import { Supplier } from "./supplierService";
 
-export type OrderStatus = 'Pendente' | 'Parcialmente Recebido' | 'Recebido';
+export type OrderStatus = 'Pendente' | 'Parcialmente Recebido' | 'Recebido' | 'Arquivado';
 
 export interface Order {
   id: string;
@@ -37,8 +37,8 @@ export interface OrderBatch {
   updated_at?: string;
 }
 
-export const fetchOrders = async (): Promise<OrderWithDetails[]> => {
-  const { data, error } = await supabase
+export const fetchOrders = async (includeArchived: boolean = false): Promise<OrderWithDetails[]> => {
+  let query = supabase
     .from('orders')
     .select(`
       *,
@@ -46,6 +46,14 @@ export const fetchOrders = async (): Promise<OrderWithDetails[]> => {
       supplier:supplier_id (*)
     `)
     .order('created_at', { ascending: false });
+    
+  if (!includeArchived) {
+    query = query.neq('status', 'Arquivado');
+  } else {
+    query = query.eq('status', 'Arquivado');
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     toast.error('Erro ao carregar pedidos', {
@@ -115,6 +123,40 @@ export const updateOrder = async (id: string, order: Partial<Order>): Promise<Or
   return data;
 };
 
+export const archiveOrder = async (id: string): Promise<boolean> => {
+  const { error } = await supabase
+    .from('orders')
+    .update({ status: 'Arquivado' })
+    .eq('id', id);
+
+  if (error) {
+    toast.error('Erro ao arquivar pedido', {
+      description: error.message
+    });
+    return false;
+  }
+
+  toast.success('Pedido arquivado com sucesso');
+  return true;
+};
+
+export const completeOrder = async (id: string): Promise<boolean> => {
+  const { error } = await supabase
+    .from('orders')
+    .update({ status: 'Recebido' })
+    .eq('id', id);
+
+  if (error) {
+    toast.error('Erro ao concluir pedido', {
+      description: error.message
+    });
+    return false;
+  }
+
+  toast.success('Pedido concluído com sucesso');
+  return true;
+};
+
 export const deleteOrder = async (id: string): Promise<boolean> => {
   const { error } = await supabase
     .from('orders')
@@ -167,6 +209,20 @@ export const createOrderBatch = async (batch: Omit<OrderBatch, 'id' | 'created_a
   return data;
 };
 
+export const getOrderTotalReceived = async (orderId: string): Promise<number> => {
+  const { data, error } = await supabase
+    .from('order_batches')
+    .select('received_quantity')
+    .eq('order_id', orderId);
+
+  if (error) {
+    console.error('Error fetching order batches:', error);
+    return 0;
+  }
+
+  return data.reduce((total, batch) => total + batch.received_quantity, 0);
+};
+
 export const getPendingOrders = async (limit: number = 3): Promise<OrderWithDetails[]> => {
   const { data, error } = await supabase
     .from('orders')
@@ -175,7 +231,7 @@ export const getPendingOrders = async (limit: number = 3): Promise<OrderWithDeta
       equipment:equipment_id (*),
       supplier:supplier_id (*)
     `)
-    .not('status', 'eq', 'Recebido')
+    .not('status', 'in', '("Recebido","Arquivado")')
     .order('expected_arrival_date', { ascending: true })
     .limit(limit);
 

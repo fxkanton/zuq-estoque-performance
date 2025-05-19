@@ -3,7 +3,15 @@ import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ClipboardCheck, Plus, Search } from "lucide-react";
+import { 
+  ClipboardCheck, 
+  Plus, 
+  Search, 
+  Check, 
+  List, 
+  Archive, 
+  ArchiveRestore 
+} from "lucide-react";
 import { 
   Dialog, 
   DialogContent, 
@@ -23,16 +31,24 @@ import {
   SelectItem 
 } from "@/components/ui/select";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
+import { Progress } from "@/components/ui/progress";
 import { 
   fetchOrders, 
   createOrder, 
   updateOrder, 
   deleteOrder,
+  getOrderTotalReceived,
+  fetchOrderBatches,
+  completeOrder,
+  archiveOrder,
   OrderWithDetails, 
-  OrderStatus 
+  OrderStatus,
+  OrderBatch
 } from "@/services/orderService";
 import { fetchEquipment } from "@/services/equipmentService";
 import { fetchSuppliers } from "@/services/supplierService";
+import OrderBatchForm from "@/components/OrderBatchForm";
+import OrderBatchDetails from "@/components/OrderBatchDetails";
 import { supabase } from "@/integrations/supabase/client";
 
 const Pedidos = () => {
@@ -43,8 +59,13 @@ const Pedidos = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isReceiveBatchDialogOpen, setIsReceiveBatchDialogOpen] = useState(false);
+  const [isBatchDetailsDialogOpen, setIsBatchDetailsDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [orderBatches, setOrderBatches] = useState<OrderBatch[]>([]);
+  const [showArchived, setShowArchived] = useState(false);
+  const [orderReceivedAmounts, setOrderReceivedAmounts] = useState<Record<string, number>>({});
   
   // Form state
   const [currentOrder, setCurrentOrder] = useState<OrderWithDetails | null>(null);
@@ -60,7 +81,7 @@ const Pedidos = () => {
 
   const loadData = async () => {
     try {
-      const ordersData = await fetchOrders();
+      const ordersData = await fetchOrders(showArchived);
       setOrders(ordersData);
       setFilteredOrders(ordersData);
       
@@ -69,6 +90,13 @@ const Pedidos = () => {
       
       const suppliersData = await fetchSuppliers();
       setSuppliers(suppliersData);
+      
+      // Load received amounts for each order
+      const receivedAmounts: Record<string, number> = {};
+      for (const order of ordersData) {
+        receivedAmounts[order.id] = await getOrderTotalReceived(order.id);
+      }
+      setOrderReceivedAmounts(receivedAmounts);
     } catch (error) {
       console.error("Error loading orders data:", error);
     }
@@ -89,10 +117,30 @@ const Pedidos = () => {
       })
       .subscribe();
 
+    const orderBatchesChannel = supabase
+      .channel('public:order_batches')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'order_batches'
+      }, () => {
+        loadData();
+        if (currentOrder) {
+          loadOrderBatches(currentOrder.id);
+        }
+      })
+      .subscribe();
+
     return () => {
       supabase.removeChannel(ordersChannel);
+      supabase.removeChannel(orderBatchesChannel);
     };
-  }, []);
+  }, [showArchived]);
+
+  const loadOrderBatches = async (orderId: string) => {
+    const batches = await fetchOrderBatches(orderId);
+    setOrderBatches(batches);
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
@@ -154,6 +202,29 @@ const Pedidos = () => {
     setIsDeleteDialogOpen(true);
   };
 
+  const handleOpenReceiveBatchDialog = (order: OrderWithDetails) => {
+    setCurrentOrder(order);
+    setIsReceiveBatchDialogOpen(true);
+  };
+
+  const handleOpenBatchDetailsDialog = async (order: OrderWithDetails) => {
+    setCurrentOrder(order);
+    await loadOrderBatches(order.id);
+    setIsBatchDetailsDialogOpen(true);
+  };
+
+  const handleArchiveOrder = async (order: OrderWithDetails) => {
+    if (await archiveOrder(order.id)) {
+      loadData();
+    }
+  };
+
+  const handleCompleteOrder = async (order: OrderWithDetails) => {
+    if (await completeOrder(order.id)) {
+      loadData();
+    }
+  };
+
   const handleSaveOrder = async () => {
     try {
       await createOrder(formData);
@@ -188,6 +259,15 @@ const Pedidos = () => {
     }
   };
 
+  const calculateProgress = (order: OrderWithDetails): number => {
+    const receivedAmount = orderReceivedAmounts[order.id] || 0;
+    return Math.min(100, (receivedAmount / order.quantity) * 100);
+  };
+
+  const toggleShowArchived = () => {
+    setShowArchived(prev => !prev);
+  };
+
   // Filter orders based on search term and status
   useEffect(() => {
     let filtered = orders;
@@ -211,13 +291,31 @@ const Pedidos = () => {
   return (
     <MainLayout title="Controle de Pedidos">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-zuq-darkblue">Controle de Pedidos</h1>
-        <Button 
-          className="bg-zuq-blue hover:bg-zuq-blue/80"
-          onClick={handleOpenAddDialog}
-        >
-          <Plus className="h-4 w-4 mr-2" /> Cadastrar Novo Pedido
-        </Button>
+        <h1 className="text-2xl font-bold text-zuq-darkblue">
+          Controle de Pedidos {showArchived ? '(Arquivados)' : ''}
+        </h1>
+        <div className="flex gap-2">
+          <Button 
+            variant={showArchived ? "default" : "outline"}
+            onClick={toggleShowArchived}
+            className={showArchived ? "bg-zuq-blue hover:bg-zuq-blue/80" : ""}
+          >
+            {showArchived ? (
+              <><ArchiveRestore className="h-4 w-4 mr-2" /> Pedidos Ativos</>
+            ) : (
+              <><Archive className="h-4 w-4 mr-2" /> Ver Arquivados</>
+            )}
+          </Button>
+          
+          {!showArchived && (
+            <Button 
+              className="bg-zuq-blue hover:bg-zuq-blue/80"
+              onClick={handleOpenAddDialog}
+            >
+              <Plus className="h-4 w-4 mr-2" /> Cadastrar Novo Pedido
+            </Button>
+          )}
+        </div>
       </div>
       
       <Card className="mb-6">
@@ -245,6 +343,7 @@ const Pedidos = () => {
                   <SelectItem value="Pendente">Pendente</SelectItem>
                   <SelectItem value="Parcialmente Recebido">Parcialmente Recebido</SelectItem>
                   <SelectItem value="Recebido">Recebido</SelectItem>
+                  {showArchived && <SelectItem value="Arquivado">Arquivado</SelectItem>}
                 </SelectContent>
               </Select>
             </div>
@@ -275,58 +374,131 @@ const Pedidos = () => {
                 <TableHead className="text-center">Quantidade</TableHead>
                 <TableHead>Previsão de Chegada</TableHead>
                 <TableHead>Status</TableHead>
+                <TableHead>Progresso</TableHead>
                 <TableHead>Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredOrders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
                     Nenhum pedido encontrado
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredOrders.map((order) => (
-                  <TableRow key={order.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="bg-zuq-gray/30 p-2 rounded-md">
-                          <ClipboardCheck className="h-4 w-4 text-zuq-blue" />
+                filteredOrders.map((order) => {
+                  const receivedAmount = orderReceivedAmounts[order.id] || 0;
+                  const progress = calculateProgress(order);
+                  
+                  return (
+                    <TableRow key={order.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div className="bg-zuq-gray/30 p-2 rounded-md">
+                            <ClipboardCheck className="h-4 w-4 text-zuq-blue" />
+                          </div>
+                          {order.equipment.name} {order.equipment.model}
                         </div>
-                        {order.equipment.name} {order.equipment.model}
-                      </div>
-                    </TableCell>
-                    <TableCell>{order.supplier.name}</TableCell>
-                    <TableCell className="text-center">{order.quantity}</TableCell>
-                    <TableCell>
-                      {order.expected_arrival_date ? new Date(order.expected_arrival_date).toLocaleDateString('pt-BR') : 'N/A'}
-                    </TableCell>
-                    <TableCell>
-                      <span className={`px-2 py-1 rounded-full text-xs ${getStatusBadgeStyle(order.status)}`}>
-                        {order.status}
-                      </span>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleOpenEditDialog(order)}
-                        >
-                          Editar
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="text-red-500"
-                          onClick={() => handleOpenDeleteDialog(order)}
-                        >
-                          Excluir
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))
+                      </TableCell>
+                      <TableCell>{order.supplier.name}</TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex flex-col items-center">
+                          <span>{order.quantity}</span>
+                          {receivedAmount > 0 && (
+                            <span className="text-xs text-muted-foreground">
+                              ({receivedAmount} recebidos)
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {order.expected_arrival_date ? new Date(order.expected_arrival_date).toLocaleDateString('pt-BR') : 'N/A'}
+                      </TableCell>
+                      <TableCell>
+                        <span className={`px-2 py-1 rounded-full text-xs ${getStatusBadgeStyle(order.status)}`}>
+                          {order.status}
+                        </span>
+                      </TableCell>
+                      <TableCell className="w-40">
+                        <div className="flex items-center gap-2">
+                          <Progress value={progress} className="h-2 flex-1" />
+                          <span className="text-xs whitespace-nowrap">{Math.round(progress)}%</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          {!showArchived && order.status !== 'Recebido' && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleOpenReceiveBatchDialog(order)}
+                              title="Registrar Recebimento"
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                          
+                          {(receivedAmount > 0 || order.status === 'Recebido') && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => handleOpenBatchDetailsDialog(order)}
+                              title="Ver Detalhes dos Recebimentos"
+                            >
+                              <List className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                          
+                          {!showArchived && order.status !== 'Recebido' && receivedAmount >= order.quantity && (
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              className="text-green-500"
+                              onClick={() => handleCompleteOrder(order)}
+                              title="Concluir Pedido"
+                            >
+                              <Check className="h-3.5 w-3.5" />
+                            </Button>
+                          )}
+                          
+                          {!showArchived && (
+                            <>
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => handleOpenEditDialog(order)}
+                                title="Editar Pedido"
+                              >
+                                Editar
+                              </Button>
+                              
+                              {order.status !== 'Arquivado' && (
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => handleArchiveOrder(order)}
+                                  title="Arquivar Pedido"
+                                >
+                                  <Archive className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                              
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="text-red-500"
+                                onClick={() => handleOpenDeleteDialog(order)}
+                                title="Excluir Pedido"
+                              >
+                                Excluir
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
@@ -569,6 +741,26 @@ const Pedidos = () => {
           </div>
         </DialogContent>
       </Dialog>
+      
+      {/* Receive Batch Dialog */}
+      {currentOrder && (
+        <OrderBatchForm
+          orderId={currentOrder.id}
+          maxQuantity={currentOrder.quantity - (orderReceivedAmounts[currentOrder.id] || 0)}
+          isOpen={isReceiveBatchDialogOpen}
+          onClose={() => setIsReceiveBatchDialogOpen(false)}
+          onSuccess={() => loadData()}
+        />
+      )}
+      
+      {/* Batch Details Dialog */}
+      {currentOrder && (
+        <OrderBatchDetails
+          orderBatches={orderBatches}
+          isOpen={isBatchDetailsDialogOpen}
+          onClose={() => setIsBatchDetailsDialogOpen(false)}
+        />
+      )}
     </MainLayout>
   );
 };
@@ -581,6 +773,8 @@ const getStatusBadgeStyle = (status: string) => {
       return 'bg-blue-100 text-blue-800';
     case 'Recebido':
       return 'bg-green-100 text-green-800';
+    case 'Arquivado':
+      return 'bg-gray-100 text-gray-800';
     default:
       return 'bg-gray-100 text-gray-800';
   }

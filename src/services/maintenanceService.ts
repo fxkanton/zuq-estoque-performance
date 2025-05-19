@@ -150,6 +150,44 @@ export const updateMaintenance = async (id: string, maintenance: Partial<Mainten
   return data ? { ...data, status: validateMaintenanceStatus(data.status) } : null;
 };
 
+export const reopenMaintenance = async (id: string): Promise<Maintenance | null> => {
+  const record = await getMaintenanceById(id);
+  
+  if (!record) {
+    toast.error('Registro de manutenção não encontrado');
+    return null;
+  }
+  
+  // Update status to Em Andamento and clear completion date
+  const { data, error } = await supabase
+    .from('maintenance_records')
+    .update({
+      status: 'Em Andamento',
+      completion_date: null
+    })
+    .eq('id', id)
+    .select()
+    .single();
+    
+  if (error) {
+    toast.error('Erro ao reabrir manutenção', {
+      description: error.message
+    });
+    return null;
+  }
+  
+  // Update readers status back to Em Manutenção
+  await supabase
+    .from('readers')
+    .update({ status: 'Em Manutenção' })
+    .eq('equipment_id', record.equipment_id)
+    .eq('status', 'Disponível')
+    .limit(record.quantity);
+  
+  toast.success('Manutenção reaberta com sucesso');
+  return data ? { ...data, status: validateMaintenanceStatus(data.status) } : null;
+};
+
 export const getMaintenceCount = async (): Promise<number> => {
   const { count, error } = await supabase
     .from('maintenance_records')
