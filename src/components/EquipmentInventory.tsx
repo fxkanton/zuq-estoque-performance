@@ -64,12 +64,12 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
     }
     
     // Apply brand filter
-    if (filters.brand && filters.brand !== '') {
+    if (filters.brand) {
       filtered = filtered.filter(item => item.brand === filters.brand);
     }
     
     // Apply model filter
-    if (filters.model && filters.model !== '') {
+    if (filters.model) {
       filtered = filtered.filter(item => item.model === filters.model);
     }
     
@@ -94,9 +94,9 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
     });
   };
   
-  // Updated chart data for vertical bars
+  // Data for VERTICAL bar chart
   const chartData = filteredInventory.slice(0, 10).map(item => ({
-    name: `${item.name.substring(0, 15)}${item.name.length > 15 ? '...' : ''}`,
+    name: item.name.substring(0, 10) + (item.name.length > 10 ? '...' : ''),
     estoque: item.stock,
     fullName: `${item.name} ${item.model}`
   }));
@@ -154,7 +154,7 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
               <SelectContent>
                 <SelectItem value="">Todos os modelos</SelectItem>
                 {uniqueModels.map(model => (
-                  <SelectItem key={model} value={model || "unknown"}>{model || "Não especificado"}</SelectItem>
+                  <SelectItem key={model || "unknown"} value={model || "unknown"}>{model || "Não especificado"}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -168,25 +168,25 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
         ) : (
           <div className="h-80">
             <ResponsiveContainer width="100%" height="100%">
+              {/* Vertical bar chart (instead of horizontal) */}
               <BarChart
                 data={chartData}
-                margin={{ top: 5, right: 20, left: 20, bottom: 50 }}
+                layout="vertical"
+                margin={{ top: 5, right: 30, left: 70, bottom: 5 }}
               >
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
+                <XAxis type="number" />
+                <YAxis 
                   dataKey="name" 
-                  angle={-45} 
-                  textAnchor="end"
-                  height={70}
-                  interval={0}
+                  type="category" 
+                  width={70} 
                   tick={{ fontSize: 12 }}
                 />
-                <YAxis />
                 <Tooltip 
                   formatter={(value, name) => [value, 'Quantidade']}
                   labelFormatter={(label, props) => {
-                    // Fix: Safe check before accessing payload properties
-                    if (props && props.length > 0 && props[0].payload) {
+                    // Safe check before accessing payload properties
+                    if (props && props.length > 0 && props[0]?.payload) {
                       return props[0].payload.fullName;
                     }
                     // Fallback to the label if payload is not available

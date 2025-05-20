@@ -1,223 +1,168 @@
+
 import React, { useState } from 'react';
+import { Button } from "@/components/ui/button";
 import { 
   Dialog, 
   DialogContent, 
+  DialogDescription, 
   DialogHeader, 
-  DialogTitle, 
-  DialogDescription 
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { toast } from '@/components/ui/sonner';
-import { updateMaintenance, deleteMaintenance, reopenMaintenance, MaintenanceRecord, MaintenanceStatus } from '@/services/maintenanceService';
-import { Pencil, Trash2, RefreshCw } from 'lucide-react';
+  DialogTitle 
+} from "@/components/ui/dialog";
+import { Edit, Trash2, RotateCw } from 'lucide-react';
+import { 
+  updateMaintenanceRecord, 
+  deleteMaintenanceRecord, 
+  reopenMaintenanceRecord,
+  MaintenanceRecord 
+} from '@/services/maintenanceService';
+import { toast } from 'sonner';
 
 interface MaintenanceActionsProps {
-  maintenance: MaintenanceRecord;
-  onActionComplete: () => void;
+  record: MaintenanceRecord;
+  onUpdate: () => void;
 }
 
-const MaintenanceActions = ({ maintenance, onActionComplete }: MaintenanceActionsProps) => {
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isReopenDialogOpen, setIsReopenDialogOpen] = useState(false);
-  
-  const [formData, setFormData] = useState({
-    notes: maintenance.notes || '',
-    technician_notes: maintenance.technician_notes || '',
-    expected_completion_date: maintenance.expected_completion_date || '',
-    completion_date: maintenance.completion_date || '',
-  });
+const MaintenanceActions = ({ record, onUpdate }: MaintenanceActionsProps) => {
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [isReopenOpen, setIsReopenOpen] = useState(false);
+  const [notes, setNotes] = useState(record.notes || '');
+  const [technicianNotes, setTechnicianNotes] = useState(record.technician_notes || '');
+  const isCompleted = record.status === 'Concluído';
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleEditMaintenance = async () => {
+  const handleEdit = async () => {
     try {
-      await updateMaintenance(maintenance.id, {
-        notes: formData.notes,
-        technician_notes: formData.technician_notes,
-        expected_completion_date: formData.expected_completion_date || null,
-        completion_date: formData.completion_date || null,
+      await updateMaintenanceRecord(record.id, {
+        ...record,
+        notes,
+        technician_notes: technicianNotes
       });
-      
-      setIsEditDialogOpen(false);
-      onActionComplete();
+      toast.success('Registro de manutenção atualizado com sucesso!');
+      setIsEditOpen(false);
+      onUpdate();
     } catch (error) {
-      toast.error('Erro ao atualizar registro de manutenção');
-      console.error(error);
+      console.error('Error updating maintenance record:', error);
+      toast.error('Erro ao atualizar registro de manutenção.');
     }
   };
 
-  const handleDeleteMaintenance = async () => {
+  const handleDelete = async () => {
     try {
-      await deleteMaintenance(maintenance.id);
-      
-      setIsDeleteDialogOpen(false);
-      onActionComplete();
+      await deleteMaintenanceRecord(record.id);
+      toast.success('Registro de manutenção excluído com sucesso!');
+      setIsDeleteOpen(false);
+      onUpdate();
     } catch (error) {
-      toast.error('Erro ao excluir registro de manutenção');
-      console.error(error);
+      console.error('Error deleting maintenance record:', error);
+      toast.error('Erro ao excluir registro de manutenção.');
     }
   };
 
-  const handleReopenMaintenance = async () => {
+  const handleReopen = async () => {
     try {
-      await reopenMaintenance(maintenance.id);
-      
-      setIsReopenDialogOpen(false);
-      onActionComplete();
+      await reopenMaintenanceRecord(record.id);
+      toast.success('Manutenção reaberta com sucesso!');
+      setIsReopenOpen(false);
+      onUpdate();
     } catch (error) {
-      toast.error('Erro ao reabrir registro de manutenção');
-      console.error(error);
+      console.error('Error reopening maintenance record:', error);
+      toast.error('Erro ao reabrir manutenção.');
     }
   };
 
   return (
-    <div className="flex items-center space-x-2">
-      <Button 
-        variant="outline" 
-        size="sm" 
-        onClick={() => setIsEditDialogOpen(true)}
-      >
-        <Pencil className="h-4 w-4" />
+    <div className="flex space-x-2">
+      <Button variant="outline" size="sm" onClick={() => setIsEditOpen(true)}>
+        <Edit className="h-4 w-4 mr-1" /> Editar
       </Button>
       
-      {maintenance.status === 'Concluída' && (
-        <Button 
-          variant="outline" 
-          size="sm"
-          onClick={() => setIsReopenDialogOpen(true)}
-        >
-          <RefreshCw className="h-4 w-4" />
-        </Button>
-      )}
-      
-      <Button 
-        variant="outline" 
-        size="sm" 
-        className="text-red-500"
-        onClick={() => setIsDeleteDialogOpen(true)}
-      >
-        <Trash2 className="h-4 w-4" />
+      <Button variant="outline" size="sm" className="text-red-500" onClick={() => setIsDeleteOpen(true)}>
+        <Trash2 className="h-4 w-4 mr-1" /> Excluir
       </Button>
 
+      {isCompleted && (
+        <Button variant="outline" size="sm" className="text-amber-500" onClick={() => setIsReopenOpen(true)}>
+          <RotateCw className="h-4 w-4 mr-1" /> Reabrir
+        </Button>
+      )}
+
       {/* Edit Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Editar Registro de Manutenção</DialogTitle>
             <DialogDescription>
-              Atualize as informações de manutenção do equipamento.
+              Atualize as informações deste registro de manutenção.
             </DialogDescription>
           </DialogHeader>
-          
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="expected_completion_date">Previsão de Conclusão</Label>
-                <Input
-                  id="expected_completion_date"
-                  name="expected_completion_date"
-                  type="date"
-                  value={formData.expected_completion_date}
-                  onChange={handleInputChange}
-                />
-              </div>
-              
-              <div>
-                <Label htmlFor="completion_date">Data de Conclusão</Label>
-                <Input
-                  id="completion_date"
-                  name="completion_date"
-                  type="date"
-                  value={formData.completion_date}
-                  onChange={handleInputChange}
-                />
-              </div>
-            </div>
-            
-            <div>
-              <Label htmlFor="technician_notes">Observações do Técnico</Label>
-              <Textarea
-                id="technician_notes"
-                name="technician_notes"
-                rows={4}
-                placeholder="Detalhes do diagnóstico e reparo..."
-                value={formData.technician_notes}
-                onChange={handleInputChange}
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Observações</label>
+              <textarea 
+                className="w-full p-2 border rounded-md"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={3}
               />
             </div>
-            
-            <div>
-              <Label htmlFor="notes">Observações</Label>
-              <Textarea
-                id="notes"
-                name="notes"
-                rows={4}
-                placeholder="Observações adicionais..."
-                value={formData.notes}
-                onChange={handleInputChange}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Notas do Técnico</label>
+              <textarea 
+                className="w-full p-2 border rounded-md"
+                value={technicianNotes}
+                onChange={(e) => setTechnicianNotes(e.target.value)}
+                rows={3}
               />
             </div>
           </div>
-          
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleEditMaintenance}>
-              Salvar Alterações
-            </Button>
+            <Button variant="outline" onClick={() => setIsEditOpen(false)}>Cancelar</Button>
+            <Button onClick={handleEdit}>Salvar</Button>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Delete Dialog */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirmar Exclusão</DialogTitle>
+            <DialogTitle>Excluir Registro de Manutenção</DialogTitle>
             <DialogDescription>
               Tem certeza que deseja excluir este registro de manutenção? Esta ação não pode ser desfeita.
             </DialogDescription>
           </DialogHeader>
-          
-          <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-              Cancelar
-            </Button>
-            <Button variant="destructive" onClick={handleDeleteMaintenance}>
-              Excluir
-            </Button>
+          <div className="py-4">
+            <div className="border-l-4 border-red-500 pl-4">
+              <p className="font-medium">Equipamento: {record.equipment?.name || 'N/A'}</p>
+              <p className="text-sm text-muted-foreground">Status: {record.status}</p>
+              <p className="text-sm text-muted-foreground">Data de Envio: {new Date(record.send_date).toLocaleDateString('pt-BR')}</p>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>Cancelar</Button>
+            <Button variant="destructive" onClick={handleDelete}>Excluir</Button>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Reopen Dialog */}
-      <Dialog open={isReopenDialogOpen} onOpenChange={setIsReopenDialogOpen}>
+      <Dialog open={isReopenOpen} onOpenChange={setIsReopenOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Reabrir Manutenção</DialogTitle>
             <DialogDescription>
-              Deseja reabrir este registro de manutenção? O status será alterado para 'Em Andamento'.
+              Deseja reabrir esta manutenção? O status será alterado para "Em Andamento".
             </DialogDescription>
           </DialogHeader>
-          
-          <div className="flex justify-end gap-2 mt-4">
-            <Button variant="outline" onClick={() => setIsReopenDialogOpen(false)}>
-              Cancelar
-            </Button>
-            <Button onClick={handleReopenMaintenance}>
-              Reabrir Manutenção
-            </Button>
+          <div className="py-4">
+            <div className="border-l-4 border-amber-500 pl-4">
+              <p className="font-medium">Equipamento: {record.equipment?.name || 'N/A'}</p>
+              <p className="text-sm text-muted-foreground">Status atual: {record.status}</p>
+            </div>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setIsReopenOpen(false)}>Cancelar</Button>
+            <Button className="bg-amber-500 hover:bg-amber-600" onClick={handleReopen}>Reabrir</Button>
           </div>
         </DialogContent>
       </Dialog>
