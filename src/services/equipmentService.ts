@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 
@@ -159,4 +160,37 @@ export const enableEquipmentRealtime = () => {
       // This callback will be empty since we'll handle the refresh in the component
     })
     .subscribe();
+};
+
+// Upload equipment image to Supabase storage
+export const uploadEquipmentImage = async (file: File): Promise<string | null> => {
+  try {
+    // Create a unique filename
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const filePath = `equipment/${fileName}`;
+    
+    const { data, error } = await supabase.storage
+      .from('equipment')
+      .upload(filePath, file);
+    
+    if (error) {
+      toast.error('Erro ao fazer upload da imagem', {
+        description: error.message
+      });
+      return null;
+    }
+    
+    // Get public URL
+    const { data: publicUrlData } = supabase.storage
+      .from('equipment')
+      .getPublicUrl(filePath);
+    
+    return publicUrlData.publicUrl;
+  } catch (error: any) {
+    toast.error('Erro ao fazer upload da imagem', {
+      description: error.message
+    });
+    return null;
+  }
 };

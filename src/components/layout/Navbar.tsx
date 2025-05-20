@@ -3,7 +3,6 @@ import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
 import { 
   Bell,
-  Search,
   User
 } from "lucide-react";
 import { 
@@ -14,7 +13,6 @@ import {
   DropdownMenuSeparator, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
-import { Input } from "@/components/ui/input";
 
 export function Navbar({ title }: { title: string }) {
   const { state } = useSidebar();
@@ -24,16 +22,7 @@ export function Navbar({ title }: { title: string }) {
     <header className="border-b border-gray-200 bg-white p-4 flex justify-between items-center">
       <div className="flex items-center gap-4">
         <SidebarTrigger className="text-zuq-darkblue hover:text-zuq-blue" />
-        <h1 className="text-xl font-bold text-zuq-darkblue hidden sm:block">{title}</h1>
-      </div>
-      
-      <div className="hidden md:flex items-center rounded-full bg-zuq-gray/30 px-3 max-w-md w-full">
-        <Search className="h-4 w-4 text-zuq-darkblue/50" />
-        <Input 
-          type="search" 
-          placeholder="Pesquisar..." 
-          className="bg-transparent border-none focus-visible:ring-0 focus-visible:ring-offset-0"
-        />
+        <h1 className="text-xl font-bold text-zuq-darkblue">{title}</h1>
       </div>
       
       <div className="flex items-center gap-2">

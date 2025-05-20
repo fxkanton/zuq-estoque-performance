@@ -63,13 +63,13 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
       );
     }
     
-    // Apply brand filter
-    if (filters.brand) {
+    // Apply brand filter - only if not empty string and not "all"
+    if (filters.brand && filters.brand !== "all") {
       filtered = filtered.filter(item => item.brand === filters.brand);
     }
     
-    // Apply model filter
-    if (filters.model) {
+    // Apply model filter - only if not empty string and not "all"
+    if (filters.model && filters.model !== "all") {
       filtered = filtered.filter(item => item.model === filters.model);
     }
     

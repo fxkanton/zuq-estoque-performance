@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useRef } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,9 +19,10 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Package2, Plus, Search } from "lucide-react";
+import { ImageIcon, Package2, Plus, Search, Upload } from "lucide-react";
 import { 
   Equipment, 
   EquipmentCategory, 
@@ -32,6 +34,7 @@ import {
 } from "@/services/equipmentService";
 import { fetchSuppliers, Supplier } from "@/services/supplierService";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/components/ui/sonner";
 
 const Equipamentos = () => {
   const [equipamentos, setEquipamentos] = useState<Array<Equipment & { stock?: number }>>([]);
@@ -40,9 +43,11 @@ const Equipamentos = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [supplierFilter, setSupplierFilter] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Form state
   const [currentEquipment, setCurrentEquipment] = useState<Equipment | null>(null);
@@ -56,6 +61,9 @@ const Equipamentos = () => {
     supplier_id: '',
     image_url: ''
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const loadData = async () => {
     try {
@@ -126,6 +134,50 @@ const Equipamentos = () => {
     }));
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      setImageFile(file);
+      
+      // Create a preview URL for the selected image
+      const previewUrl = URL.createObjectURL(file);
+      setImagePreview(previewUrl);
+    }
+  };
+
+  const handleUploadImage = async () => {
+    if (!imageFile) return null;
+    
+    setIsUploading(true);
+    try {
+      // Create a unique filename to prevent collisions
+      const fileExt = imageFile.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `equipment/${fileName}`;
+      
+      const { data, error } = await supabase.storage
+        .from('equipment')
+        .upload(filePath, imageFile);
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Get public URL
+      const { data: publicUrlData } = supabase.storage
+        .from('equipment')
+        .getPublicUrl(filePath);
+      
+      return publicUrlData.publicUrl;
+    } catch (error: any) {
+      console.error("Error uploading image:", error.message);
+      toast.error("Error uploading image", { description: error.message });
+      return null;
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       name: '',
@@ -138,6 +190,13 @@ const Equipamentos = () => {
       image_url: ''
     });
     setCurrentEquipment(null);
+    setImageFile(null);
+    setImagePreview(null);
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const handleOpenAddDialog = () => {
@@ -157,7 +216,20 @@ const Equipamentos = () => {
       supplier_id: equipment.supplier_id || '',
       image_url: equipment.image_url || ''
     });
+    
+    // Set image preview if equipment has an image
+    if (equipment.image_url) {
+      setImagePreview(equipment.image_url);
+    } else {
+      setImagePreview(null);
+    }
+    
     setIsEditDialogOpen(true);
+  };
+
+  const handleOpenViewDialog = (equipment: Equipment) => {
+    setCurrentEquipment(equipment);
+    setIsViewDialogOpen(true);
   };
 
   const handleOpenDeleteDialog = (equipment: Equipment) => {
@@ -167,11 +239,30 @@ const Equipamentos = () => {
 
   const handleSaveEquipment = async () => {
     try {
-      await createEquipment(formData);
+      setIsUploading(true);
+      
+      // First upload image if there is one
+      let imageUrl = formData.image_url;
+      if (imageFile) {
+        const uploadedUrl = await handleUploadImage();
+        if (uploadedUrl) {
+          imageUrl = uploadedUrl;
+        }
+      }
+      
+      // Then save equipment data with the image URL
+      const dataToSave = {
+        ...formData,
+        image_url: imageUrl
+      };
+      
+      await createEquipment(dataToSave);
       setIsAddDialogOpen(false);
       resetForm();
     } catch (error) {
       console.error("Error creating equipment:", error);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -179,11 +270,30 @@ const Equipamentos = () => {
     if (!currentEquipment) return;
     
     try {
-      await updateEquipment(currentEquipment.id, formData);
+      setIsUploading(true);
+      
+      // First upload image if there is one
+      let imageUrl = formData.image_url;
+      if (imageFile) {
+        const uploadedUrl = await handleUploadImage();
+        if (uploadedUrl) {
+          imageUrl = uploadedUrl;
+        }
+      }
+      
+      // Then update equipment data with the image URL
+      const dataToUpdate = {
+        ...formData,
+        image_url: imageUrl
+      };
+      
+      await updateEquipment(currentEquipment.id, dataToUpdate);
       setIsEditDialogOpen(false);
       resetForm();
     } catch (error) {
       console.error("Error updating equipment:", error);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -337,10 +447,21 @@ const Equipamentos = () => {
                   <TableRow key={item.id}>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <div className="bg-zuq-gray/30 p-2 rounded-md">
-                          <Package2 className="h-4 w-4 text-zuq-blue" />
-                        </div>
-                        {item.name}
+                        {item.image_url ? (
+                          <img 
+                            src={item.image_url} 
+                            alt={item.name} 
+                            className="h-12 w-12 object-cover rounded-md cursor-pointer"
+                            onClick={() => handleOpenViewDialog(item)}
+                          />
+                        ) : (
+                          <div className="bg-zuq-gray/30 p-2 h-12 w-12 flex items-center justify-center rounded-md">
+                            <Package2 className="h-6 w-6 text-zuq-blue" />
+                          </div>
+                        )}
+                        <span className="cursor-pointer hover:text-zuq-blue" onClick={() => handleOpenViewDialog(item)}>
+                          {item.name}
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell>{item.brand}</TableCell>
@@ -400,6 +521,57 @@ const Equipamentos = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            <div className="flex flex-col gap-2">
+              <Label>Imagem do Equipamento</Label>
+              <div className="flex flex-col gap-2 items-center border rounded-md p-4 bg-gray-50">
+                {imagePreview ? (
+                  <div className="relative">
+                    <img 
+                      src={imagePreview} 
+                      alt="Preview" 
+                      className="h-40 w-40 object-cover rounded-md" 
+                    />
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="absolute top-2 right-2 bg-white"
+                      onClick={() => {
+                        setImagePreview(null);
+                        setImageFile(null);
+                        if (fileInputRef.current) {
+                          fileInputRef.current.value = '';
+                        }
+                      }}
+                    >
+                      Remover
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center text-muted-foreground">
+                    <ImageIcon className="h-40 w-40 mb-2 text-gray-300" />
+                    <p>Nenhuma imagem selecionada</p>
+                  </div>
+                )}
+                <div className="w-full mt-2">
+                  <Button 
+                    variant="outline" 
+                    className="w-full" 
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="mr-2 h-4 w-4" /> Selecionar Imagem
+                  </Button>
+                  <input 
+                    ref={fileInputRef}
+                    type="file" 
+                    accept="image/*" 
+                    className="hidden" 
+                    onChange={handleFileChange}
+                  />
+                </div>
+              </div>
+            </div>
+            
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
                 <Label htmlFor="name">Nome</Label>
@@ -492,21 +664,14 @@ const Equipamentos = () => {
                   onChange={handleInputChange}
                 />
               </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="image_url">URL da Imagem</Label>
-                <Input 
-                  id="image_url" 
-                  placeholder="https://..." 
-                  value={formData.image_url}
-                  onChange={handleInputChange}
-                />
-              </div>
             </div>
           </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancelar</Button>
-            <Button className="bg-zuq-blue hover:bg-zuq-blue/80" onClick={handleSaveEquipment}>Salvar</Button>
-          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} disabled={isUploading}>Cancelar</Button>
+            <Button className="bg-zuq-blue hover:bg-zuq-blue/80" onClick={handleSaveEquipment} disabled={isUploading}>
+              {isUploading ? 'Salvando...' : 'Salvar'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -519,114 +684,238 @@ const Equipamentos = () => {
               Atualize as informações do equipamento.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4 py-4">
+            {/* Left side - Image */}
+            <div className="col-span-1">
               <div className="flex flex-col gap-2">
-                <Label htmlFor="edit-name">Nome</Label>
-                <Input 
-                  id="name" 
-                  placeholder="Nome do equipamento" 
-                  value={formData.name}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="edit-brand">Marca</Label>
-                <Input 
-                  id="brand" 
-                  placeholder="Marca" 
-                  value={formData.brand}
-                  onChange={handleInputChange}
-                />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="edit-model">Modelo</Label>
-                <Input 
-                  id="model" 
-                  placeholder="Modelo" 
-                  value={formData.model}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="edit-category">Categoria</Label>
-                <Select 
-                  value={formData.category} 
-                  onValueChange={(value) => handleSelectChange('category', value as EquipmentCategory)}
-                >
-                  <SelectTrigger id="category">
-                    <SelectValue placeholder="Selecione a categoria" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Leitora">Leitora</SelectItem>
-                    <SelectItem value="Sensor">Sensor</SelectItem>
-                    <SelectItem value="Rastreador">Rastreador</SelectItem>
-                    <SelectItem value="Acessório">Acessório</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="edit-price">Valor Médio de Compra</Label>
-                <Input 
-                  id="average_price" 
-                  type="number"
-                  placeholder="R$ 0,00" 
-                  value={formData.average_price}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="edit-supplier">Fornecedor Padrão</Label>
-                <Select 
-                  value={formData.supplier_id} 
-                  onValueChange={(value) => handleSelectChange('supplier_id', value)}
-                >
-                  <SelectTrigger id="edit-supplier">
-                    <SelectValue placeholder="Selecione um fornecedor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {suppliers.map(supplier => (
-                      <SelectItem key={supplier.id} value={supplier.id}>
-                        {supplier.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Label>Imagem</Label>
+                <div className="flex flex-col gap-2 items-center border rounded-md p-4 bg-gray-50">
+                  {imagePreview ? (
+                    <div className="relative">
+                      <img 
+                        src={imagePreview} 
+                        alt="Preview" 
+                        className="w-full aspect-square object-cover rounded-md" 
+                      />
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="absolute top-2 right-2 bg-white"
+                        onClick={() => {
+                          setImagePreview(null);
+                          setImageFile(null);
+                          setFormData(prev => ({ ...prev, image_url: '' }));
+                          if (fileInputRef.current) {
+                            fileInputRef.current.value = '';
+                          }
+                        }}
+                      >
+                        Remover
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center text-muted-foreground">
+                      <ImageIcon className="h-20 w-20 mb-2 text-gray-300" />
+                      <p className="text-xs">Sem imagem</p>
+                    </div>
+                  )}
+                  <div className="w-full mt-2">
+                    <Button 
+                      variant="outline" 
+                      className="w-full" 
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      <Upload className="mr-2 h-4 w-4" /> Alterar Imagem
+                    </Button>
+                    <input 
+                      ref={fileInputRef}
+                      type="file" 
+                      accept="image/*" 
+                      className="hidden" 
+                      onChange={handleFileChange}
+                    />
+                  </div>
+                </div>
               </div>
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="edit-min-stock">Nível Mínimo de Estoque</Label>
-                <Input 
-                  id="min_stock" 
-                  type="number" 
-                  placeholder="0" 
-                  value={formData.min_stock}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="edit-image">URL da Imagem</Label>
-                <Input 
-                  id="image_url" 
-                  placeholder="https://..." 
-                  value={formData.image_url}
-                  onChange={handleInputChange}
-                />
+            {/* Right side - Form fields */}
+            <div className="col-span-2">
+              <div className="grid gap-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="edit-name">Nome</Label>
+                    <Input 
+                      id="name" 
+                      placeholder="Nome do equipamento" 
+                      value={formData.name}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="edit-brand">Marca</Label>
+                    <Input 
+                      id="brand" 
+                      placeholder="Marca" 
+                      value={formData.brand}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="edit-model">Modelo</Label>
+                    <Input 
+                      id="model" 
+                      placeholder="Modelo" 
+                      value={formData.model}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="edit-category">Categoria</Label>
+                    <Select 
+                      value={formData.category} 
+                      onValueChange={(value) => handleSelectChange('category', value as EquipmentCategory)}
+                    >
+                      <SelectTrigger id="category">
+                        <SelectValue placeholder="Selecione a categoria" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Leitora">Leitora</SelectItem>
+                        <SelectItem value="Sensor">Sensor</SelectItem>
+                        <SelectItem value="Rastreador">Rastreador</SelectItem>
+                        <SelectItem value="Acessório">Acessório</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="edit-price">Valor Médio de Compra</Label>
+                    <Input 
+                      id="average_price" 
+                      type="number"
+                      placeholder="R$ 0,00" 
+                      value={formData.average_price}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <Label htmlFor="edit-min-stock">Nível Mínimo de Estoque</Label>
+                    <Input 
+                      id="min_stock" 
+                      type="number" 
+                      placeholder="0" 
+                      value={formData.min_stock}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </div>
+                
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="edit-supplier">Fornecedor Padrão</Label>
+                  <Select 
+                    value={formData.supplier_id} 
+                    onValueChange={(value) => handleSelectChange('supplier_id', value)}
+                  >
+                    <SelectTrigger id="edit-supplier">
+                      <SelectValue placeholder="Selecione um fornecedor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {suppliers.map(supplier => (
+                        <SelectItem key={supplier.id} value={supplier.id}>
+                          {supplier.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
           </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancelar</Button>
-            <Button className="bg-zuq-blue hover:bg-zuq-blue/80" onClick={handleUpdateEquipment}>Salvar</Button>
-          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} disabled={isUploading}>Cancelar</Button>
+            <Button className="bg-zuq-blue hover:bg-zuq-blue/80" onClick={handleUpdateEquipment} disabled={isUploading}>
+              {isUploading ? 'Atualizando...' : 'Atualizar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Equipment Dialog */}
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Detalhes do Equipamento</DialogTitle>
+          </DialogHeader>
+          {currentEquipment && (
+            <div className="grid grid-cols-3 gap-6 py-4">
+              <div className="col-span-1 flex flex-col items-center">
+                {currentEquipment.image_url ? (
+                  <img 
+                    src={currentEquipment.image_url} 
+                    alt={currentEquipment.name} 
+                    className="w-full aspect-square object-cover rounded-md shadow-md" 
+                  />
+                ) : (
+                  <div className="bg-zuq-gray/30 w-full aspect-square flex items-center justify-center rounded-md">
+                    <Package2 className="h-16 w-16 text-zuq-blue" />
+                  </div>
+                )}
+              </div>
+              <div className="col-span-2">
+                <div className="grid gap-3">
+                  <div>
+                    <h3 className="text-xl font-bold">{currentEquipment.name}</h3>
+                    <p className="text-muted-foreground">{currentEquipment.brand} {currentEquipment.model}</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4 mt-2">
+                    <div>
+                      <p className="text-sm font-medium">Categoria</p>
+                      <span className={`px-2 py-1 rounded-full text-xs ${getCategoryBadgeStyle(currentEquipment.category)}`}>
+                        {currentEquipment.category}
+                      </span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Valor Médio</p>
+                      <p>{currentEquipment.average_price ? `R$ ${Number(currentEquipment.average_price).toFixed(2)}` : 'N/A'}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Estoque Atual</p>
+                      <p className={`font-medium ${
+                        ((currentEquipment as any).stock || 0) < (currentEquipment.min_stock || 0) 
+                          ? 'text-red-500' 
+                          : 'text-green-600'}`
+                      }>
+                        {(currentEquipment as any).stock || 0} unidades
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Estoque Mínimo</p>
+                      <p>{currentEquipment.min_stock || 0} unidades</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>Fechar</Button>
+            {currentEquipment && (
+              <Button className="bg-zuq-blue hover:bg-zuq-blue/80" onClick={() => {
+                setIsViewDialogOpen(false);
+                handleOpenEditDialog(currentEquipment);
+              }}>
+                Editar
+              </Button>
+            )}
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -647,10 +936,10 @@ const Equipamentos = () => {
               </div>
             )}
           </div>
-          <div className="flex justify-end gap-2">
+          <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>Cancelar</Button>
             <Button variant="destructive" onClick={handleDeleteEquipment}>Excluir</Button>
-          </div>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </MainLayout>
@@ -666,6 +955,7 @@ const getCategoryBadgeStyle = (category: string) => {
     case 'rastreador':
       return 'bg-purple-100 text-purple-800';
     case 'acessorio':
+      return 'bg-gray-100 text-gray-800';
     default:
       return 'bg-gray-100 text-gray-800';
   }
