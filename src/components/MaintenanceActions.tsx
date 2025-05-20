@@ -15,7 +15,7 @@ import {
   reopenMaintenanceRecord,
   MaintenanceRecord 
 } from '@/services/maintenanceService';
-import { toast } from 'sonner';
+import { toast } from '@/components/ui/sonner';
 
 interface MaintenanceActionsProps {
   record: MaintenanceRecord;

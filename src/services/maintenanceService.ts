@@ -1,7 +1,7 @@
 
 import { supabase } from "@/integrations/supabase/client";
 
-export type MaintenanceStatus = 'Em Andamento' | 'Concluído' | 'Cancelado';
+export type MaintenanceStatus = 'Em Andamento' | 'Concluído' | 'Cancelado' | 'Aguardando Peças';
 
 export interface MaintenanceRecord {
   id: string;
@@ -23,14 +23,10 @@ export interface MaintenanceRecord {
   };
 }
 
-export interface MaintenanceWithEquipment extends MaintenanceRecord {
-  equipment: {
-    id: string;
-    name: string;
-    model: string;
-    brand: string;
-  };
-}
+// Alias functions with names used in Manutencao.tsx
+export const fetchMaintenanceRecords = getMaintenanceRecords;
+export const createMaintenance = createMaintenanceRecord;
+export const updateMaintenance = updateMaintenanceRecord;
 
 export async function getMaintenceCount(): Promise<number> {
   const { count, error } = await supabase
@@ -61,6 +57,7 @@ export async function getMaintenanceRecords(): Promise<MaintenanceRecord[]> {
     throw error;
   }
   
+  // Cast the data to ensure type safety
   return data as unknown as MaintenanceRecord[];
 }
 

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,6 +36,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import MaintenanceActions from "@/components/MaintenanceActions";
 
 const Manutencao = () => {
   const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceRecord[]>([]);
@@ -62,7 +64,7 @@ const Manutencao = () => {
   const [completeData, setCompleteData] = useState({
     technician_notes: '',
     completion_date: new Date().toISOString().split('T')[0],
-    status: 'Concluída' as MaintenanceStatus
+    status: 'Concluído' as MaintenanceStatus
   });
 
   const loadData = async () => {
@@ -142,7 +144,7 @@ const Manutencao = () => {
     setCompleteData({
       technician_notes: '',
       completion_date: new Date().toISOString().split('T')[0],
-      status: 'Concluída'
+      status: 'Concluído'
     });
     setCurrentRecord(null);
   };
@@ -182,7 +184,7 @@ const Manutencao = () => {
     try {
       await updateMaintenance(currentRecord.id, {
         ...completeData,
-        status: 'Concluída' as MaintenanceStatus
+        status: 'Concluído' as MaintenanceStatus
       });
       
       setIsCompleteDialogOpen(false);
@@ -200,8 +202,8 @@ const Manutencao = () => {
     
     if (searchTerm) {
       filtered = filtered.filter(record => 
-        record.equipment.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        record.equipment.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        record.equipment?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        record.equipment?.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (record.notes && record.notes.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
@@ -249,8 +251,8 @@ const Manutencao = () => {
                   <SelectItem value="all">Todos</SelectItem>
                   <SelectItem value="Em Andamento">Em Andamento</SelectItem>
                   <SelectItem value="Aguardando Peças">Aguardando Peças</SelectItem>
-                  <SelectItem value="Concluída">Concluída</SelectItem>
-                  <SelectItem value="Cancelada">Cancelada</SelectItem>
+                  <SelectItem value="Concluído">Concluído</SelectItem>
+                  <SelectItem value="Cancelado">Cancelado</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -299,7 +301,7 @@ const Manutencao = () => {
                         <div className="bg-zuq-gray/30 p-2 rounded-md">
                           <Settings className="h-4 w-4 text-zuq-blue" />
                         </div>
-                        {record.equipment.name} {record.equipment.model}
+                        {record.equipment?.name} {record.equipment?.model}
                       </div>
                     </TableCell>
                     <TableCell className="text-center">{record.quantity}</TableCell>
@@ -321,7 +323,7 @@ const Manutencao = () => {
                         >
                           Detalhes
                         </Button>
-                        {record.status !== 'Concluída' && record.status !== 'Cancelada' && (
+                        {record.status !== 'Concluído' && record.status !== 'Cancelado' && (
                           <Button 
                             variant="outline" 
                             size="sm"
@@ -331,6 +333,7 @@ const Manutencao = () => {
                             Concluir
                           </Button>
                         )}
+                        <MaintenanceActions record={record} onUpdate={loadData} />
                       </div>
                     </TableCell>
                   </TableRow>
@@ -451,7 +454,7 @@ const Manutencao = () => {
               <div className="mb-6">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-semibold text-zuq-darkblue">
-                    {currentRecord.equipment.name} {currentRecord.equipment.model}
+                    {currentRecord.equipment?.name} {currentRecord.equipment?.model}
                   </h3>
                   <Badge className={getStatusBadgeClass(currentRecord.status)}>
                     {currentRecord.status}
@@ -539,7 +542,7 @@ const Manutencao = () => {
             <div className="grid gap-4 py-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="font-medium">{currentRecord.equipment.name} {currentRecord.equipment.model}</h4>
+                  <h4 className="font-medium">{currentRecord.equipment?.name} {currentRecord.equipment?.model}</h4>
                   <p className="text-sm text-muted-foreground">Quantidade: {currentRecord.quantity}</p>
                 </div>
                 <Badge className={getStatusBadgeClass(currentRecord.status)}>
@@ -597,9 +600,9 @@ const getStatusBadgeClass = (status: string) => {
       return 'bg-amber-100 text-amber-800 border-amber-200';
     case 'Aguardando Peças':
       return 'bg-blue-100 text-blue-800 border-blue-200';
-    case 'Concluída':
+    case 'Concluído':
       return 'bg-green-100 text-green-800 border-green-200';
-    case 'Cancelada':
+    case 'Cancelado':
       return 'bg-red-100 text-red-800 border-red-200';
     default:
       return 'bg-gray-100 text-gray-800 border-gray-200';
