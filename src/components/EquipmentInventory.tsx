@@ -154,7 +154,7 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
               <SelectContent>
                 <SelectItem value="">Todos os modelos</SelectItem>
                 {uniqueModels.map(model => (
-                  <SelectItem key={model} value={model}>{model}</SelectItem>
+                  <SelectItem key={model} value={model || "unknown"}>{model || "Não especificado"}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -183,8 +183,15 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
                 />
                 <YAxis />
                 <Tooltip 
-                  formatter={(value, name, props) => [value, 'Quantidade']}
-                  labelFormatter={(label, props) => props[0].payload.fullName}
+                  formatter={(value, name) => [value, 'Quantidade']}
+                  labelFormatter={(label, props) => {
+                    // Fix: Safe check before accessing payload properties
+                    if (props && props.length > 0 && props[0].payload) {
+                      return props[0].payload.fullName;
+                    }
+                    // Fallback to the label if payload is not available
+                    return label;
+                  }}
                 />
                 <Legend />
                 <Bar dataKey="estoque" name="Quantidade em Estoque" fill="#3b82f6" />
