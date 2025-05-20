@@ -1,7 +1,8 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 
-export type MaintenanceStatus = 'Em Andamento' | 'Concluída' | 'Cancelada';
+export type MaintenanceStatus = 'Em Andamento' | 'Aguardando Peças' | 'Concluída' | 'Cancelada';
 
 export interface MaintenanceRecord {
   id: string;
@@ -36,7 +37,7 @@ export const fetchMaintenanceRecords = async (): Promise<MaintenanceRecord[]> =>
     return [];
   }
 
-  return data || [];
+  return data as MaintenanceRecord[] || [];
 };
 
 export const getMaintenanceRecordById = async (id: string): Promise<MaintenanceRecord | null> => {
@@ -53,7 +54,7 @@ export const getMaintenanceRecordById = async (id: string): Promise<MaintenanceR
     return null;
   }
 
-  return data;
+  return data as MaintenanceRecord;
 };
 
 export const createMaintenance = async (maintenance: Omit<MaintenanceRecord, 'id' | 'created_at' | 'updated_at' | 'equipment'>): Promise<MaintenanceRecord | null> => {
@@ -71,7 +72,7 @@ export const createMaintenance = async (maintenance: Omit<MaintenanceRecord, 'id
   }
 
   toast.success('Registro de manutenção criado com sucesso');
-  return data;
+  return data as MaintenanceRecord;
 };
 
 export const updateMaintenance = async (id: string, maintenance: Partial<MaintenanceRecord>): Promise<MaintenanceRecord | null> => {
@@ -90,14 +91,14 @@ export const updateMaintenance = async (id: string, maintenance: Partial<Mainten
   }
 
   toast.success('Registro de manutenção atualizado com sucesso');
-  return data;
+  return data as MaintenanceRecord;
 };
 
 export const completeMaintenance = async (id: string, completionDate: string, technicianNotes?: string): Promise<MaintenanceRecord | null> => {
   const { data, error } = await supabase
     .from('maintenance_records')
     .update({
-      status: 'Concluída',
+      status: 'Concluída' as MaintenanceStatus,
       completion_date: completionDate,
       technician_notes: technicianNotes
     })
@@ -113,14 +114,14 @@ export const completeMaintenance = async (id: string, completionDate: string, te
   }
 
   toast.success('Manutenção concluída com sucesso');
-  return data;
+  return data as MaintenanceRecord;
 };
 
 export const reopenMaintenance = async (id: string): Promise<MaintenanceRecord | null> => {
   const { data, error } = await supabase
     .from('maintenance_records')
     .update({
-      status: 'Em Andamento',
+      status: 'Em Andamento' as MaintenanceStatus,
       completion_date: null
     })
     .eq('id', id)
@@ -135,7 +136,7 @@ export const reopenMaintenance = async (id: string): Promise<MaintenanceRecord |
   }
 
   toast.success('Manutenção reaberta com sucesso');
-  return data;
+  return data as MaintenanceRecord;
 };
 
 export const deleteMaintenance = async (id: string): Promise<boolean> => {

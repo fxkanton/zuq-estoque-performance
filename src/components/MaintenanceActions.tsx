@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { 
   Dialog, 
@@ -12,20 +11,8 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from '@/components/ui/sonner';
-import { updateMaintenance, deleteMaintenance, reopenMaintenance } from '@/services/maintenanceService';
+import { updateMaintenance, deleteMaintenance, reopenMaintenance, MaintenanceRecord, MaintenanceStatus } from '@/services/maintenanceService';
 import { Pencil, Trash2, RefreshCw } from 'lucide-react';
-
-interface MaintenanceRecord {
-  id: string;
-  equipment_id: string;
-  quantity: number;
-  send_date: string;
-  expected_completion_date?: string;
-  completion_date?: string;
-  status: string;
-  technician_notes?: string;
-  notes?: string;
-}
 
 interface MaintenanceActionsProps {
   maintenance: MaintenanceRecord;

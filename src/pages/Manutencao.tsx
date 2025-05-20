@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,7 +27,7 @@ import {
   fetchMaintenanceRecords, 
   createMaintenance,
   updateMaintenance,
-  MaintenanceWithEquipment,
+  MaintenanceRecord,
   MaintenanceStatus
 } from "@/services/maintenanceService";
 import { fetchEquipment } from "@/services/equipmentService";
@@ -38,15 +37,15 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Manutencao = () => {
-  const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceWithEquipment[]>([]);
-  const [filteredRecords, setFilteredRecords] = useState<MaintenanceWithEquipment[]>([]);
+  const [maintenanceRecords, setMaintenanceRecords] = useState<MaintenanceRecord[]>([]);
+  const [filteredRecords, setFilteredRecords] = useState<MaintenanceRecord[]>([]);
   const [equipment, setEquipment] = useState<any[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isCompleteDialogOpen, setIsCompleteDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [currentRecord, setCurrentRecord] = useState<MaintenanceWithEquipment | null>(null);
+  const [currentRecord, setCurrentRecord] = useState<MaintenanceRecord | null>(null);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -153,12 +152,12 @@ const Manutencao = () => {
     setIsAddDialogOpen(true);
   };
   
-  const handleOpenViewDialog = (record: MaintenanceWithEquipment) => {
+  const handleOpenViewDialog = (record: MaintenanceRecord) => {
     setCurrentRecord(record);
     setIsViewDialogOpen(true);
   };
   
-  const handleOpenCompleteDialog = (record: MaintenanceWithEquipment) => {
+  const handleOpenCompleteDialog = (record: MaintenanceRecord) => {
     setCurrentRecord(record);
     setCompleteData(prev => ({
       ...prev,
