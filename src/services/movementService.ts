@@ -207,3 +207,49 @@ export const getRecentMovements = async (limit: number = 5): Promise<MovementWit
 
   return data ? data.map(convertToMovementWithEquipment) : [];
 };
+
+// Get equipment inventory by period
+export const getEquipmentInventory = async (startDate: string, endDate: string) => {
+  const { data, error } = await supabase
+    .from('inventory_movements')
+    .select(`
+      equipment_id,
+      movement_type,
+      quantity,
+      equipment:equipment_id (name, model, brand)
+    `)
+    .gte('movement_date', startDate)
+    .lte('movement_date', endDate);
+
+  if (error) {
+    console.error('Error fetching equipment inventory:', error);
+    return [];
+  }
+
+  // Process data to get inventory levels by equipment
+  const equipmentMap = new Map();
+  
+  data.forEach(movement => {
+    const key = movement.equipment_id;
+    if (!equipmentMap.has(key)) {
+      equipmentMap.set(key, {
+        id: movement.equipment_id,
+        name: movement.equipment.name,
+        model: movement.equipment.model,
+        brand: movement.equipment.brand,
+        stock: 0
+      });
+    }
+    
+    const equipment = equipmentMap.get(key);
+    if (movement.movement_type === 'Entrada') {
+      equipment.stock += movement.quantity;
+    } else if (movement.movement_type === 'Saída') {
+      equipment.stock -= movement.quantity;
+    }
+  });
+  
+  // Convert map to array and sort by stock (descending)
+  return Array.from(equipmentMap.values())
+    .sort((a, b) => b.stock - a.stock);
+};

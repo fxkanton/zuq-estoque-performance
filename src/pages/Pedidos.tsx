@@ -10,7 +10,9 @@ import {
   Check, 
   List, 
   Archive, 
-  ArchiveRestore 
+  ArchiveRestore,
+  Trash2,
+  Edit,
 } from "lucide-react";
 import { 
   Dialog, 
@@ -41,6 +43,7 @@ import {
   fetchOrderBatches,
   completeOrder,
   archiveOrder,
+  unarchiveOrder,
   OrderWithDetails, 
   OrderStatus,
   OrderBatch
@@ -219,6 +222,12 @@ const Pedidos = () => {
     }
   };
 
+  const handleUnarchiveOrder = async (order: OrderWithDetails) => {
+    if (await unarchiveOrder(order.id)) {
+      loadData();
+    }
+  };
+
   const handleCompleteOrder = async (order: OrderWithDetails) => {
     if (await completeOrder(order.id)) {
       loadData();
@@ -372,6 +381,7 @@ const Pedidos = () => {
                 <TableHead>Equipamento</TableHead>
                 <TableHead>Fornecedor</TableHead>
                 <TableHead className="text-center">Quantidade</TableHead>
+                <TableHead>Data do Pedido</TableHead>
                 <TableHead>Previsão de Chegada</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Progresso</TableHead>
@@ -381,7 +391,7 @@ const Pedidos = () => {
             <TableBody>
               {filteredOrders.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
                     Nenhum pedido encontrado
                   </TableCell>
                 </TableRow>
@@ -412,6 +422,9 @@ const Pedidos = () => {
                         </div>
                       </TableCell>
                       <TableCell>
+                        {order.created_at ? new Date(order.created_at).toLocaleDateString('pt-BR') : 'N/A'}
+                      </TableCell>
+                      <TableCell>
                         {order.expected_arrival_date ? new Date(order.expected_arrival_date).toLocaleDateString('pt-BR') : 'N/A'}
                       </TableCell>
                       <TableCell>
@@ -430,30 +443,30 @@ const Pedidos = () => {
                           {!showArchived && order.status !== 'Recebido' && (
                             <Button 
                               variant="outline" 
-                              size="sm"
+                              size="icon"
                               onClick={() => handleOpenReceiveBatchDialog(order)}
                               title="Registrar Recebimento"
+                              className="h-8 w-8 p-0"
                             >
                               <Plus className="h-3.5 w-3.5" />
                             </Button>
                           )}
                           
-                          {(receivedAmount > 0 || order.status === 'Recebido') && (
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleOpenBatchDetailsDialog(order)}
-                              title="Ver Detalhes dos Recebimentos"
-                            >
-                              <List className="h-3.5 w-3.5" />
-                            </Button>
-                          )}
+                          <Button 
+                            variant="outline" 
+                            size="icon"
+                            onClick={() => handleOpenBatchDetailsDialog(order)}
+                            title="Ver Detalhes dos Recebimentos"
+                            className="h-8 w-8 p-0"
+                          >
+                            <List className="h-3.5 w-3.5" />
+                          </Button>
                           
                           {!showArchived && order.status !== 'Recebido' && receivedAmount >= order.quantity && (
                             <Button 
                               variant="outline" 
-                              size="sm"
-                              className="text-green-500"
+                              size="icon"
+                              className="text-green-500 h-8 w-8 p-0"
                               onClick={() => handleCompleteOrder(order)}
                               title="Concluir Pedido"
                             >
@@ -462,38 +475,50 @@ const Pedidos = () => {
                           )}
                           
                           {!showArchived && (
-                            <>
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                onClick={() => handleOpenEditDialog(order)}
-                                title="Editar Pedido"
-                              >
-                                Editar
-                              </Button>
-                              
-                              {order.status !== 'Arquivado' && (
-                                <Button 
-                                  variant="outline" 
-                                  size="sm"
-                                  onClick={() => handleArchiveOrder(order)}
-                                  title="Arquivar Pedido"
-                                >
-                                  <Archive className="h-3.5 w-3.5" />
-                                </Button>
-                              )}
-                              
-                              <Button 
-                                variant="outline" 
-                                size="sm" 
-                                className="text-red-500"
-                                onClick={() => handleOpenDeleteDialog(order)}
-                                title="Excluir Pedido"
-                              >
-                                Excluir
-                              </Button>
-                            </>
+                            <Button 
+                              variant="outline" 
+                              size="icon"
+                              onClick={() => handleOpenEditDialog(order)}
+                              title="Editar Pedido"
+                              className="h-8 w-8 p-0"
+                            >
+                              <Edit className="h-3.5 w-3.5" />
+                            </Button>
                           )}
+                              
+                          {showArchived ? (
+                            <Button 
+                              variant="outline" 
+                              size="icon"
+                              onClick={() => handleUnarchiveOrder(order)}
+                              title="Desarquivar Pedido"
+                              className="h-8 w-8 p-0"
+                            >
+                              <ArchiveRestore className="h-3.5 w-3.5" />
+                            </Button>
+                          ) : (
+                            order.status !== 'Arquivado' && (
+                              <Button 
+                                variant="outline" 
+                                size="icon"
+                                onClick={() => handleArchiveOrder(order)}
+                                title="Arquivar Pedido"
+                                className="h-8 w-8 p-0"
+                              >
+                                <Archive className="h-3.5 w-3.5" />
+                              </Button>
+                            )
+                          )}
+                              
+                          <Button 
+                            variant="outline" 
+                            size="icon" 
+                            className="text-red-500 h-8 w-8 p-0"
+                            onClick={() => handleOpenDeleteDialog(order)}
+                            title="Excluir Pedido"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -757,6 +782,9 @@ const Pedidos = () => {
       {currentOrder && (
         <OrderBatchDetails
           orderBatches={orderBatches}
+          orderQuantity={currentOrder.quantity}
+          orderDate={currentOrder.created_at}
+          expectedDate={currentOrder.expected_arrival_date}
           isOpen={isBatchDetailsDialogOpen}
           onClose={() => setIsBatchDetailsDialogOpen(false)}
         />

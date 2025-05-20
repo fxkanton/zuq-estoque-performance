@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,6 +10,7 @@ import { getPendingOrders } from "@/services/orderService";
 import { getReadersByStatus, EquipmentStatus } from "@/services/readerService";
 import { getMaintenceCount } from "@/services/maintenanceService";
 import { supabase } from "@/integrations/supabase/client";
+import EquipmentInventory from "@/components/EquipmentInventory";
 import { 
   BarChart,
   Bar,
@@ -272,6 +274,9 @@ const Dashboard = () => {
           icon={<ArrowUp className="h-8 w-8 text-amber-500" />}
         />
       </div>
+
+      {/* Novo componente de inventário de equipamentos */}
+      <EquipmentInventory startDate={startDate} endDate={endDate} />
       
       <div className="grid grid-cols-1 mb-8">
         <Card>

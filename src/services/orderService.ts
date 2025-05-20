@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 import { Equipment } from "./equipmentService";
@@ -136,6 +137,23 @@ export const archiveOrder = async (id: string): Promise<boolean> => {
   }
 
   toast.success('Pedido arquivado com sucesso');
+  return true;
+};
+
+export const unarchiveOrder = async (id: string): Promise<boolean> => {
+  const { error } = await supabase
+    .from('orders')
+    .update({ status: 'Pendente' })
+    .eq('id', id);
+
+  if (error) {
+    toast.error('Erro ao desarquivar pedido', {
+      description: error.message
+    });
+    return false;
+  }
+
+  toast.success('Pedido desarquivado com sucesso');
   return true;
 };
 
