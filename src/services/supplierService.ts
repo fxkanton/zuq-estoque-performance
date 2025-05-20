@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 
@@ -98,4 +97,18 @@ export const deleteSupplier = async (id: string): Promise<boolean> => {
 
   toast.success('Fornecedor excluído com sucesso');
   return true;
+};
+
+// Enable realtime updates for suppliers table
+export const enableSupplierRealtime = () => {
+  return supabase
+    .channel('supplier-changes')
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'suppliers'
+    }, () => {
+      // This callback will be empty since we'll handle the refresh in the component
+    })
+    .subscribe();
 };

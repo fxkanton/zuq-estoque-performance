@@ -50,7 +50,8 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
   }, [startDate, endDate]);
   
   useEffect(() => {
-    let filtered = inventory;
+    // Start with all inventory
+    let filtered = [...inventory];
     
     // Apply search filter
     if (filters.search) {
@@ -63,12 +64,12 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
     }
     
     // Apply brand filter
-    if (filters.brand) {
+    if (filters.brand && filters.brand !== '') {
       filtered = filtered.filter(item => item.brand === filters.brand);
     }
     
     // Apply model filter
-    if (filters.model) {
+    if (filters.model && filters.model !== '') {
       filtered = filtered.filter(item => item.model === filters.model);
     }
     
@@ -93,9 +94,11 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
     });
   };
   
+  // Updated chart data for vertical bars
   const chartData = filteredInventory.slice(0, 10).map(item => ({
-    name: `${item.name} ${item.model}`,
-    estoque: item.stock
+    name: `${item.name.substring(0, 15)}${item.name.length > 15 ? '...' : ''}`,
+    estoque: item.stock,
+    fullName: `${item.name} ${item.model}`
   }));
   
   const totalStock = filteredInventory.reduce((sum, item) => sum + item.stock, 0);
@@ -167,7 +170,7 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={chartData}
-                margin={{ top: 5, right: 30, left: 20, bottom: 50 }}
+                margin={{ top: 5, right: 20, left: 20, bottom: 50 }}
               >
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis 
@@ -179,7 +182,10 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
                   tick={{ fontSize: 12 }}
                 />
                 <YAxis />
-                <Tooltip />
+                <Tooltip 
+                  formatter={(value, name, props) => [value, 'Quantidade']}
+                  labelFormatter={(label, props) => props[0].payload.fullName}
+                />
                 <Legend />
                 <Bar dataKey="estoque" name="Quantidade em Estoque" fill="#3b82f6" />
               </BarChart>

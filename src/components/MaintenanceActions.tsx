@@ -1,106 +1,201 @@
 
 import React, { useState } from 'react';
-import { Button } from "@/components/ui/button";
-import { Edit, Trash2, RefreshCcw } from "lucide-react";
 import { 
   Dialog, 
   DialogContent, 
   DialogHeader, 
   DialogTitle, 
-  DialogDescription,
-  DialogFooter
-} from "@/components/ui/dialog";
-import { toast } from "@/components/ui/sonner";
-import { supabase } from "@/integrations/supabase/client";
+  DialogDescription 
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { toast } from '@/components/ui/sonner';
+import { updateMaintenance, deleteMaintenance, reopenMaintenance } from '@/services/maintenanceService';
+import { Pencil, Trash2, RefreshCw } from 'lucide-react';
 
-interface MaintenanceActionsProps {
-  maintenanceId: string;
-  equipmentName: string;
-  maintenanceStatus: string;
+interface MaintenanceRecord {
+  id: string;
+  equipment_id: string;
   quantity: number;
-  sendDate: string;
-  onSuccess: () => void;
+  send_date: string;
+  expected_completion_date?: string;
+  completion_date?: string;
+  status: string;
+  technician_notes?: string;
+  notes?: string;
 }
 
-const MaintenanceActions = ({ 
-  maintenanceId, 
-  equipmentName, 
-  maintenanceStatus, 
-  quantity,
-  sendDate,
-  onSuccess 
-}: MaintenanceActionsProps) => {
+interface MaintenanceActionsProps {
+  maintenance: MaintenanceRecord;
+  onActionComplete: () => void;
+}
+
+const MaintenanceActions = ({ maintenance, onActionComplete }: MaintenanceActionsProps) => {
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isReopenDialogOpen, setIsReopenDialogOpen] = useState(false);
+  
+  const [formData, setFormData] = useState({
+    notes: maintenance.notes || '',
+    technician_notes: maintenance.technician_notes || '',
+    expected_completion_date: maintenance.expected_completion_date || '',
+    completion_date: maintenance.completion_date || '',
+  });
 
-  const handleDelete = async () => {
-    const { error } = await supabase
-      .from('maintenance_records')
-      .delete()
-      .eq('id', maintenanceId);
-
-    if (error) {
-      toast.error('Erro ao excluir registro de manutenção', {
-        description: error.message
-      });
-      return;
-    }
-
-    toast.success('Registro de manutenção excluído com sucesso');
-    setIsDeleteDialogOpen(false);
-    onSuccess();
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
-  const handleReopen = async () => {
-    const { error } = await supabase
-      .from('maintenance_records')
-      .update({ 
-        status: 'Em Andamento', 
-        completion_date: null 
-      })
-      .eq('id', maintenanceId);
-
-    if (error) {
-      toast.error('Erro ao reabrir manutenção', {
-        description: error.message
+  const handleEditMaintenance = async () => {
+    try {
+      await updateMaintenance(maintenance.id, {
+        notes: formData.notes,
+        technician_notes: formData.technician_notes,
+        expected_completion_date: formData.expected_completion_date || null,
+        completion_date: formData.completion_date || null,
       });
-      return;
+      
+      setIsEditDialogOpen(false);
+      onActionComplete();
+    } catch (error) {
+      toast.error('Erro ao atualizar registro de manutenção');
+      console.error(error);
     }
+  };
 
-    toast.success('Manutenção reaberta com sucesso');
-    setIsReopenDialogOpen(false);
-    onSuccess();
+  const handleDeleteMaintenance = async () => {
+    try {
+      await deleteMaintenance(maintenance.id);
+      
+      setIsDeleteDialogOpen(false);
+      onActionComplete();
+    } catch (error) {
+      toast.error('Erro ao excluir registro de manutenção');
+      console.error(error);
+    }
+  };
+
+  const handleReopenMaintenance = async () => {
+    try {
+      await reopenMaintenance(maintenance.id);
+      
+      setIsReopenDialogOpen(false);
+      onActionComplete();
+    } catch (error) {
+      toast.error('Erro ao reabrir registro de manutenção');
+      console.error(error);
+    }
   };
 
   return (
-    <>
-      <div className="flex gap-1">
-        {maintenanceStatus === 'Concluído' && (
-          <Button 
-            variant="outline" 
-            size="icon"
-            className="h-8 w-8 p-0" 
-            onClick={() => setIsReopenDialogOpen(true)}
-            title="Reabrir Manutenção"
-          >
-            <RefreshCcw className="h-3.5 w-3.5" />
-          </Button>
-        )}
-        
+    <div className="flex items-center space-x-2">
+      <Button 
+        variant="outline" 
+        size="sm" 
+        onClick={() => setIsEditDialogOpen(true)}
+      >
+        <Pencil className="h-4 w-4" />
+      </Button>
+      
+      {maintenance.status === 'Concluída' && (
         <Button 
           variant="outline" 
-          size="icon"
-          className="text-red-500 h-8 w-8 p-0" 
-          onClick={() => setIsDeleteDialogOpen(true)}
-          title="Excluir Registro"
+          size="sm"
+          onClick={() => setIsReopenDialogOpen(true)}
         >
-          <Trash2 className="h-3.5 w-3.5" />
+          <RefreshCw className="h-4 w-4" />
         </Button>
-      </div>
+      )}
+      
+      <Button 
+        variant="outline" 
+        size="sm" 
+        className="text-red-500"
+        onClick={() => setIsDeleteDialogOpen(true)}
+      >
+        <Trash2 className="h-4 w-4" />
+      </Button>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Editar Registro de Manutenção</DialogTitle>
+            <DialogDescription>
+              Atualize as informações de manutenção do equipamento.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label htmlFor="expected_completion_date">Previsão de Conclusão</Label>
+                <Input
+                  id="expected_completion_date"
+                  name="expected_completion_date"
+                  type="date"
+                  value={formData.expected_completion_date}
+                  onChange={handleInputChange}
+                />
+              </div>
+              
+              <div>
+                <Label htmlFor="completion_date">Data de Conclusão</Label>
+                <Input
+                  id="completion_date"
+                  name="completion_date"
+                  type="date"
+                  value={formData.completion_date}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </div>
+            
+            <div>
+              <Label htmlFor="technician_notes">Observações do Técnico</Label>
+              <Textarea
+                id="technician_notes"
+                name="technician_notes"
+                rows={4}
+                placeholder="Detalhes do diagnóstico e reparo..."
+                value={formData.technician_notes}
+                onChange={handleInputChange}
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="notes">Observações</Label>
+              <Textarea
+                id="notes"
+                name="notes"
+                rows={4}
+                placeholder="Observações adicionais..."
+                value={formData.notes}
+                onChange={handleInputChange}
+              />
+            </div>
+          </div>
+          
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleEditMaintenance}>
+              Salvar Alterações
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Confirmar Exclusão</DialogTitle>
             <DialogDescription>
@@ -108,62 +203,38 @@ const MaintenanceActions = ({
             </DialogDescription>
           </DialogHeader>
           
-          <div className="py-4">
-            <div className="border-l-4 border-red-500 pl-4">
-              <p className="font-medium">{equipmentName}</p>
-              <p className="text-sm text-muted-foreground">
-                Status: {maintenanceStatus} - Quantidade: {quantity}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Data de Envio: {new Date(sendDate).toLocaleDateString('pt-BR')}
-              </p>
-            </div>
-          </div>
-          
-          <DialogFooter>
+          <div className="flex justify-end gap-2 mt-4">
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
               Cancelar
             </Button>
-            <Button variant="destructive" onClick={handleDelete}>
+            <Button variant="destructive" onClick={handleDeleteMaintenance}>
               Excluir
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
 
-      {/* Reopen Maintenance Dialog */}
+      {/* Reopen Dialog */}
       <Dialog open={isReopenDialogOpen} onOpenChange={setIsReopenDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Reabrir Manutenção</DialogTitle>
             <DialogDescription>
-              Deseja reabrir esta manutenção? O status será alterado para "Em Andamento".
+              Deseja reabrir este registro de manutenção? O status será alterado para 'Em Andamento'.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="py-4">
-            <div className="border-l-4 border-amber-500 pl-4">
-              <p className="font-medium">{equipmentName}</p>
-              <p className="text-sm">
-                Status Atual: <span className="font-medium text-green-600">Concluído</span>
-              </p>
-              <p className="text-sm">
-                Novo Status: <span className="font-medium text-amber-600">Em Andamento</span>
-              </p>
-            </div>
-          </div>
-          
-          <DialogFooter>
+          <div className="flex justify-end gap-2 mt-4">
             <Button variant="outline" onClick={() => setIsReopenDialogOpen(false)}>
               Cancelar
             </Button>
-            <Button className="bg-amber-500 hover:bg-amber-600" onClick={handleReopen}>
+            <Button onClick={handleReopenMaintenance}>
               Reabrir Manutenção
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 };
 

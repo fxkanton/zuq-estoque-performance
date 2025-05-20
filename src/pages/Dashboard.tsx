@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,6 +23,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import DateRangeFilter from "@/components/ui/date-range-filter";
+import { Edit, Trash2 } from 'lucide-react';
 
 const Dashboard = () => {
   // Date range state 
@@ -224,35 +225,15 @@ const Dashboard = () => {
     <MainLayout title="Dashboard">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-zuq-darkblue">Dashboard</h1>
-        <div className="flex items-center gap-4">
-          <div className="flex flex-col gap-1">
-            <Label htmlFor="start-date">Data Inicial</Label>
-            <Input 
-              id="start-date" 
-              type="date" 
-              value={startDate} 
-              onChange={(e) => setStartDate(e.target.value)} 
-              className="w-40"
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <Label htmlFor="end-date">Data Final</Label>
-            <Input 
-              id="end-date" 
-              type="date" 
-              value={endDate} 
-              onChange={(e) => setEndDate(e.target.value)} 
-              className="w-40"
-            />
-          </div>
-          <Button 
-            className="mt-6 bg-zuq-blue hover:bg-zuq-blue/80"
-            onClick={loadDashboardData}
-          >
-            <Calendar className="h-4 w-4 mr-2" /> Atualizar
-          </Button>
-        </div>
       </div>
+      
+      <DateRangeFilter 
+        startDate={startDate}
+        endDate={endDate}
+        onStartDateChange={setStartDate}
+        onEndDateChange={setEndDate}
+        onFilterApply={loadDashboardData}
+      />
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         <StatsCard 

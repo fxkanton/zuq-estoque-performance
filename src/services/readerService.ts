@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 import { Equipment } from "./equipmentService";
@@ -141,4 +140,18 @@ export const getReadersByStatus = async (): Promise<Record<EquipmentStatus, numb
   });
 
   return counts;
+};
+
+// Enable realtime updates for readers table
+export const enableReaderRealtime = () => {
+  return supabase
+    .channel('reader-changes')
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'readers'
+    }, () => {
+      // This callback will be empty since we'll handle the refresh in the component
+    })
+    .subscribe();
 };

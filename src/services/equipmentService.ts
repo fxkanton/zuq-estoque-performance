@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 
@@ -146,4 +145,18 @@ export const getEquipmentWithStock = async (): Promise<Array<Equipment & { stock
     ...item,
     stock: stockMap[item.id] || 0
   }));
+};
+
+// Enable realtime updates for equipment table
+export const enableEquipmentRealtime = () => {
+  return supabase
+    .channel('equipment-changes')
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'equipment'
+    }, () => {
+      // This callback will be empty since we'll handle the refresh in the component
+    })
+    .subscribe();
 };

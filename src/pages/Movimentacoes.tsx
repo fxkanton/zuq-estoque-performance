@@ -1,103 +1,85 @@
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { 
-  ArrowDown, 
-  ArrowUp, 
-  Plus, 
-  Search, 
-  FileText, 
-  Calendar,
-  Edit,
-  Trash2
-} from "lucide-react";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogDescription 
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { SearchInput } from "@/components/ui/search-input";
-import { Textarea } from "@/components/ui/textarea";
-import { 
-  Select, 
-  SelectTrigger, 
-  SelectValue, 
-  SelectContent, 
-  SelectItem 
-} from "@/components/ui/select";
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { 
-  fetchMovements, 
-  createMovement, 
-  updateMovement, 
-  deleteMovement,
-  MovementWithEquipment, 
-  MovementType 
-} from "@/services/movementService";
-import { fetchEquipment } from "@/services/equipmentService";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Plus, Search, Edit, Trash2 } from "lucide-react";
+import { fetchMovements, createMovement, updateMovement, deleteMovement, Movement } from "@/services/movementService";
 import { supabase } from "@/integrations/supabase/client";
-import MovementActions from "@/components/MovementActions";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { fetchEquipment, Equipment } from "@/services/equipmentService";
+import DateRangeFilter from "@/components/ui/date-range-filter";
 
 const Movimentacoes = () => {
-  const [movements, setMovements] = useState<MovementWithEquipment[]>([]);
-  const [filteredMovements, setFilteredMovements] = useState<MovementWithEquipment[]>([]);
-  const [equipment, setEquipment] = useState<any[]>([]);
+  const [movements, setMovements] = useState<Movement[]>([]);
+  const [filteredMovements, setFilteredMovements] = useState<Movement[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState('');
-  const [dateFilter, setDateFilter] = useState({
-    start: '',
-    end: ''
-  });
-  
+  const [equipmentList, setEquipmentList] = useState<Equipment[]>([]);
+  const [selectedEquipmentId, setSelectedEquipmentId] = useState('');
+  const [movementType, setMovementType] = useState<'Entrada' | 'Saída'>('Entrada');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+
   // Form state
-  const [currentMovement, setCurrentMovement] = useState<MovementWithEquipment | null>(null);
+  const [currentMovement, setCurrentMovement] = useState<Movement | null>(null);
   const [formData, setFormData] = useState({
     equipment_id: '',
-    movement_type: 'Entrada' as MovementType,
-    quantity: 1,
+    movement_type: 'Entrada' as 'Entrada' | 'Saída',
+    quantity: 0,
     movement_date: new Date().toISOString().split('T')[0],
     notes: ''
   });
 
-  const loadData = async () => {
+  const loadMovements = async () => {
     try {
-      const movementsData = await fetchMovements();
-      setMovements(movementsData);
-      setFilteredMovements(movementsData);
-      
-      const equipmentData = await fetchEquipment();
-      setEquipment(equipmentData);
+      const data = await fetchMovements();
+      setMovements(data);
+      setFilteredMovements(data);
     } catch (error) {
-      console.error("Error loading movements data:", error);
+      console.error("Error loading movements:", error);
+    }
+  };
+
+  const loadEquipment = async () => {
+    try {
+      const data = await fetchEquipment();
+      setEquipmentList(data);
+    } catch (error) {
+      console.error("Error loading equipment:", error);
     }
   };
 
   useEffect(() => {
-    loadData();
+    loadMovements();
+    loadEquipment();
 
     // Subscribe to realtime updates
-    const movementsChannel = supabase
+    const channel = supabase
       .channel('public:inventory_movements')
       .on('postgres_changes', {
-        event: '*',
+        event: '*', 
         schema: 'public',
         table: 'inventory_movements'
       }, () => {
-        loadData();
+        loadMovements();
       })
       .subscribe();
 
     return () => {
-      supabase.removeChannel(movementsChannel);
+      supabase.removeChannel(channel);
     };
   }, []);
 
@@ -107,7 +89,7 @@ const Movimentacoes = () => {
     if (id === 'quantity') {
       setFormData(prev => ({
         ...prev,
-        [id]: value === '' ? 1 : parseInt(value)
+        [id]: value === '' ? 0 : parseInt(value)
       }));
     } else {
       setFormData(prev => ({
@@ -117,18 +99,11 @@ const Movimentacoes = () => {
     }
   };
 
-  const handleSelectChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
   const resetForm = () => {
     setFormData({
       equipment_id: '',
       movement_type: 'Entrada',
-      quantity: 1,
+      quantity: 0,
       movement_date: new Date().toISOString().split('T')[0],
       notes: ''
     });
@@ -140,20 +115,20 @@ const Movimentacoes = () => {
     setIsAddDialogOpen(true);
   };
 
-  const handleOpenEditDialog = (movement: MovementWithEquipment) => {
-    setCurrentMovement(movement);
+  const handleOpenEditDialog = (item: Movement) => {
+    setCurrentMovement(item);
     setFormData({
-      equipment_id: movement.equipment_id,
-      movement_type: movement.movement_type,
-      quantity: movement.quantity,
-      movement_date: movement.movement_date ? new Date(movement.movement_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
-      notes: movement.notes || ''
+      equipment_id: item.equipment_id,
+      movement_type: item.movement_type as 'Entrada' | 'Saída',
+      quantity: item.quantity,
+      movement_date: item.movement_date,
+      notes: item.notes || ''
     });
     setIsEditDialogOpen(true);
   };
 
-  const handleOpenDeleteDialog = (movement: MovementWithEquipment) => {
-    setCurrentMovement(movement);
+  const handleOpenDeleteDialog = (item: Movement) => {
+    setCurrentMovement(item);
     setIsDeleteDialogOpen(true);
   };
 
@@ -191,63 +166,84 @@ const Movimentacoes = () => {
     }
   };
 
-  const handleDateFilterChange = (field: 'start' | 'end', value: string) => {
-    setDateFilter(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  // Filter movements based on search term, type, and date range
+  // Filter movements based on search term
   useEffect(() => {
+    if (!searchTerm && !selectedEquipmentId && !startDate && !endDate) {
+      setFilteredMovements(movements);
+      return;
+    }
+    
     let filtered = movements;
     
     if (searchTerm) {
-      filtered = filtered.filter(item => 
-        item.equipment.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        item.equipment.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (item.notes && item.notes.toLowerCase().includes(searchTerm.toLowerCase()))
-      );
+      filtered = filtered.filter(movement => {
+        const equipment = equipmentList.find(eq => eq.id === movement.equipment_id);
+        if (equipment) {
+          return equipment.name.toLowerCase().includes(searchTerm.toLowerCase());
+        }
+        return false;
+      });
     }
     
-    if (typeFilter) {
-      filtered = filtered.filter(item => item.movement_type === typeFilter);
+    if (selectedEquipmentId) {
+      filtered = filtered.filter(movement => movement.equipment_id === selectedEquipmentId);
     }
-    
-    if (dateFilter.start) {
-      filtered = filtered.filter(item => 
-        new Date(item.movement_date) >= new Date(dateFilter.start)
-      );
-    }
-    
-    if (dateFilter.end) {
-      filtered = filtered.filter(item => 
-        new Date(item.movement_date) <= new Date(dateFilter.end)
-      );
+
+    if (startDate && endDate) {
+      filtered = filtered.filter(movement => {
+        const movementDate = new Date(movement.movement_date);
+        const start = new Date(startDate);
+        const end = new Date(endDate);
+        
+        start.setHours(0, 0, 0, 0);
+        end.setHours(23, 59, 59, 999);
+        
+        return movementDate >= start && movementDate <= end;
+      });
     }
     
     setFilteredMovements(filtered);
-  }, [searchTerm, typeFilter, dateFilter, movements]);
+  }, [searchTerm, movements, selectedEquipmentId, equipmentList, startDate, endDate]);
 
-  return (
-    <MainLayout title="Movimentações de Estoque">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-zuq-darkblue">Movimentações de Estoque</h1>
-        <Button 
-          className="bg-zuq-blue hover:bg-zuq-blue/80"
-          onClick={handleOpenAddDialog}
+  const EditDeleteButtons = ({ item }: { item: Movement }) => {
+    return (
+      <div className="flex gap-2">
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => handleOpenEditDialog(item)}
         >
-          <Plus className="h-4 w-4 mr-2" /> Registrar Movimentação
+          <Edit className="h-4 w-4" />
+        </Button>
+        <Button 
+          variant="outline"
+          size="sm" 
+          className="text-red-500"
+          onClick={() => handleOpenDeleteDialog(item)}
+        >
+          <Trash2 className="h-4 w-4" />
         </Button>
       </div>
-      
+    );
+  };
+
+  return (
+    <MainLayout title="Movimentações">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-zuq-darkblue">Controle de Movimentações</h1>
+        
+        <Button className="bg-zuq-blue hover:bg-zuq-blue/80" onClick={handleOpenAddDialog}>
+          <Plus className="h-4 w-4 mr-2" /> Nova Movimentação
+        </Button>
+      </div>
+
       <Card className="mb-6">
         <CardHeader className="pb-3">
           <CardTitle>Filtrar Movimentações</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="mb-4 md:mb-0">
               <SearchInput
                 placeholder="Pesquisar por equipamento..."
                 className="w-full"
@@ -256,122 +252,92 @@ const Movimentacoes = () => {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <div>
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Tipo de Movimento" />
+
+            <div className="mb-4 md:mb-0">
+              <Label htmlFor="equipment" className="block text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                Equipamento
+              </Label>
+              <Select onValueChange={setSelectedEquipmentId}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Selecione um equipamento" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Todos</SelectItem>
-                  <SelectItem value="Entrada">Entrada</SelectItem>
-                  <SelectItem value="Saída">Saída</SelectItem>
+                  {equipmentList.map((equipment) => (
+                    <SelectItem key={equipment.id} value={equipment.id}>{equipment.name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <div className="flex flex-col gap-1">
-                <Label htmlFor="start-date" className="text-xs">Data Inicial</Label>
-                <Input 
-                  id="start-date" 
-                  type="date" 
-                  value={dateFilter.start}
-                  onChange={(e) => handleDateFilterChange('start', e.target.value)}
-                />
-              </div>
+
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                className="flex-1"
+                onClick={() => {
+                  setSearchTerm('');
+                  setSelectedEquipmentId('');
+                  setStartDate('');
+                  setEndDate('');
+                  loadMovements();
+                }}
+              >
+                Limpar
+              </Button>
+              <Button 
+                className="bg-zuq-blue hover:bg-zuq-blue/80 flex-1"
+                onClick={() => {}}
+              >
+                Aplicar
+              </Button>
             </div>
-            <div>
-              <div className="flex flex-col gap-1">
-                <Label htmlFor="end-date" className="text-xs">Data Final</Label>
-                <Input 
-                  id="end-date" 
-                  type="date" 
-                  value={dateFilter.end}
-                  onChange={(e) => handleDateFilterChange('end', e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
-          <div className="flex justify-end mt-4">
-            <Button 
-              variant="outline" 
-              className="mr-2"
-              onClick={() => {
-                setSearchTerm('');
-                setTypeFilter('');
-                setDateFilter({ start: '', end: '' });
-              }}
-            >
-              Limpar Filtros
-            </Button>
-            <Button className="bg-zuq-blue hover:bg-zuq-blue/80">
-              <FileText className="h-4 w-4 mr-2" /> Gerar Relatório
-            </Button>
           </div>
         </CardContent>
       </Card>
 
+      <DateRangeFilter 
+        startDate={startDate}
+        endDate={endDate}
+        onStartDateChange={setStartDate}
+        onEndDateChange={setEndDate}
+        onFilterApply={loadMovements}
+      />
+
       <Card>
-        <CardContent className="p-0">
+        <CardContent className="p-0 overflow-auto">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Equipamento</TableHead>
                 <TableHead>Tipo</TableHead>
-                <TableHead className="text-center">Quantidade</TableHead>
+                <TableHead>Quantidade</TableHead>
                 <TableHead>Data</TableHead>
-                <TableHead>Observações</TableHead>
                 <TableHead>Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredMovements.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
+                  <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
                     Nenhuma movimentação encontrada
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredMovements.map((movement) => (
-                  <TableRow key={movement.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="bg-zuq-gray/30 p-2 rounded-md">
-                          {movement.movement_type === 'Entrada' ? (
-                            <ArrowDown className="h-4 w-4 text-green-500" />
-                          ) : (
-                            <ArrowUp className="h-4 w-4 text-amber-500" />
-                          )}
-                        </div>
-                        {movement.equipment.name} {movement.equipment.model}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={movement.movement_type === 'Entrada' ? 'success' : 'warning'}>
-                        {movement.movement_type}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-center font-medium">
-                      {movement.quantity}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        {new Date(movement.movement_date).toLocaleDateString('pt-BR')}
-                      </div>
-                    </TableCell>
-                    <TableCell className="max-w-xs truncate">
-                      {movement.notes || '-'}
-                    </TableCell>
-                    <TableCell>
-                      <MovementActions 
-                        movement={movement}
-                        equipment={movement.equipment}
-                        allEquipment={equipment}
-                        onSuccess={loadData}
-                      />
-                    </TableCell>
-                  </TableRow>
-                ))
+                filteredMovements.map((item) => {
+                  const equipment = equipmentList.find(eq => eq.id === item.equipment_id);
+                  return (
+                    <TableRow key={item.id}>
+                      <TableCell>
+                        {equipment ? equipment.name : 'N/A'}
+                      </TableCell>
+                      <TableCell>{item.movement_type}</TableCell>
+                      <TableCell>{item.quantity}</TableCell>
+                      <TableCell>{new Date(item.movement_date).toLocaleDateString()}</TableCell>
+                      <TableCell>
+                        <EditDeleteButtons item={item} />
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
@@ -380,42 +346,33 @@ const Movimentacoes = () => {
 
       {/* Add Movement Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle>Registrar Movimentação</DialogTitle>
+            <DialogTitle>Cadastrar Nova Movimentação</DialogTitle>
             <DialogDescription>
-              Informe os detalhes da movimentação de estoque
+              Preencha os dados da movimentação para cadastro no sistema.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="equipment_id">Equipamento</Label>
-              <Select 
-                value={formData.equipment_id} 
-                onValueChange={(value) => handleSelectChange('equipment_id', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o equipamento" />
-                </SelectTrigger>
-                <SelectContent>
-                  {equipment.map(item => (
-                    <SelectItem key={item.id} value={item.id}>
-                      {item.name} {item.model}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
-                <Label htmlFor="movement_type">Tipo de Movimento</Label>
-                <Select 
-                  value={formData.movement_type} 
-                  onValueChange={(value) => handleSelectChange('movement_type', value as MovementType)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Tipo" />
+                <Label htmlFor="equipment_id">Equipamento</Label>
+                <Select onValueChange={(value) => setFormData(prev => ({ ...prev, equipment_id: value }))}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selecione um equipamento" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {equipmentList.map((equipment) => (
+                      <SelectItem key={equipment.id} value={equipment.id}>{equipment.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="movement_type">Tipo de Movimentação</Label>
+                <Select onValueChange={(value) => setFormData(prev => ({ ...prev, movement_type: value as 'Entrada' | 'Saída' }))}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selecione o tipo" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Entrada">Entrada</SelectItem>
@@ -423,34 +380,35 @@ const Movimentacoes = () => {
                   </SelectContent>
                 </Select>
               </div>
-              
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
                 <Label htmlFor="quantity">Quantidade</Label>
                 <Input 
                   id="quantity" 
-                  type="number"
-                  min="1"
+                  type="number" 
+                  placeholder="0"
                   value={formData.quantity}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="movement_date">Data da Movimentação</Label>
+                <Input 
+                  id="movement_date" 
+                  type="date"
+                  value={formData.movement_date}
                   onChange={handleInputChange}
                 />
               </div>
             </div>
             
             <div className="flex flex-col gap-2">
-              <Label htmlFor="movement_date">Data da Movimentação</Label>
-              <Input 
-                id="movement_date" 
-                type="date"
-                value={formData.movement_date}
-                onChange={handleInputChange}
-              />
-            </div>
-            
-            <div className="flex flex-col gap-2">
               <Label htmlFor="notes">Observações</Label>
-              <Textarea 
+              <Input 
                 id="notes" 
-                placeholder="Detalhes adicionais da movimentação..." 
+                placeholder="Observações adicionais"
                 value={formData.notes}
                 onChange={handleInputChange}
               />
@@ -465,42 +423,39 @@ const Movimentacoes = () => {
 
       {/* Edit Movement Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle>Editar Movimentação</DialogTitle>
             <DialogDescription>
-              Atualize os detalhes da movimentação
+              Atualize as informações da movimentação.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="edit-equipment">Equipamento</Label>
-              <Select 
-                value={formData.equipment_id} 
-                onValueChange={(value) => handleSelectChange('equipment_id', value)}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o equipamento" />
-                </SelectTrigger>
-                <SelectContent>
-                  {equipment.map(item => (
-                    <SelectItem key={item.id} value={item.id}>
-                      {item.name} {item.model}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
-                <Label htmlFor="movement_type">Tipo de Movimento</Label>
+                <Label htmlFor="equipment_id">Equipamento</Label>
+                  <Select 
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, equipment_id: value }))}
+                    defaultValue={formData.equipment_id}
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Selecione um equipamento" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {equipmentList.map((equipment) => (
+                        <SelectItem key={equipment.id} value={equipment.id}>{equipment.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="movement_type">Tipo de Movimentação</Label>
                 <Select 
-                  value={formData.movement_type} 
-                  onValueChange={(value) => handleSelectChange('movement_type', value as MovementType)}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, movement_type: value as 'Entrada' | 'Saída' }))}
+                  defaultValue={formData.movement_type}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Tipo" />
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selecione o tipo" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Entrada">Entrada</SelectItem>
@@ -508,34 +463,35 @@ const Movimentacoes = () => {
                   </SelectContent>
                 </Select>
               </div>
-              
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
                 <Label htmlFor="quantity">Quantidade</Label>
                 <Input 
                   id="quantity" 
-                  type="number"
-                  min="1"
+                  type="number" 
+                  placeholder="0"
                   value={formData.quantity}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="movement_date">Data da Movimentação</Label>
+                <Input 
+                  id="movement_date" 
+                  type="date"
+                  value={formData.movement_date}
                   onChange={handleInputChange}
                 />
               </div>
             </div>
             
             <div className="flex flex-col gap-2">
-              <Label htmlFor="movement_date">Data da Movimentação</Label>
-              <Input 
-                id="movement_date" 
-                type="date"
-                value={formData.movement_date}
-                onChange={handleInputChange}
-              />
-            </div>
-            
-            <div className="flex flex-col gap-2">
               <Label htmlFor="notes">Observações</Label>
-              <Textarea 
+              <Input 
                 id="notes" 
-                placeholder="Detalhes adicionais da movimentação..." 
+                placeholder="Observações adicionais"
                 value={formData.notes}
                 onChange={handleInputChange}
               />
@@ -560,13 +516,8 @@ const Movimentacoes = () => {
           <div className="py-4">
             {currentMovement && (
               <div className="border-l-4 border-red-500 pl-4">
-                <p className="font-medium">{currentMovement.equipment.name} {currentMovement.equipment.model}</p>
-                <p className="text-sm text-muted-foreground">
-                  Tipo: {currentMovement.movement_type} - Quantidade: {currentMovement.quantity}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Data: {new Date(currentMovement.movement_date).toLocaleDateString('pt-BR')}
-                </p>
+                {equipmentList.find(eq => eq.id === currentMovement?.equipment_id)?.name}
+                <p className="text-sm text-muted-foreground">Quantidade: {currentMovement.quantity}</p>
               </div>
             )}
           </div>

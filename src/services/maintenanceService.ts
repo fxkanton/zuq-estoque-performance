@@ -1,57 +1,32 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
-import { Equipment } from "./equipmentService";
 
-export type MaintenanceStatus = 'Em Andamento' | 'Aguardando Peças' | 'Concluída' | 'Cancelada';
+export type MaintenanceStatus = 'Em Andamento' | 'Concluída' | 'Cancelada';
 
-export interface Maintenance {
+export interface MaintenanceRecord {
   id: string;
   equipment_id: string;
   quantity: number;
   send_date: string;
-  notes?: string;
-  status: MaintenanceStatus;
-  technician_notes?: string;
   expected_completion_date?: string;
   completion_date?: string;
+  status: MaintenanceStatus;
+  technician_notes?: string;
+  notes?: string;
   created_at?: string;
   updated_at?: string;
-}
-
-export interface MaintenanceWithEquipment extends Maintenance {
-  equipment: Equipment;
-}
-
-// Helper function to validate status
-const validateMaintenanceStatus = (status: string): MaintenanceStatus => {
-  const validStatuses: MaintenanceStatus[] = [
-    'Em Andamento', 
-    'Aguardando Peças', 
-    'Concluída', 
-    'Cancelada'
-  ];
-  
-  return validStatuses.includes(status as MaintenanceStatus) 
-    ? status as MaintenanceStatus 
-    : 'Em Andamento';
-};
-
-// Helper to convert record to MaintenanceWithEquipment with proper types
-const convertToMaintenanceWithEquipment = (record: any): MaintenanceWithEquipment => {
-  return {
-    ...record,
-    status: validateMaintenanceStatus(record.status)
+  equipment?: {
+    id: string;
+    name: string;
+    model: string;
+    brand: string;
   };
-};
+}
 
-export const fetchMaintenanceRecords = async (): Promise<MaintenanceWithEquipment[]> => {
+export const fetchMaintenanceRecords = async (): Promise<MaintenanceRecord[]> => {
   const { data, error } = await supabase
     .from('maintenance_records')
-    .select(`
-      *,
-      equipment:equipment_id (*)
-    `)
+    .select('*, equipment(*)')
     .order('send_date', { ascending: false });
 
   if (error) {
@@ -61,104 +36,87 @@ export const fetchMaintenanceRecords = async (): Promise<MaintenanceWithEquipmen
     return [];
   }
 
-  return data ? data.map(convertToMaintenanceWithEquipment) : [];
+  return data || [];
 };
 
-export const getMaintenanceById = async (id: string): Promise<MaintenanceWithEquipment | null> => {
+export const getMaintenanceRecordById = async (id: string): Promise<MaintenanceRecord | null> => {
   const { data, error } = await supabase
     .from('maintenance_records')
-    .select(`
-      *,
-      equipment:equipment_id (*)
-    `)
+    .select('*, equipment(*)')
     .eq('id', id)
     .single();
 
   if (error) {
-    toast.error('Erro ao carregar dados de manutenção', {
+    toast.error('Erro ao carregar registro de manutenção', {
       description: error.message
     });
     return null;
   }
 
-  return data ? convertToMaintenanceWithEquipment(data) : null;
+  return data;
 };
 
-export const createMaintenance = async (maintenance: Omit<Maintenance, 'id' | 'created_at' | 'updated_at'>): Promise<Maintenance | null> => {
-  // Set default status if not provided
-  const dataToInsert = {
-    ...maintenance,
-    status: maintenance.status || 'Em Andamento'
-  };
-
+export const createMaintenance = async (maintenance: Omit<MaintenanceRecord, 'id' | 'created_at' | 'updated_at' | 'equipment'>): Promise<MaintenanceRecord | null> => {
   const { data, error } = await supabase
     .from('maintenance_records')
-    .insert([dataToInsert])
-    .select()
+    .insert([maintenance])
+    .select('*, equipment(*)')
     .single();
 
   if (error) {
-    toast.error('Erro ao registrar manutenção', {
+    toast.error('Erro ao criar registro de manutenção', {
       description: error.message
     });
     return null;
   }
 
-  // Also update reader status if applicable
-  if (maintenance.equipment_id) {
-    await supabase
-      .from('readers')
-      .update({ status: 'Em Manutenção' })
-      .eq('equipment_id', maintenance.equipment_id)
-      .limit(maintenance.quantity);
-  }
-
-  toast.success('Manutenção registrada com sucesso');
-  return data ? { ...data, status: validateMaintenanceStatus(data.status) } : null;
+  toast.success('Registro de manutenção criado com sucesso');
+  return data;
 };
 
-export const updateMaintenance = async (id: string, maintenance: Partial<Maintenance>): Promise<Maintenance | null> => {
+export const updateMaintenance = async (id: string, maintenance: Partial<MaintenanceRecord>): Promise<MaintenanceRecord | null> => {
   const { data, error } = await supabase
     .from('maintenance_records')
     .update(maintenance)
     .eq('id', id)
-    .select()
+    .select('*, equipment(*)')
     .single();
 
   if (error) {
-    toast.error('Erro ao atualizar manutenção', {
+    toast.error('Erro ao atualizar registro de manutenção', {
       description: error.message
     });
     return null;
   }
 
-  // If status is changed to Concluída, update readers status back to Disponível
-  if (maintenance.status === 'Concluída') {
-    const record = await getMaintenanceById(id);
-    
-    if (record) {
-      await supabase
-        .from('readers')
-        .update({ status: 'Disponível' })
-        .eq('equipment_id', record.equipment_id)
-        .eq('status', 'Em Manutenção')
-        .limit(record.quantity);
-    }
-  }
-
-  toast.success('Manutenção atualizada com sucesso');
-  return data ? { ...data, status: validateMaintenanceStatus(data.status) } : null;
+  toast.success('Registro de manutenção atualizado com sucesso');
+  return data;
 };
 
-export const reopenMaintenance = async (id: string): Promise<Maintenance | null> => {
-  const record = await getMaintenanceById(id);
-  
-  if (!record) {
-    toast.error('Registro de manutenção não encontrado');
+export const completeMaintenance = async (id: string, completionDate: string, technicianNotes?: string): Promise<MaintenanceRecord | null> => {
+  const { data, error } = await supabase
+    .from('maintenance_records')
+    .update({
+      status: 'Concluída',
+      completion_date: completionDate,
+      technician_notes: technicianNotes
+    })
+    .eq('id', id)
+    .select('*, equipment(*)')
+    .single();
+
+  if (error) {
+    toast.error('Erro ao concluir manutenção', {
+      description: error.message
+    });
     return null;
   }
-  
-  // Update status to Em Andamento and clear completion date
+
+  toast.success('Manutenção concluída com sucesso');
+  return data;
+};
+
+export const reopenMaintenance = async (id: string): Promise<MaintenanceRecord | null> => {
   const { data, error } = await supabase
     .from('maintenance_records')
     .update({
@@ -166,37 +124,62 @@ export const reopenMaintenance = async (id: string): Promise<Maintenance | null>
       completion_date: null
     })
     .eq('id', id)
-    .select()
+    .select('*, equipment(*)')
     .single();
-    
+
   if (error) {
     toast.error('Erro ao reabrir manutenção', {
       description: error.message
     });
     return null;
   }
-  
-  // Update readers status back to Em Manutenção
-  await supabase
-    .from('readers')
-    .update({ status: 'Em Manutenção' })
-    .eq('equipment_id', record.equipment_id)
-    .eq('status', 'Disponível')
-    .limit(record.quantity);
-  
+
   toast.success('Manutenção reaberta com sucesso');
-  return data ? { ...data, status: validateMaintenanceStatus(data.status) } : null;
+  return data;
+};
+
+export const deleteMaintenance = async (id: string): Promise<boolean> => {
+  const { error } = await supabase
+    .from('maintenance_records')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    toast.error('Erro ao excluir manutenção', {
+      description: error.message
+    });
+    return false;
+  }
+
+  toast.success('Manutenção excluída com sucesso');
+  return true;
 };
 
 export const getMaintenceCount = async (): Promise<number> => {
   const { count, error } = await supabase
     .from('maintenance_records')
-    .select('*', { count: 'exact' });
+    .select('*', { count: 'exact', head: true });
 
   if (error) {
-    console.error('Error fetching maintenance count:', error);
+    toast.error('Erro ao carregar contagem de manutenções', {
+      description: error.message
+    });
     return 0;
   }
 
   return count || 0;
+};
+
+// Enable realtime updates for maintenance records
+export const enableMaintenanceRealtime = () => {
+  return supabase
+    .channel('maintenance-changes')
+    .on('postgres_changes', {
+      event: '*',
+      schema: 'public',
+      table: 'maintenance_records'
+    }, () => {
+      // This callback will be empty since we'll handle the refresh in the component
+    })
+    .subscribe();
 };
