@@ -82,9 +82,10 @@ export async function getMaintenanceById(id: string): Promise<MaintenanceRecord>
 }
 
 export async function createMaintenanceRecord(maintenanceData: Partial<MaintenanceRecord>): Promise<MaintenanceRecord> {
+  // The issue was here - we were passing an array instead of a single object
   const { data, error } = await supabase
     .from('maintenance_records')
-    .insert([maintenanceData])
+    .insert(maintenanceData)
     .select(`
       *,
       equipment:equipment_id (
