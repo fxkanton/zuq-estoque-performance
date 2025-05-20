@@ -23,6 +23,29 @@ export interface MaintenanceRecord {
   };
 }
 
+// Create a more specific type for creating maintenance records
+export interface CreateMaintenanceInput {
+  equipment_id: string;
+  quantity: number;
+  send_date: string;
+  expected_completion_date?: string;
+  status?: MaintenanceStatus;
+  notes?: string;
+  technician_notes?: string;
+}
+
+// Update type for updating maintenance records
+export interface UpdateMaintenanceInput {
+  equipment_id?: string;
+  quantity?: number;
+  send_date?: string;
+  expected_completion_date?: string;
+  completion_date?: string | null;
+  status?: MaintenanceStatus;
+  notes?: string;
+  technician_notes?: string;
+}
+
 // Alias functions with names used in Manutencao.tsx
 export const fetchMaintenanceRecords = getMaintenanceRecords;
 export const createMaintenance = createMaintenanceRecord;
@@ -81,8 +104,7 @@ export async function getMaintenanceById(id: string): Promise<MaintenanceRecord>
   return data as unknown as MaintenanceRecord;
 }
 
-export async function createMaintenanceRecord(maintenanceData: Partial<MaintenanceRecord>): Promise<MaintenanceRecord> {
-  // The issue was here - we were passing an array instead of a single object
+export async function createMaintenanceRecord(maintenanceData: CreateMaintenanceInput): Promise<MaintenanceRecord> {
   const { data, error } = await supabase
     .from('maintenance_records')
     .insert(maintenanceData)
@@ -102,7 +124,7 @@ export async function createMaintenanceRecord(maintenanceData: Partial<Maintenan
   return data as unknown as MaintenanceRecord;
 }
 
-export async function updateMaintenanceRecord(id: string, maintenanceData: Partial<MaintenanceRecord>): Promise<MaintenanceRecord> {
+export async function updateMaintenanceRecord(id: string, maintenanceData: UpdateMaintenanceInput): Promise<MaintenanceRecord> {
   const { data, error } = await supabase
     .from('maintenance_records')
     .update(maintenanceData)
