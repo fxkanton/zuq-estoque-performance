@@ -1,3 +1,4 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -34,21 +35,27 @@
 
     --radius: 0.5rem;
 
-    --sidebar-background: 0 0% 98%;
-
-    --sidebar-foreground: 240 5.3% 26.1%;
-
-    --sidebar-primary: 240 5.9% 10%;
-
+    --sidebar-background: 223 39% 20%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 193 100% 47%;
     --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 223 39% 25%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 223 39% 25%;
+    --sidebar-ring: 193 100% 47%;
 
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* ZUQ Performance colors */
+    --zuq-blue: 193 100% 47%;
+    --zuq-darkblue: 223 39% 20%;
+    --zuq-gray: 210 17% 90%;
+    --zuq-turquoise: 193 100% 47%;
+    
+    /* New theme colors */
+    --purple-pastel: 270 50% 85%;
+    --green-pastel: 120 40% 85%;
+    --orange-pastel: 30 70% 85%;
+    --red-pastel: 0 60% 85%;
+    --blue-pastel: 210 60% 85%;
   }
 
   .dark {
@@ -79,14 +86,15 @@
     --border: 217.2 32.6% 17.5%;
     --input: 217.2 32.6% 17.5%;
     --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
+    
+    --sidebar-background: 223 39% 15%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 193 100% 47%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-accent: 223 39% 20%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 223 39% 20%;
+    --sidebar-ring: 193 100% 47%;
   }
 }
 
@@ -96,6 +104,63 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-gradient-to-br from-sky-50 via-white to-blue-50 text-foreground min-h-screen;
+  }
+}
+
+@layer components {
+  /* Modern card styling */
+  .modern-card {
+    @apply bg-white/80 backdrop-blur-sm rounded-lg shadow-sm border border-white/20 hover:shadow-md transition-all duration-300;
+  }
+  
+  /* Enhanced hover states */
+  .hover-lift {
+    @apply hover:transform hover:-translate-y-1 hover:shadow-lg transition-all duration-200;
+  }
+  
+  /* Modern button primary */
+  .btn-primary {
+    @apply bg-zuq-turquoise hover:bg-zuq-turquoise/90 text-white font-medium px-4 py-2 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md;
+  }
+  
+  /* Pastel badges */
+  .badge-purple {
+    @apply bg-purple-100 text-purple-700 px-2 py-1 rounded-full text-xs font-medium;
+  }
+  
+  .badge-green {
+    @apply bg-green-100 text-green-700 px-2 py-1 rounded-full text-xs font-medium;
+  }
+  
+  .badge-orange {
+    @apply bg-orange-100 text-orange-700 px-2 py-1 rounded-full text-xs font-medium;
+  }
+  
+  .badge-red {
+    @apply bg-red-100 text-red-700 px-2 py-1 rounded-full text-xs font-medium;
+  }
+  
+  .badge-blue {
+    @apply bg-blue-100 text-blue-700 px-2 py-1 rounded-full text-xs font-medium;
+  }
+  
+  /* Table row hover */
+  .table-row-hover {
+    @apply hover:bg-white/50 hover:shadow-sm transition-all duration-200;
+  }
+  
+  /* Kanban card */
+  .kanban-card {
+    @apply bg-white rounded-lg p-4 shadow-sm border border-gray-100 hover:shadow-md hover:-translate-y-1 transition-all duration-200 cursor-pointer;
+  }
+  
+  /* Animation utilities */
+  .animate-fade-in {
+    @apply animate-in fade-in duration-300;
+  }
+  
+  .animate-slide-up {
+    @apply animate-in slide-in-from-bottom-4 duration-300;
   }
 }

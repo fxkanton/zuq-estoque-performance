@@ -11,6 +11,7 @@ import Fornecedores from "./pages/Fornecedores";
 import Movimentacoes from "./pages/Movimentacoes";
 import Leitoras from "./pages/Leitoras";
 import Pedidos from "./pages/Pedidos";
+import FluxoTarefas from "./pages/FluxoTarefas";
 import Manutencao from "./pages/Manutencao";
 import NotFound from "./pages/NotFound";
 
@@ -30,6 +31,7 @@ const App = () => (
           <Route path="/movimentacoes" element={<Movimentacoes />} />
           <Route path="/leitoras" element={<Leitoras />} />
           <Route path="/pedidos" element={<Pedidos />} />
+          <Route path="/fluxo-tarefas" element={<FluxoTarefas />} />
           <Route path="/manutencao" element={<Manutencao />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

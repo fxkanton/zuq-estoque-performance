@@ -12,13 +12,19 @@ interface MainLayoutProps {
 export function MainLayout({ children, title }: MainLayoutProps) {
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen w-full bg-zuq-gray/10">
+      <div className="flex min-h-screen w-full bg-gradient-to-br from-sky-50 via-white to-blue-50">
         <AppSidebar />
         <div className="flex flex-col flex-1">
           <Navbar title={title} />
-          <Suspense fallback={<div className="flex-1 p-6 flex items-center justify-center">Carregando...</div>}>
+          <Suspense fallback={
+            <div className="flex-1 p-6 flex items-center justify-center">
+              <div className="animate-pulse">Carregando...</div>
+            </div>
+          }>
             <main className="flex-1 p-6 overflow-auto">
-              {children}
+              <div className="animate-fade-in">
+                {children}
+              </div>
             </main>
           </Suspense>
         </div>

@@ -9,7 +9,8 @@ import {
   ClipboardCheck, 
   Settings, 
   Package, 
-  BarChart3
+  BarChart3,
+  Kanban
 } from "lucide-react";
 
 import {
@@ -42,17 +43,17 @@ export function AppSidebar() {
 
   return (
     <Sidebar
-      className={`transition-all duration-300 ease-in-out ${isCollapsed ? "w-14" : "w-60"}`}
+      className={`transition-all duration-300 ease-in-out ${isCollapsed ? "w-14" : "w-60"} bg-sidebar border-sidebar-border`}
       collapsible="icon"
     >
-      <SidebarContent>
+      <SidebarContent className="bg-sidebar">
         <div className={`flex justify-center items-center my-6 ${isCollapsed ? "px-2" : "px-6"}`}>
           {isCollapsed ? (
             <img 
               ref={logoSmallRef}
               src="/lovable-uploads/b063f862-dfa6-4ec2-bf1e-f6ba630f97b6.png" 
               alt="ZUQ Performance" 
-              className="w-8 h-8"
+              className="w-8 h-8 brightness-0 invert"
               loading="eager"
             />
           ) : (
@@ -60,19 +61,19 @@ export function AppSidebar() {
               ref={logoFullRef}
               src="/lovable-uploads/d23c7cfe-f31c-48e7-853d-9336a829189d.png" 
               alt="ZUQ Performance" 
-              className="w-36"
+              className="w-36 brightness-0 invert"
               loading="eager"
             />
           )}
         </div>
 
         <SidebarGroup>
-          <SidebarGroupLabel className="text-zuq-darkblue font-medium">
+          <SidebarGroupLabel className="text-sidebar-foreground/70 font-medium text-xs uppercase tracking-wider">
             {!isCollapsed && "Principal"}
           </SidebarGroupLabel>
 
           <SidebarGroupContent>
-            <SidebarMenu>
+            <SidebarMenu className="space-y-1">
               <NavItem
                 to="/"
                 icon={<BarChart3 className="h-5 w-5" />}
@@ -110,6 +111,12 @@ export function AppSidebar() {
                 isCollapsed={isCollapsed}
               />
               <NavItem
+                to="/fluxo-tarefas"
+                icon={<Kanban className="h-5 w-5" />}
+                label="Fluxo de Tarefas"
+                isCollapsed={isCollapsed}
+              />
+              <NavItem
                 to="/manutencao"
                 icon={<Settings className="h-5 w-5" />}
                 label="Manutenção"
@@ -137,17 +144,17 @@ const NavItem = ({ to, icon, label, isCollapsed }: NavItemProps) => {
         <NavLink
           to={to}
           className={({ isActive }) =>
-            `flex items-center px-3 py-2 rounded-md ${
+            `flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 ${
               isActive
-                ? "bg-zuq-blue text-white"
-                : "hover:bg-zuq-gray text-zuq-darkblue hover:text-zuq-blue"
+                ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
+                : "hover:bg-sidebar-accent text-sidebar-foreground hover:text-sidebar-accent-foreground"
             }`
           }
           end
         >
           <div className="flex items-center">
             {icon}
-            {!isCollapsed && <span className="ml-3">{label}</span>}
+            {!isCollapsed && <span className="ml-3 font-medium">{label}</span>}
           </div>
         </NavLink>
       </SidebarMenuButton>
