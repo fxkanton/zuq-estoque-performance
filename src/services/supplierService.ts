@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 
@@ -7,7 +8,10 @@ export interface Supplier {
   cnpj: string;
   address?: string;
   phone?: string;
+  contact_name?: string;
+  email?: string;
   average_delivery_days?: number;
+  image_url?: string;
   created_at?: string;
   updated_at?: string;
 }

@@ -2,11 +2,10 @@
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 
-export type EquipmentCategory = 'Leitora' | 'Sensor' | 'Rastreador' | 'Acessório';
+export type EquipmentCategory = string;
 
 export interface Equipment {
   id: string;
-  name: string;
   brand: string;
   model: string;
   category: EquipmentCategory;
@@ -14,6 +13,7 @@ export interface Equipment {
   min_stock?: number;
   supplier_id?: string;
   image_url?: string;
+  quality_status?: string;
   created_at?: string;
   updated_at?: string;
 }
@@ -22,7 +22,7 @@ export const fetchEquipment = async (): Promise<Equipment[]> => {
   const { data, error } = await supabase
     .from('equipment')
     .select('*')
-    .order('name');
+    .order('brand');
 
   if (error) {
     toast.error('Erro ao carregar equipamentos', {

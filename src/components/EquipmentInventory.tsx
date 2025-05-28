@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getEquipmentInventory } from '@/services/movementService';
+import { getEquipmentWithStock } from '@/services/equipmentService';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
@@ -9,10 +9,10 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 
 interface Equipment {
   id: string;
-  name: string;
-  model: string;
   brand: string;
+  model: string;
   stock: number;
+  category?: string;
 }
 
 interface EquipmentInventoryProps {
@@ -26,24 +26,25 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
   const [filters, setFilters] = useState({
     search: '',
     brand: '',
-    model: ''
+    category: ''
   });
   
   const [uniqueBrands, setUniqueBrands] = useState<string[]>([]);
-  const [uniqueModels, setUniqueModels] = useState<string[]>([]);
+  const [uniqueCategories, setUniqueCategories] = useState<string[]>([]);
   
   useEffect(() => {
     const loadInventory = async () => {
-      const data = await getEquipmentInventory(startDate, endDate);
+      const data = await getEquipmentWithStock();
+      
       setInventory(data);
       setFilteredInventory(data);
       
-      // Extract unique brands and models
+      // Extract unique brands and categories
       const brands = [...new Set(data.map(item => item.brand))];
       setUniqueBrands(brands);
       
-      const models = [...new Set(data.map(item => item.model))];
-      setUniqueModels(models);
+      const categories = [...new Set(data.map(item => item.category))];
+      setUniqueCategories(categories);
     };
     
     loadInventory();
@@ -57,9 +58,8 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
     if (filters.search) {
       const searchLower = filters.search.toLowerCase();
       filtered = filtered.filter(
-        item => item.name.toLowerCase().includes(searchLower) || 
-               item.model.toLowerCase().includes(searchLower) || 
-               item.brand.toLowerCase().includes(searchLower)
+        item => item.brand.toLowerCase().includes(searchLower) || 
+               item.model.toLowerCase().includes(searchLower)
       );
     }
     
@@ -68,9 +68,9 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
       filtered = filtered.filter(item => item.brand === filters.brand);
     }
     
-    // Apply model filter - only if not empty string and not "all"
-    if (filters.model && filters.model !== "all") {
-      filtered = filtered.filter(item => item.model === filters.model);
+    // Apply category filter - only if not empty string and not "all"
+    if (filters.category && filters.category !== "all") {
+      filtered = filtered.filter(item => item.category === filters.category);
     }
     
     // Sort by stock (highest first)
@@ -90,15 +90,15 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
     setFilters({
       search: '',
       brand: '',
-      model: ''
+      category: ''
     });
   };
   
   // Data for VERTICAL bar chart
   const chartData = filteredInventory.slice(0, 10).map(item => ({
-    name: item.name.substring(0, 10) + (item.name.length > 10 ? '...' : ''),
+    name: (item.brand + " " + item.model).substring(0, 15) + (item.brand.length + item.model.length > 15 ? '...' : ''),
     estoque: item.stock,
-    fullName: `${item.name} ${item.model}`
+    fullName: `${item.brand} ${item.model}`
   }));
   
   const totalStock = filteredInventory.reduce((sum, item) => sum + item.stock, 0);
@@ -143,18 +143,18 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
           </div>
           
           <div>
-            <Label htmlFor="model" className="mb-2 block text-sm">Modelo</Label>
+            <Label htmlFor="category" className="mb-2 block text-sm">Categoria</Label>
             <Select 
-              value={filters.model} 
-              onValueChange={(value) => handleFilterChange('model', value)}
+              value={filters.category} 
+              onValueChange={(value) => handleFilterChange('category', value)}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Todos os modelos" />
+                <SelectValue placeholder="Todas as categorias" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos os modelos</SelectItem>
-                {uniqueModels.map(model => (
-                  <SelectItem key={model || "unknown"} value={model || "unknown"}>{model || "Não especificado"}</SelectItem>
+                <SelectItem value="">Todas as categorias</SelectItem>
+                {uniqueCategories.map(category => (
+                  <SelectItem key={category || "unknown"} value={category || "unknown"}>{category || "Não especificado"}</SelectItem>
                 ))}
               </SelectContent>
             </Select>

@@ -19,7 +19,7 @@ export type Database = {
           image_url: string | null
           min_stock: number | null
           model: string
-          name: string
+          quality_status: string | null
           supplier_id: string | null
           updated_at: string | null
         }
@@ -32,7 +32,7 @@ export type Database = {
           image_url?: string | null
           min_stock?: number | null
           model: string
-          name: string
+          quality_status?: string | null
           supplier_id?: string | null
           updated_at?: string | null
         }
@@ -45,7 +45,7 @@ export type Database = {
           image_url?: string | null
           min_stock?: number | null
           model?: string
-          name?: string
+          quality_status?: string | null
           supplier_id?: string | null
           updated_at?: string | null
         }
@@ -294,8 +294,11 @@ export type Database = {
           address: string | null
           average_delivery_days: number | null
           cnpj: string
+          contact_name: string | null
           created_at: string | null
+          email: string | null
           id: string
+          image_url: string | null
           name: string
           phone: string | null
           updated_at: string | null
@@ -304,8 +307,11 @@ export type Database = {
           address?: string | null
           average_delivery_days?: number | null
           cnpj: string
+          contact_name?: string | null
           created_at?: string | null
+          email?: string | null
           id?: string
+          image_url?: string | null
           name: string
           phone?: string | null
           updated_at?: string | null
@@ -314,8 +320,11 @@ export type Database = {
           address?: string | null
           average_delivery_days?: number | null
           cnpj?: string
+          contact_name?: string | null
           created_at?: string | null
+          email?: string | null
           id?: string
+          image_url?: string | null
           name?: string
           phone?: string | null
           updated_at?: string | null

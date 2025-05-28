@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +13,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Plus, Search, Users } from "lucide-react";
+import { Plus, Search, Users, Upload, ImageIcon } from "lucide-react";
 import { fetchSuppliers, createSupplier, updateSupplier, deleteSupplier, Supplier } from "@/services/supplierService";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -25,6 +24,7 @@ const Fornecedores = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Form state
   const [currentSupplier, setCurrentSupplier] = useState<Supplier | null>(null);
@@ -33,8 +33,14 @@ const Fornecedores = () => {
     cnpj: '',
     address: '',
     phone: '',
-    average_delivery_days: 0
+    contact_name: '',
+    email: '',
+    average_delivery_days: 0,
+    image_url: ''
   });
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const loadSuppliers = async () => {
     try {
@@ -82,15 +88,61 @@ const Fornecedores = () => {
     }
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      setImageFile(file);
+      
+      // Create a preview URL for the selected image
+      const previewUrl = URL.createObjectURL(file);
+      setImagePreview(previewUrl);
+    }
+  };
+
+  const uploadSupplierImage = async (file: File): Promise<string | null> => {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `suppliers/${fileName}`;
+      
+      const { data, error } = await supabase.storage
+        .from('suppliers')
+        .upload(filePath, file);
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Get public URL
+      const { data: publicUrlData } = supabase.storage
+        .from('suppliers')
+        .getPublicUrl(filePath);
+      
+      return publicUrlData.publicUrl;
+    } catch (error: any) {
+      console.error("Error uploading image:", error.message);
+      return null;
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       name: '',
       cnpj: '',
       address: '',
       phone: '',
-      average_delivery_days: 0
+      contact_name: '',
+      email: '',
+      average_delivery_days: 0,
+      image_url: ''
     });
     setCurrentSupplier(null);
+    setImageFile(null);
+    setImagePreview(null);
+    
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
   };
 
   const handleOpenAddDialog = () => {
@@ -105,8 +157,18 @@ const Fornecedores = () => {
       cnpj: supplier.cnpj,
       address: supplier.address || '',
       phone: supplier.phone || '',
-      average_delivery_days: supplier.average_delivery_days || 0
+      contact_name: supplier.contact_name || '',
+      email: supplier.email || '',
+      average_delivery_days: supplier.average_delivery_days || 0,
+      image_url: supplier.image_url || ''
     });
+    
+    if (supplier.image_url) {
+      setImagePreview(supplier.image_url);
+    } else {
+      setImagePreview(null);
+    }
+    
     setIsEditDialogOpen(true);
   };
 
@@ -117,11 +179,28 @@ const Fornecedores = () => {
 
   const handleSaveSupplier = async () => {
     try {
-      await createSupplier(formData);
+      setIsUploading(true);
+      
+      let imageUrl = formData.image_url;
+      if (imageFile) {
+        const uploadedUrl = await uploadSupplierImage(imageFile);
+        if (uploadedUrl) {
+          imageUrl = uploadedUrl;
+        }
+      }
+      
+      const dataToSave = {
+        ...formData,
+        image_url: imageUrl
+      };
+      
+      await createSupplier(dataToSave);
       setIsAddDialogOpen(false);
       resetForm();
     } catch (error) {
       console.error("Error creating supplier:", error);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -129,11 +208,28 @@ const Fornecedores = () => {
     if (!currentSupplier) return;
     
     try {
-      await updateSupplier(currentSupplier.id, formData);
+      setIsUploading(true);
+      
+      let imageUrl = formData.image_url;
+      if (imageFile) {
+        const uploadedUrl = await uploadSupplierImage(imageFile);
+        if (uploadedUrl) {
+          imageUrl = uploadedUrl;
+        }
+      }
+      
+      const dataToUpdate = {
+        ...formData,
+        image_url: imageUrl
+      };
+      
+      await updateSupplier(currentSupplier.id, dataToUpdate);
       setIsEditDialogOpen(false);
       resetForm();
     } catch (error) {
       console.error("Error updating supplier:", error);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -158,7 +254,9 @@ const Fornecedores = () => {
     
     const filtered = fornecedores.filter(supplier => 
       supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      supplier.cnpj.includes(searchTerm)
+      supplier.cnpj.includes(searchTerm) ||
+      (supplier.contact_name && supplier.contact_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (supplier.email && supplier.email.toLowerCase().includes(searchTerm.toLowerCase()))
     );
     
     setFilteredFornecedores(filtered);
@@ -182,7 +280,7 @@ const Fornecedores = () => {
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="flex-1">
               <SearchInput
-                placeholder="Pesquisar por nome, CNPJ..."
+                placeholder="Pesquisar por nome, CNPJ, contato, email..."
                 className="w-full"
                 icon={<Search className="h-4 w-4" />}
                 value={searchTerm}
@@ -212,8 +310,10 @@ const Fornecedores = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nome/Razão Social</TableHead>
+                <TableHead>Fornecedor</TableHead>
                 <TableHead>CNPJ</TableHead>
+                <TableHead>Contato</TableHead>
+                <TableHead>Email</TableHead>
                 <TableHead>Telefone</TableHead>
                 <TableHead>Prazo Médio</TableHead>
                 <TableHead>Ações</TableHead>
@@ -222,7 +322,7 @@ const Fornecedores = () => {
             <TableBody>
               {filteredFornecedores.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
                     Nenhum fornecedor encontrado
                   </TableCell>
                 </TableRow>
@@ -231,13 +331,23 @@ const Fornecedores = () => {
                   <TableRow key={item.id}>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <div className="bg-zuq-gray/30 p-2 rounded-md">
-                          <Users className="h-4 w-4 text-zuq-darkblue" />
-                        </div>
-                        {item.name}
+                        {item.image_url ? (
+                          <img 
+                            src={item.image_url} 
+                            alt={item.name} 
+                            className="h-12 w-12 object-cover rounded-md"
+                          />
+                        ) : (
+                          <div className="bg-zuq-gray/30 p-2 h-12 w-12 flex items-center justify-center rounded-md">
+                            <Users className="h-6 w-6 text-zuq-darkblue" />
+                          </div>
+                        )}
+                        <span>{item.name}</span>
                       </div>
                     </TableCell>
                     <TableCell>{item.cnpj}</TableCell>
+                    <TableCell>{item.contact_name || 'N/A'}</TableCell>
+                    <TableCell>{item.email || 'N/A'}</TableCell>
                     <TableCell>{item.phone || 'N/A'}</TableCell>
                     <TableCell>{item.average_delivery_days || 0} dias</TableCell>
                     <TableCell>
@@ -277,6 +387,57 @@ const Fornecedores = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            <div className="flex flex-col gap-2">
+              <Label>Foto do Fornecedor</Label>
+              <div className="flex flex-col gap-2 items-center border rounded-md p-4 bg-gray-50">
+                {imagePreview ? (
+                  <div className="relative">
+                    <img 
+                      src={imagePreview} 
+                      alt="Preview" 
+                      className="h-32 w-32 object-cover rounded-md" 
+                    />
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="absolute top-2 right-2 bg-white"
+                      onClick={() => {
+                        setImagePreview(null);
+                        setImageFile(null);
+                        if (fileInputRef.current) {
+                          fileInputRef.current.value = '';
+                        }
+                      }}
+                    >
+                      Remover
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center text-muted-foreground">
+                    <ImageIcon className="h-32 w-32 mb-2 text-gray-300" />
+                    <p>Nenhuma imagem selecionada</p>
+                  </div>
+                )}
+                <div className="w-full mt-2">
+                  <Button 
+                    variant="outline" 
+                    className="w-full" 
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="mr-2 h-4 w-4" /> Selecionar Imagem
+                  </Button>
+                  <input 
+                    ref={fileInputRef}
+                    type="file" 
+                    accept="image/*" 
+                    className="hidden" 
+                    onChange={handleFileChange}
+                  />
+                </div>
+              </div>
+            </div>
+            
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
                 <Label htmlFor="name">Nome/Razão Social</Label>
@@ -293,6 +454,28 @@ const Fornecedores = () => {
                   id="cnpj" 
                   placeholder="00.000.000/0000-00"
                   value={formData.cnpj}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="contact_name">Nome do Contato</Label>
+                <Input 
+                  id="contact_name" 
+                  placeholder="Nome do responsável"
+                  value={formData.contact_name}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="email">Email</Label>
+                <Input 
+                  id="email" 
+                  type="email"
+                  placeholder="contato@empresa.com"
+                  value={formData.email}
                   onChange={handleInputChange}
                 />
               </div>
@@ -331,8 +514,10 @@ const Fornecedores = () => {
             </div>
           </div>
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancelar</Button>
-            <Button className="bg-zuq-blue hover:bg-zuq-blue/80" onClick={handleSaveSupplier}>Salvar</Button>
+            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)} disabled={isUploading}>Cancelar</Button>
+            <Button className="bg-zuq-blue hover:bg-zuq-blue/80" onClick={handleSaveSupplier} disabled={isUploading}>
+              {isUploading ? 'Salvando...' : 'Salvar'}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -347,9 +532,61 @@ const Fornecedores = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            <div className="flex flex-col gap-2">
+              <Label>Foto do Fornecedor</Label>
+              <div className="flex flex-col gap-2 items-center border rounded-md p-4 bg-gray-50">
+                {imagePreview ? (
+                  <div className="relative">
+                    <img 
+                      src={imagePreview} 
+                      alt="Preview" 
+                      className="h-32 w-32 object-cover rounded-md" 
+                    />
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="absolute top-2 right-2 bg-white"
+                      onClick={() => {
+                        setImagePreview(null);
+                        setImageFile(null);
+                        setFormData(prev => ({ ...prev, image_url: '' }));
+                        if (fileInputRef.current) {
+                          fileInputRef.current.value = '';
+                        }
+                      }}
+                    >
+                      Remover
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center text-muted-foreground">
+                    <ImageIcon className="h-32 w-32 mb-2 text-gray-300" />
+                    <p>Nenhuma imagem selecionada</p>
+                  </div>
+                )}
+                <div className="w-full mt-2">
+                  <Button 
+                    variant="outline" 
+                    className="w-full" 
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <Upload className="mr-2 h-4 w-4" /> Alterar Imagem
+                  </Button>
+                  <input 
+                    ref={fileInputRef}
+                    type="file" 
+                    accept="image/*" 
+                    className="hidden" 
+                    onChange={handleFileChange}
+                  />
+                </div>
+              </div>
+            </div>
+            
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
-                <Label htmlFor="edit-name">Nome/Razão Social</Label>
+                <Label htmlFor="name">Nome/Razão Social</Label>
                 <Input 
                   id="name" 
                   placeholder="Nome completo ou Razão Social" 
@@ -358,7 +595,7 @@ const Fornecedores = () => {
                 />
               </div>
               <div className="flex flex-col gap-2">
-                <Label htmlFor="edit-cnpj">CNPJ</Label>
+                <Label htmlFor="cnpj">CNPJ</Label>
                 <Input 
                   id="cnpj" 
                   placeholder="00.000.000/0000-00"
@@ -368,8 +605,30 @@ const Fornecedores = () => {
               </div>
             </div>
             
+            <div className="grid grid-cols-2 gap-4">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="contact_name">Nome do Contato</Label>
+                <Input 
+                  id="contact_name" 
+                  placeholder="Nome do responsável"
+                  value={formData.contact_name}
+                  onChange={handleInputChange}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="email">Email</Label>
+                <Input 
+                  id="email" 
+                  type="email"
+                  placeholder="contato@empresa.com"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </div>
+            
             <div className="flex flex-col gap-2">
-              <Label htmlFor="edit-address">Endereço</Label>
+              <Label htmlFor="address">Endereço</Label>
               <Input 
                 id="address" 
                 placeholder="Endereço completo"
@@ -380,7 +639,7 @@ const Fornecedores = () => {
             
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
-                <Label htmlFor="edit-phone">Telefone de Contato</Label>
+                <Label htmlFor="phone">Telefone de Contato</Label>
                 <Input 
                   id="phone" 
                   placeholder="(00) 00000-0000"
@@ -389,7 +648,7 @@ const Fornecedores = () => {
                 />
               </div>
               <div className="flex flex-col gap-2">
-                <Label htmlFor="edit-delivery-days">Prazo Médio de Entrega (dias)</Label>
+                <Label htmlFor="average_delivery_days">Prazo Médio de Entrega (dias)</Label>
                 <Input 
                   id="average_delivery_days" 
                   type="number" 
@@ -401,8 +660,10 @@ const Fornecedores = () => {
             </div>
           </div>
           <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancelar</Button>
-            <Button className="bg-zuq-blue hover:bg-zuq-blue/80" onClick={handleUpdateSupplier}>Salvar</Button>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)} disabled={isUploading}>Cancelar</Button>
+            <Button className="bg-zuq-blue hover:bg-zuq-blue/80" onClick={handleUpdateSupplier} disabled={isUploading}>
+              {isUploading ? 'Atualizando...' : 'Atualizar'}
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

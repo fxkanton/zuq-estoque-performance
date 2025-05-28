@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -6,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { SearchInput } from "@/components/ui/search-input";
+import { Badge } from "@/components/ui/badge";
 import { 
   Select,
   SelectContent,
@@ -41,26 +41,30 @@ const Equipamentos = () => {
   const [equipamentos, setEquipamentos] = useState<Array<Equipment & { stock?: number }>>([]);
   const [filteredEquipamentos, setFilteredEquipamentos] = useState<Array<Equipment & { stock?: number }>>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [categories, setCategories] = useState<string[]>(['Leitora', 'Sensor', 'Rastreador', 'Acessório']);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [qualityFilter, setQualityFilter] = useState('');
   const [supplierFilter, setSupplierFilter] = useState('');
+  const [newCategory, setNewCategory] = useState('');
+  const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Form state
   const [currentEquipment, setCurrentEquipment] = useState<Equipment | null>(null);
   const [formData, setFormData] = useState({
-    name: '',
     brand: '',
     model: '',
     category: 'Leitora' as EquipmentCategory,
     average_price: 0,
     min_stock: 0,
     supplier_id: '',
-    image_url: ''
+    image_url: '',
+    quality_status: 'Em Teste'
   });
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -129,10 +133,27 @@ const Equipamentos = () => {
   };
 
   const handleSelectChange = (field: string, value: string) => {
+    if (field === 'category' && value === 'new') {
+      setShowNewCategoryInput(true);
+      return;
+    }
+    
     setFormData(prev => ({
       ...prev,
       [field]: value
     }));
+  };
+
+  const handleAddNewCategory = () => {
+    if (newCategory && !categories.includes(newCategory)) {
+      setCategories(prev => [...prev, newCategory]);
+      setFormData(prev => ({
+        ...prev,
+        category: newCategory as EquipmentCategory
+      }));
+      setNewCategory('');
+      setShowNewCategoryInput(false);
+    }
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -146,53 +167,22 @@ const Equipamentos = () => {
     }
   };
 
-  const handleUploadImage = async () => {
-    if (!imageFile) return null;
-    
-    setIsUploading(true);
-    try {
-      // Create a unique filename to prevent collisions
-      const fileExt = imageFile.name.split('.').pop();
-      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `equipment/${fileName}`;
-      
-      const { data, error } = await supabase.storage
-        .from('equipment')
-        .upload(filePath, imageFile);
-      
-      if (error) {
-        throw error;
-      }
-      
-      // Get public URL
-      const { data: publicUrlData } = supabase.storage
-        .from('equipment')
-        .getPublicUrl(filePath);
-      
-      return publicUrlData.publicUrl;
-    } catch (error: any) {
-      console.error("Error uploading image:", error.message);
-      toast.error("Error uploading image", { description: error.message });
-      return null;
-    } finally {
-      setIsUploading(false);
-    }
-  };
-
   const resetForm = () => {
     setFormData({
-      name: '',
       brand: '',
       model: '',
       category: 'Leitora',
       average_price: 0,
       min_stock: 0,
       supplier_id: '',
-      image_url: ''
+      image_url: '',
+      quality_status: 'Em Teste'
     });
     setCurrentEquipment(null);
     setImageFile(null);
     setImagePreview(null);
+    setShowNewCategoryInput(false);
+    setNewCategory('');
     
     // Reset file input
     if (fileInputRef.current) {
@@ -208,14 +198,14 @@ const Equipamentos = () => {
   const handleOpenEditDialog = (equipment: Equipment) => {
     setCurrentEquipment(equipment);
     setFormData({
-      name: equipment.name,
       brand: equipment.brand,
       model: equipment.model,
       category: equipment.category,
       average_price: equipment.average_price || 0,
       min_stock: equipment.min_stock || 0,
       supplier_id: equipment.supplier_id || '',
-      image_url: equipment.image_url || ''
+      image_url: equipment.image_url || '',
+      quality_status: equipment.quality_status || 'Em Teste'
     });
     
     // Set image preview if equipment has an image
@@ -315,7 +305,6 @@ const Equipamentos = () => {
     
     if (searchTerm) {
       filtered = filtered.filter(item => 
-        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.brand.toLowerCase().includes(searchTerm.toLowerCase())
       );
@@ -324,6 +313,12 @@ const Equipamentos = () => {
     if (categoryFilter && categoryFilter !== 'all') {
       filtered = filtered.filter(item => 
         item.category.toLowerCase() === categoryFilter.toLowerCase()
+      );
+    }
+    
+    if (qualityFilter && qualityFilter !== 'all') {
+      filtered = filtered.filter(item => 
+        item.quality_status === qualityFilter
       );
     }
     
@@ -338,12 +333,26 @@ const Equipamentos = () => {
 
   useEffect(() => {
     applyFilters();
-  }, [searchTerm, categoryFilter, supplierFilter, equipamentos]);
+  }, [searchTerm, categoryFilter, qualityFilter, supplierFilter, equipamentos]);
 
   const handleClearFilters = () => {
     setSearchTerm('');
     setCategoryFilter('');
+    setQualityFilter('');
     setSupplierFilter('');
+  };
+
+  const getQualityBadgeStyle = (status: string) => {
+    switch (status) {
+      case 'Aprovado':
+        return 'bg-green-100 text-green-800';
+      case 'Reprovado':
+        return 'bg-red-100 text-red-800';
+      case 'Em Teste':
+        return 'bg-yellow-100 text-yellow-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
   };
 
   return (
@@ -364,7 +373,7 @@ const Equipamentos = () => {
           <CardTitle>Filtrar Equipamentos</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div>
               <SearchInput
                 placeholder="Pesquisar..."
@@ -381,10 +390,22 @@ const Equipamentos = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">Todas as categorias</SelectItem>
-                  <SelectItem value="leitora">Leitora</SelectItem>
-                  <SelectItem value="sensor">Sensor</SelectItem>
-                  <SelectItem value="rastreador">Rastreador</SelectItem>
-                  <SelectItem value="acessorio">Acessório</SelectItem>
+                  {categories.map(cat => (
+                    <SelectItem key={cat} value={cat.toLowerCase()}>{cat}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Select value={qualityFilter} onValueChange={setQualityFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Status Qualidade" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Todos os status</SelectItem>
+                  <SelectItem value="Aprovado">Aprovado</SelectItem>
+                  <SelectItem value="Reprovado">Reprovado</SelectItem>
+                  <SelectItem value="Em Teste">Em Teste</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -411,12 +432,6 @@ const Equipamentos = () => {
               >
                 Limpar
               </Button>
-              <Button 
-                className="bg-zuq-blue hover:bg-zuq-blue/80 flex-1"
-                onClick={applyFilters}
-              >
-                Aplicar
-              </Button>
             </div>
           </div>
         </CardContent>
@@ -427,10 +442,11 @@ const Equipamentos = () => {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nome</TableHead>
+                <TableHead>Equipamento</TableHead>
                 <TableHead>Marca</TableHead>
                 <TableHead>Modelo</TableHead>
                 <TableHead>Categoria</TableHead>
+                <TableHead>Status Qualidade</TableHead>
                 <TableHead className="text-right">Valor Médio</TableHead>
                 <TableHead className="text-center">Estoque</TableHead>
                 <TableHead>Ações</TableHead>
@@ -439,7 +455,7 @@ const Equipamentos = () => {
             <TableBody>
               {filteredEquipamentos.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-10 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
                     Nenhum equipamento encontrado
                   </TableCell>
                 </TableRow>
@@ -451,7 +467,7 @@ const Equipamentos = () => {
                         {item.image_url ? (
                           <img 
                             src={item.image_url} 
-                            alt={item.name} 
+                            alt={`${item.brand} ${item.model}`} 
                             className="h-20 w-20 object-cover rounded-md cursor-pointer"
                             onClick={() => handleOpenViewDialog(item)}
                           />
@@ -461,7 +477,7 @@ const Equipamentos = () => {
                           </div>
                         )}
                         <span className="cursor-pointer hover:text-zuq-blue" onClick={() => handleOpenViewDialog(item)}>
-                          {item.name}
+                          {item.brand} {item.model}
                         </span>
                       </div>
                     </TableCell>
@@ -471,6 +487,11 @@ const Equipamentos = () => {
                       <span className={`px-2 py-1 rounded-full text-xs ${getCategoryBadgeStyle(item.category)}`}>
                         {item.category}
                       </span>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={getQualityBadgeStyle(item.quality_status || 'Em Teste')}>
+                        {item.quality_status || 'Em Teste'}
+                      </Badge>
                     </TableCell>
                     <TableCell className="text-right">
                       {item.average_price ? `R$ ${Number(item.average_price).toFixed(2)}` : 'N/A'}
@@ -575,16 +596,7 @@ const Equipamentos = () => {
             
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
-                <Label htmlFor="name">Nome</Label>
-                <Input 
-                  id="name" 
-                  placeholder="Nome do equipamento" 
-                  value={formData.name}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="marca">Marca</Label>
+                <Label htmlFor="brand">Marca</Label>
                 <Input 
                   id="brand" 
                   placeholder="Marca" 
@@ -592,11 +604,8 @@ const Equipamentos = () => {
                   onChange={handleInputChange}
                 />
               </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
-                <Label htmlFor="modelo">Modelo</Label>
+                <Label htmlFor="model">Modelo</Label>
                 <Input 
                   id="model" 
                   placeholder="Modelo" 
@@ -604,20 +613,51 @@ const Equipamentos = () => {
                   onChange={handleInputChange}
                 />
               </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
-                <Label htmlFor="categoria">Categoria</Label>
+                <Label htmlFor="category">Categoria</Label>
+                {showNewCategoryInput ? (
+                  <div className="flex gap-2">
+                    <Input 
+                      placeholder="Nova categoria"
+                      value={newCategory}
+                      onChange={(e) => setNewCategory(e.target.value)}
+                    />
+                    <Button onClick={handleAddNewCategory}>Adicionar</Button>
+                    <Button variant="outline" onClick={() => setShowNewCategoryInput(false)}>Cancelar</Button>
+                  </div>
+                ) : (
+                  <Select 
+                    value={formData.category} 
+                    onValueChange={(value) => handleSelectChange('category', value)}
+                  >
+                    <SelectTrigger id="category">
+                      <SelectValue placeholder="Selecione a categoria" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map(cat => (
+                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                      ))}
+                      <SelectItem value="new">+ Nova Categoria</SelectItem>
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="quality_status">Status de Qualidade</Label>
                 <Select 
-                  value={formData.category} 
-                  onValueChange={(value) => handleSelectChange('category', value)}
+                  value={formData.quality_status} 
+                  onValueChange={(value) => handleSelectChange('quality_status', value)}
                 >
-                  <SelectTrigger id="category">
-                    <SelectValue placeholder="Selecione a categoria" />
+                  <SelectTrigger id="quality_status">
+                    <SelectValue placeholder="Selecione o status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Leitora">Leitora</SelectItem>
-                    <SelectItem value="Sensor">Sensor</SelectItem>
-                    <SelectItem value="Rastreador">Rastreador</SelectItem>
-                    <SelectItem value="Acessório">Acessório</SelectItem>
+                    <SelectItem value="Aprovado">Aprovado</SelectItem>
+                    <SelectItem value="Reprovado">Reprovado</SelectItem>
+                    <SelectItem value="Em Teste">Em Teste</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -635,27 +675,6 @@ const Equipamentos = () => {
                 />
               </div>
               <div className="flex flex-col gap-2">
-                <Label htmlFor="fornecedor">Fornecedor Padrão</Label>
-                <Select 
-                  value={formData.supplier_id} 
-                  onValueChange={(value) => handleSelectChange('supplier_id', value)}
-                >
-                  <SelectTrigger id="supplier_id">
-                    <SelectValue placeholder="Selecione um fornecedor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {suppliers.map(supplier => (
-                      <SelectItem key={supplier.id} value={supplier.id}>
-                        {supplier.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-2">
                 <Label htmlFor="min_stock">Nível Mínimo de Estoque</Label>
                 <Input 
                   id="min_stock" 
@@ -665,6 +684,25 @@ const Equipamentos = () => {
                   onChange={handleInputChange}
                 />
               </div>
+            </div>
+            
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="supplier_id">Fornecedor Padrão</Label>
+              <Select 
+                value={formData.supplier_id} 
+                onValueChange={(value) => handleSelectChange('supplier_id', value)}
+              >
+                <SelectTrigger id="supplier_id">
+                  <SelectValue placeholder="Selecione um fornecedor" />
+                </SelectTrigger>
+                <SelectContent>
+                  {suppliers.map(supplier => (
+                    <SelectItem key={supplier.id} value={supplier.id}>
+                      {supplier.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter>
@@ -748,15 +786,6 @@ const Equipamentos = () => {
                 <div className="grid gap-4">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="flex flex-col gap-2">
-                      <Label htmlFor="name">Nome</Label>
-                      <Input 
-                        id="name" 
-                        placeholder="Nome do equipamento" 
-                        value={formData.name}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                    <div className="flex flex-col gap-2">
                       <Label htmlFor="brand">Marca</Label>
                       <Input 
                         id="brand" 
@@ -765,9 +794,6 @@ const Equipamentos = () => {
                         onChange={handleInputChange}
                       />
                     </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4">
                     <div className="flex flex-col gap-2">
                       <Label htmlFor="model">Modelo</Label>
                       <Input 
@@ -777,6 +803,9 @@ const Equipamentos = () => {
                         onChange={handleInputChange}
                       />
                     </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
                     <div className="flex flex-col gap-2">
                       <Label htmlFor="category">Categoria</Label>
                       <Select 
@@ -787,10 +816,25 @@ const Equipamentos = () => {
                           <SelectValue placeholder="Selecione a categoria" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="Leitora">Leitora</SelectItem>
-                          <SelectItem value="Sensor">Sensor</SelectItem>
-                          <SelectItem value="Rastreador">Rastreador</SelectItem>
-                          <SelectItem value="Acessório">Acessório</SelectItem>
+                          {categories.map(cat => (
+                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="quality_status">Status de Qualidade</Label>
+                      <Select 
+                        value={formData.quality_status} 
+                        onValueChange={(value) => handleSelectChange('quality_status', value)}
+                      >
+                        <SelectTrigger id="quality_status">
+                          <SelectValue placeholder="Selecione o status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Aprovado">Aprovado</SelectItem>
+                          <SelectItem value="Reprovado">Reprovado</SelectItem>
+                          <SelectItem value="Em Teste">Em Teste</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -863,7 +907,7 @@ const Equipamentos = () => {
                 {currentEquipment.image_url ? (
                   <img 
                     src={currentEquipment.image_url} 
-                    alt={currentEquipment.name} 
+                    alt={`${currentEquipment.brand} ${currentEquipment.model}`} 
                     className="w-full aspect-square object-cover rounded-md shadow-md" 
                   />
                 ) : (
@@ -875,8 +919,7 @@ const Equipamentos = () => {
               <div className="md:col-span-2">
                 <div className="grid gap-3">
                   <div>
-                    <h3 className="text-xl font-bold">{currentEquipment.name}</h3>
-                    <p className="text-muted-foreground">{currentEquipment.brand} {currentEquipment.model}</p>
+                    <h3 className="text-xl font-bold">{currentEquipment.brand} {currentEquipment.model}</h3>
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4 mt-2">
@@ -885,6 +928,12 @@ const Equipamentos = () => {
                       <span className={`px-2 py-1 rounded-full text-xs ${getCategoryBadgeStyle(currentEquipment.category)}`}>
                         {currentEquipment.category}
                       </span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">Status de Qualidade</p>
+                      <Badge variant="outline" className={getQualityBadgeStyle(currentEquipment.quality_status || 'Em Teste')}>
+                        {currentEquipment.quality_status || 'Em Teste'}
+                      </Badge>
                     </div>
                     <div>
                       <p className="text-sm font-medium">Valor Médio</p>
@@ -935,8 +984,8 @@ const Equipamentos = () => {
           <div className="py-4">
             {currentEquipment && (
               <div className="border-l-4 border-red-500 pl-4">
-                <p className="font-medium">{currentEquipment.name}</p>
-                <p className="text-sm text-muted-foreground">{currentEquipment.brand} {currentEquipment.model}</p>
+                <p className="font-medium">{currentEquipment.brand} {currentEquipment.model}</p>
+                <p className="text-sm text-muted-foreground">Categoria: {currentEquipment.category}</p>
               </div>
             )}
           </div>
@@ -959,6 +1008,7 @@ const getCategoryBadgeStyle = (category: string) => {
     case 'rastreador':
       return 'bg-purple-100 text-purple-800';
     case 'acessorio':
+    case 'acessório':
       return 'bg-gray-100 text-gray-800';
     default:
       return 'bg-gray-100 text-gray-800';
