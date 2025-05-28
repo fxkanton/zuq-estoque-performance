@@ -71,7 +71,7 @@ export default function DateRangeFilter({
   };
 
   return (
-    <div className="flex flex-col sm:flex-row gap-2">
+    <div className="flex flex-col sm:flex-row gap-2 mb-6">
       <div className="flex items-center space-x-2">
         <Popover open={isStartCalendarOpen} onOpenChange={setIsStartCalendarOpen}>
           <PopoverTrigger asChild>
@@ -83,7 +83,7 @@ export default function DateRangeFilter({
               {format(startDate, "dd 'de' MMMM, yyyy", { locale: ptBR })}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="p-0" align="start">
+          <PopoverContent className="w-auto p-0" align="start">
             <Calendar
               mode="single"
               selected={startDate}
@@ -94,6 +94,7 @@ export default function DateRangeFilter({
                 }
               }}
               initialFocus
+              className="p-3 pointer-events-auto"
             />
           </PopoverContent>
         </Popover>
@@ -110,7 +111,7 @@ export default function DateRangeFilter({
               {format(endDate, "dd 'de' MMMM, yyyy", { locale: ptBR })}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="p-0" align="start">
+          <PopoverContent className="w-auto p-0" align="start">
             <Calendar
               mode="single"
               selected={endDate}
@@ -122,6 +123,7 @@ export default function DateRangeFilter({
               }}
               initialFocus
               fromDate={startDate}
+              className="p-3 pointer-events-auto"
             />
           </PopoverContent>
         </Popover>

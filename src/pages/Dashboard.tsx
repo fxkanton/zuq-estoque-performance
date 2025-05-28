@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -32,8 +33,8 @@ const Dashboard = () => {
   const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
   const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
   
-  const [startDate, setStartDate] = useState(firstDayOfMonth.toISOString().split('T')[0]);
-  const [endDate, setEndDate] = useState(lastDayOfMonth.toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState(firstDayOfMonth);
+  const [endDate, setEndDate] = useState(lastDayOfMonth);
   
   const [equipmentBalance, setEquipmentBalance] = useState(0);
   const [monthlyMovements, setMonthlyMovements] = useState({ entries: 0, exits: 0, entriesChange: 0, exitsChange: 0, entriesCount: 0, exitsCount: 0 });
@@ -47,14 +48,22 @@ const Dashboard = () => {
   });
   const [dailyMovements, setDailyMovements] = useState<any[]>([]);
 
+  const handleDateRangeChange = (newStartDate: Date, newEndDate: Date) => {
+    setStartDate(newStartDate);
+    setEndDate(newEndDate);
+  };
+
   const loadDashboardData = async () => {
     try {
+      const startDateStr = startDate.toISOString().split('T')[0];
+      const endDateStr = endDate.toISOString().split('T')[0];
+
       // Calcular saldo de equipamentos para o período selecionado
       const { data: movementsData, error: movementsError } = await supabase
         .from('inventory_movements')
         .select('movement_type, quantity')
-        .gte('movement_date', startDate)
-        .lte('movement_date', endDate);
+        .gte('movement_date', startDateStr)
+        .lte('movement_date', endDateStr);
         
       if (movementsError) {
         console.error("Error fetching movements data:", movementsError);
@@ -110,15 +119,15 @@ const Dashboard = () => {
         .from('inventory_movements')
         .select('movement_date, quantity')
         .eq('movement_type', 'Entrada')
-        .gte('movement_date', startDate)
-        .lte('movement_date', endDate);
+        .gte('movement_date', startDateStr)
+        .lte('movement_date', endDateStr);
         
       const { data: exitData, error: exitError } = await supabase
         .from('inventory_movements')
         .select('movement_date, quantity')
         .eq('movement_type', 'Saída')
-        .gte('movement_date', startDate)
-        .lte('movement_date', endDate);
+        .gte('movement_date', startDateStr)
+        .lte('movement_date', endDateStr);
         
       if (entryError || exitError) {
         console.error("Error fetching movement data:", entryError || exitError);
@@ -230,9 +239,7 @@ const Dashboard = () => {
       <DateRangeFilter 
         startDate={startDate}
         endDate={endDate}
-        onStartDateChange={setStartDate}
-        onEndDateChange={setEndDate}
-        onFilterApply={loadDashboardData}
+        onChange={handleDateRangeChange}
       />
       
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
