@@ -166,9 +166,9 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
             Nenhum equipamento encontrado para os filtros selecionados
           </div>
         ) : (
-          <div className="h-80">
+          <div className="h-96">
             <ResponsiveContainer width="100%" height="100%">
-              {/* Vertical bar chart (instead of horizontal) */}
+              {/* Vertical bar chart (instead of horizontal) with increased height */}
               <BarChart
                 data={chartData}
                 layout="vertical"

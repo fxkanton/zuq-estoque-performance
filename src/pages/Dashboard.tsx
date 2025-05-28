@@ -52,6 +52,63 @@ const Dashboard = () => {
     setEndDate(newEndDate);
   };
 
+  // Function to group daily movements based on date range
+  const groupMovementsByPeriod = (movements: any[], startDate: Date, endDate: Date) => {
+    const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays <= 31) {
+      // Show daily data for periods up to a month
+      return movements;
+    } else if (diffDays <= 90) {
+      // Group by weeks for periods up to 3 months
+      const weeklyData = new Map();
+      
+      movements.forEach(movement => {
+        const date = new Date(movement.date);
+        const weekStart = new Date(date);
+        weekStart.setDate(date.getDate() - date.getDay()); // Start of week (Sunday)
+        const weekKey = weekStart.toISOString().split('T')[0];
+        
+        if (!weeklyData.has(weekKey)) {
+          weeklyData.set(weekKey, {
+            date: `Semana ${weekStart.getDate()}/${weekStart.getMonth() + 1}`,
+            entries: 0,
+            exits: 0
+          });
+        }
+        
+        const week = weeklyData.get(weekKey);
+        week.entries += movement.entries;
+        week.exits += movement.exits;
+      });
+      
+      return Array.from(weeklyData.values());
+    } else {
+      // Group by months for longer periods
+      const monthlyData = new Map();
+      
+      movements.forEach(movement => {
+        const date = new Date(movement.date);
+        const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        
+        if (!monthlyData.has(monthKey)) {
+          monthlyData.set(monthKey, {
+            date: `${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`,
+            entries: 0,
+            exits: 0
+          });
+        }
+        
+        const month = monthlyData.get(monthKey);
+        month.entries += movement.entries;
+        month.exits += movement.exits;
+      });
+      
+      return Array.from(monthlyData.values());
+    }
+  };
+
   const loadDashboardData = async () => {
     try {
       const startDateStr = startDate.toISOString().split('T')[0];
@@ -162,9 +219,10 @@ const Dashboard = () => {
         }
       });
       
-      // Convert to array for the chart
-      const chartData = Array.from(daysMap.values());
-      setDailyMovements(chartData);
+      // Convert to array and group by period
+      const rawChartData = Array.from(daysMap.values());
+      const groupedChartData = groupMovementsByPeriod(rawChartData, startDate, endDate);
+      setDailyMovements(groupedChartData);
       
     } catch (error) {
       console.error("Error loading dashboard data:", error);
@@ -262,7 +320,7 @@ const Dashboard = () => {
         />
       </div>
 
-      {/* Novo componente de inventário de equipamentos */}
+      {/* Novo componente de inventário de equipamentos com altura aumentada */}
       <EquipmentInventory startDate={startDate.toISOString().split('T')[0]} endDate={endDate.toISOString().split('T')[0]} />
       
       <div className="grid grid-cols-1 mb-8">
@@ -270,7 +328,7 @@ const Dashboard = () => {
           <CardHeader>
             <CardTitle className="text-lg font-medium text-zuq-darkblue">Movimentações Diárias</CardTitle>
           </CardHeader>
-          <CardContent className="h-80">
+          <CardContent className="h-96">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={dailyMovements}
