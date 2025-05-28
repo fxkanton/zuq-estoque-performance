@@ -12,6 +12,8 @@ export interface Movement {
   updated_at?: string;
 }
 
+export type MovementType = "Entrada" | "Saída";
+
 export interface MovementWithEquipment extends Movement {
   equipment: {
     id: string;

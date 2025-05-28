@@ -33,6 +33,8 @@ export default function DateRangeFilter({
   const [isEndCalendarOpen, setIsEndCalendarOpen] = useState(false);
 
   const handlePresetChange = (value: string) => {
+    if (!onChange) return;
+    
     const now = new Date();
     
     switch (value) {
@@ -88,7 +90,7 @@ export default function DateRangeFilter({
               mode="single"
               selected={startDate}
               onSelect={(date) => {
-                if (date) {
+                if (date && onChange) {
                   onChange(date, endDate < date ? date : endDate);
                   setIsStartCalendarOpen(false);
                 }
@@ -116,7 +118,7 @@ export default function DateRangeFilter({
               mode="single"
               selected={endDate}
               onSelect={(date) => {
-                if (date) {
+                if (date && onChange) {
                   onChange(startDate > date ? date : startDate, date);
                   setIsEndCalendarOpen(false);
                 }

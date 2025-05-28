@@ -128,7 +128,7 @@ const MovementActions = ({ movement, equipment, allEquipment, onSuccess }: Movem
                 <SelectContent>
                   {allEquipment.map(item => (
                     <SelectItem key={item.id} value={item.id}>
-                      {item.name} {item.model}
+                      {item.brand} {item.model}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -209,7 +209,7 @@ const MovementActions = ({ movement, equipment, allEquipment, onSuccess }: Movem
           <div className="py-4">
             <div className="border-l-4 border-red-500 pl-4">
               <p className="font-medium">
-                {equipment?.name} {equipment?.model}
+                {equipment?.brand} {equipment?.model}
               </p>
               <p className="text-sm text-muted-foreground">
                 Tipo: {movement.movement_type} - Quantidade: {movement.quantity}

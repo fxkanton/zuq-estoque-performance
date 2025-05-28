@@ -1,8 +1,7 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 
-export type EquipmentCategory = string;
+export type EquipmentCategory = "Leitora" | "Sensor" | "Rastreador" | "Acessório";
 
 export interface Equipment {
   id: string;
@@ -54,7 +53,7 @@ export const getEquipmentById = async (id: string): Promise<Equipment | null> =>
 export const createEquipment = async (equipment: Omit<Equipment, 'id' | 'created_at' | 'updated_at'>): Promise<Equipment | null> => {
   const { data, error } = await supabase
     .from('equipment')
-    .insert([equipment])
+    .insert(equipment)
     .select()
     .single();
 
