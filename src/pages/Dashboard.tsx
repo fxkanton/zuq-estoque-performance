@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -354,7 +353,7 @@ const Dashboard = () => {
                     <PendingOrderItem 
                       key={order.id}
                       supplier={order.supplier.name}
-                      product={order.equipment.name}
+                      product={order.equipment.brand}
                       quantity={order.quantity}
                       received={order.status === 'Parcialmente Recebido' ? Math.floor(order.quantity * 0.5) : 0}
                       date={order.expected_arrival_date ? new Date(order.expected_arrival_date).toLocaleDateString('pt-BR') : 'N/A'}
@@ -383,7 +382,7 @@ const Dashboard = () => {
                   {lowStockItems.map((item) => (
                     <AlertItem 
                       key={item.id}
-                      name={`${item.name} ${item.model}`} 
+                      name={`${item.brand} ${item.model}`} 
                       currentStock={item.stock} 
                       minLevel={item.min_stock || 0} 
                     />

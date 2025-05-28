@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -177,7 +176,7 @@ const Leitoras = () => {
     if (searchTerm) {
       filtered = filtered.filter(item => 
         item.code.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        item.equipment.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.equipment.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.equipment.model.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
@@ -277,7 +276,7 @@ const Leitoras = () => {
                         {reader.code}
                       </div>
                     </TableCell>
-                    <TableCell>{reader.equipment.name} {reader.equipment.model}</TableCell>
+                    <TableCell>{reader.equipment.brand} {reader.equipment.model}</TableCell>
                     <TableCell>
                       <span className={`px-2 py-1 rounded-full text-xs ${getStatusBadgeStyle(reader.status)}`}>
                         {reader.status}
@@ -350,7 +349,7 @@ const Leitoras = () => {
                 <SelectContent>
                   {equipment.map(item => (
                     <SelectItem key={item.id} value={item.id}>
-                      {item.name} {item.model}
+                      {item.brand} {item.model}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -440,7 +439,7 @@ const Leitoras = () => {
                 <SelectContent>
                   {equipment.map(item => (
                     <SelectItem key={item.id} value={item.id}>
-                      {item.name} {item.model}
+                      {item.brand} {item.model}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -512,7 +511,7 @@ const Leitoras = () => {
               <div className="border-l-4 border-red-500 pl-4">
                 <p className="font-medium">Código: {currentReader.code}</p>
                 <p className="text-sm text-muted-foreground">
-                  {currentReader.equipment.name} {currentReader.equipment.model}
+                  {currentReader.equipment.brand} {currentReader.equipment.model}
                 </p>
               </div>
             )}

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -283,7 +282,7 @@ const Pedidos = () => {
     
     if (searchTerm) {
       filtered = filtered.filter(item => 
-        item.equipment.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        item.equipment.brand.toLowerCase().includes(searchTerm.toLowerCase()) || 
         item.equipment.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.supplier.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (item.invoice_number && item.invoice_number.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -407,7 +406,7 @@ const Pedidos = () => {
                           <div className="bg-zuq-gray/30 p-2 rounded-md">
                             <ClipboardCheck className="h-4 w-4 text-zuq-blue" />
                           </div>
-                          {order.equipment.name} {order.equipment.model}
+                          {order.equipment.brand} {order.equipment.model}
                         </div>
                       </TableCell>
                       <TableCell>{order.supplier.name}</TableCell>
@@ -552,7 +551,7 @@ const Pedidos = () => {
                 <SelectContent>
                   {equipment.map(item => (
                     <SelectItem key={item.id} value={item.id}>
-                      {item.name} {item.model}
+                      {item.brand} {item.model}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -649,7 +648,7 @@ const Pedidos = () => {
                 <SelectContent>
                   {equipment.map(item => (
                     <SelectItem key={item.id} value={item.id}>
-                      {item.name} {item.model}
+                      {item.brand} {item.model}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -753,7 +752,7 @@ const Pedidos = () => {
           <div className="py-4">
             {currentOrder && (
               <div className="border-l-4 border-red-500 pl-4">
-                <p className="font-medium">{currentOrder.equipment.name} {currentOrder.equipment.model}</p>
+                <p className="font-medium">{currentOrder.equipment.brand} {currentOrder.equipment.model}</p>
                 <p className="text-sm text-muted-foreground">
                   Fornecedor: {currentOrder.supplier.name} - Quantidade: {currentOrder.quantity}
                 </p>
@@ -766,27 +765,28 @@ const Pedidos = () => {
           </div>
         </DialogContent>
       </Dialog>
-      
+
       {/* Receive Batch Dialog */}
       {currentOrder && (
         <OrderBatchForm
-          orderId={currentOrder.id}
-          maxQuantity={currentOrder.quantity - (orderReceivedAmounts[currentOrder.id] || 0)}
           isOpen={isReceiveBatchDialogOpen}
           onClose={() => setIsReceiveBatchDialogOpen(false)}
-          onSuccess={() => loadData()}
+          order={currentOrder}
+          onSave={() => {
+            setIsReceiveBatchDialogOpen(false);
+            loadData();
+          }}
         />
       )}
-      
+
       {/* Batch Details Dialog */}
       {currentOrder && (
         <OrderBatchDetails
-          orderBatches={orderBatches}
-          orderQuantity={currentOrder.quantity}
-          orderDate={currentOrder.created_at}
-          expectedDate={currentOrder.expected_arrival_date}
           isOpen={isBatchDetailsDialogOpen}
           onClose={() => setIsBatchDetailsDialogOpen(false)}
+          order={currentOrder}
+          batches={orderBatches}
+          onRefresh={() => loadOrderBatches(currentOrder.id)}
         />
       )}
     </MainLayout>
@@ -796,7 +796,7 @@ const Pedidos = () => {
 const getStatusBadgeStyle = (status: string) => {
   switch (status) {
     case 'Pendente':
-      return 'bg-amber-100 text-amber-800';
+      return 'bg-yellow-100 text-yellow-800';
     case 'Parcialmente Recebido':
       return 'bg-blue-100 text-blue-800';
     case 'Recebido':

@@ -30,8 +30,8 @@ const Movimentacoes = () => {
   const [equipmentList, setEquipmentList] = useState<Equipment[]>([]);
   const [selectedEquipmentId, setSelectedEquipmentId] = useState('');
   const [movementType, setMovementType] = useState<'Entrada' | 'Saída'>('Entrada');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const [startDate, setStartDate] = useState(new Date());
+  const [endDate, setEndDate] = useState(new Date());
 
   // Form state
   const [currentMovement, setCurrentMovement] = useState<Movement | null>(null);
@@ -82,6 +82,11 @@ const Movimentacoes = () => {
       supabase.removeChannel(channel);
     };
   }, []);
+
+  const handleDateRangeChange = (newStartDate: Date, newEndDate: Date) => {
+    setStartDate(newStartDate);
+    setEndDate(newEndDate);
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
@@ -179,7 +184,7 @@ const Movimentacoes = () => {
       filtered = filtered.filter(movement => {
         const equipment = equipmentList.find(eq => eq.id === movement.equipment_id);
         if (equipment) {
-          return equipment.name.toLowerCase().includes(searchTerm.toLowerCase());
+          return equipment.brand.toLowerCase().includes(searchTerm.toLowerCase());
         }
         return false;
       });
@@ -190,10 +195,13 @@ const Movimentacoes = () => {
     }
 
     if (startDate && endDate) {
+      const startDateStr = startDate.toISOString().split('T')[0];
+      const endDateStr = endDate.toISOString().split('T')[0];
+      
       filtered = filtered.filter(movement => {
         const movementDate = new Date(movement.movement_date);
-        const start = new Date(startDate);
-        const end = new Date(endDate);
+        const start = new Date(startDateStr);
+        const end = new Date(endDateStr);
         
         start.setHours(0, 0, 0, 0);
         end.setHours(23, 59, 59, 999);
@@ -263,7 +271,7 @@ const Movimentacoes = () => {
                 </SelectTrigger>
                 <SelectContent>
                   {equipmentList.map((equipment) => (
-                    <SelectItem key={equipment.id} value={equipment.id}>{equipment.name}</SelectItem>
+                    <SelectItem key={equipment.id} value={equipment.id}>{equipment.brand}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -276,8 +284,8 @@ const Movimentacoes = () => {
                 onClick={() => {
                   setSearchTerm('');
                   setSelectedEquipmentId('');
-                  setStartDate('');
-                  setEndDate('');
+                  setStartDate(new Date());
+                  setEndDate(new Date());
                   loadMovements();
                 }}
               >
@@ -297,9 +305,7 @@ const Movimentacoes = () => {
       <DateRangeFilter 
         startDate={startDate}
         endDate={endDate}
-        onStartDateChange={setStartDate}
-        onEndDateChange={setEndDate}
-        onFilterApply={loadMovements}
+        onChange={handleDateRangeChange}
       />
 
       <Card>
@@ -327,7 +333,7 @@ const Movimentacoes = () => {
                   return (
                     <TableRow key={item.id}>
                       <TableCell>
-                        {equipment ? equipment.name : 'N/A'}
+                        {equipment ? equipment.brand : 'N/A'}
                       </TableCell>
                       <TableCell>{item.movement_type}</TableCell>
                       <TableCell>{item.quantity}</TableCell>
@@ -363,7 +369,7 @@ const Movimentacoes = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {equipmentList.map((equipment) => (
-                      <SelectItem key={equipment.id} value={equipment.id}>{equipment.name}</SelectItem>
+                      <SelectItem key={equipment.id} value={equipment.id}>{equipment.brand}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -443,7 +449,7 @@ const Movimentacoes = () => {
                     </SelectTrigger>
                     <SelectContent>
                       {equipmentList.map((equipment) => (
-                        <SelectItem key={equipment.id} value={equipment.id}>{equipment.name}</SelectItem>
+                        <SelectItem key={equipment.id} value={equipment.id}>{equipment.brand}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -516,7 +522,7 @@ const Movimentacoes = () => {
           <div className="py-4">
             {currentMovement && (
               <div className="border-l-4 border-red-500 pl-4">
-                {equipmentList.find(eq => eq.id === currentMovement?.equipment_id)?.name}
+                {equipmentList.find(eq => eq.id === currentMovement?.equipment_id)?.brand}
                 <p className="text-sm text-muted-foreground">Quantidade: {currentMovement.quantity}</p>
               </div>
             )}
