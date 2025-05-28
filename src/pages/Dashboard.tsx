@@ -263,7 +263,7 @@ const Dashboard = () => {
       </div>
 
       {/* Novo componente de inventário de equipamentos */}
-      <EquipmentInventory startDate={startDate} endDate={endDate} />
+      <EquipmentInventory startDate={startDate.toISOString().split('T')[0]} endDate={endDate.toISOString().split('T')[0]} />
       
       <div className="grid grid-cols-1 mb-8">
         <Card>

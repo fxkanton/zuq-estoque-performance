@@ -12,19 +12,18 @@ import {
   DialogDescription,
   DialogFooter 
 } from '@/components/ui/dialog';
-import { OrderBatch, createOrderBatch } from '@/services/orderService';
+import { OrderBatch, createOrderBatch, OrderWithDetails } from '@/services/orderService';
 
 interface OrderBatchFormProps {
-  orderId: string;
-  maxQuantity: number;
+  order: OrderWithDetails;
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void;
+  onSave: () => void;
 }
 
-const OrderBatchForm = ({ orderId, maxQuantity, isOpen, onClose, onSuccess }: OrderBatchFormProps) => {
+const OrderBatchForm = ({ order, isOpen, onClose, onSave }: OrderBatchFormProps) => {
   const [formData, setFormData] = useState<Omit<OrderBatch, 'id' | 'created_at' | 'updated_at'>>({
-    order_id: orderId,
+    order_id: order.id,
     received_quantity: 0,
     received_date: new Date().toISOString().split('T')[0],
     invoice_number: '',
@@ -39,7 +38,7 @@ const OrderBatchForm = ({ orderId, maxQuantity, isOpen, onClose, onSuccess }: Or
       // Ensure quantity doesn't exceed max
       setFormData(prev => ({
         ...prev,
-        [id]: isNaN(quantity) ? 0 : Math.min(quantity, maxQuantity)
+        [id]: isNaN(quantity) ? 0 : Math.min(quantity, order.quantity)
       }));
     } else {
       setFormData(prev => ({
@@ -57,7 +56,7 @@ const OrderBatchForm = ({ orderId, maxQuantity, isOpen, onClose, onSuccess }: Or
     const result = await createOrderBatch(formData);
     
     if (result) {
-      onSuccess();
+      onSave();
       onClose();
     }
   };
@@ -80,12 +79,12 @@ const OrderBatchForm = ({ orderId, maxQuantity, isOpen, onClose, onSuccess }: Or
                 id="received_quantity"
                 type="number"
                 min="1"
-                max={maxQuantity}
+                max={order.quantity}
                 value={formData.received_quantity}
                 onChange={handleInputChange}
               />
               <p className="text-xs text-muted-foreground">
-                Máximo: {maxQuantity}
+                Máximo: {order.quantity}
               </p>
             </div>
             

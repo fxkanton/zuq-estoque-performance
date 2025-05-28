@@ -9,21 +9,20 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { OrderBatch } from '@/services/orderService';
+import { OrderBatch, OrderWithDetails } from '@/services/orderService';
 import { Progress } from '@/components/ui/progress';
 
 interface OrderBatchDetailsProps {
-  orderBatches: OrderBatch[];
+  order: OrderWithDetails;
+  batches: OrderBatch[];
   isOpen: boolean;
   onClose: () => void;
-  orderQuantity: number;
-  orderDate?: string;
-  expectedDate?: string;
+  onRefresh: () => Promise<void>;
 }
 
-const OrderBatchDetails = ({ orderBatches, orderQuantity, orderDate, expectedDate, isOpen, onClose }: OrderBatchDetailsProps) => {
-  const totalReceived = orderBatches.reduce((total, batch) => total + batch.received_quantity, 0);
-  const progress = (totalReceived / orderQuantity) * 100;
+const OrderBatchDetails = ({ order, batches, isOpen, onClose, onRefresh }: OrderBatchDetailsProps) => {
+  const totalReceived = batches.reduce((total, batch) => total + batch.received_quantity, 0);
+  const progress = (totalReceived / order.quantity) * 100;
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -40,15 +39,15 @@ const OrderBatchDetails = ({ orderBatches, orderQuantity, orderDate, expectedDat
           <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
             <div>
               <span className="text-muted-foreground">Data do Pedido:</span>{" "}
-              {orderDate ? new Date(orderDate).toLocaleDateString('pt-BR') : 'N/A'}
+              {order.created_at ? new Date(order.created_at).toLocaleDateString('pt-BR') : 'N/A'}
             </div>
             <div>
               <span className="text-muted-foreground">Previsão de Chegada:</span>{" "}
-              {expectedDate ? new Date(expectedDate).toLocaleDateString('pt-BR') : 'N/A'}
+              {order.expected_arrival_date ? new Date(order.expected_arrival_date).toLocaleDateString('pt-BR') : 'N/A'}
             </div>
             <div>
               <span className="text-muted-foreground">Quantidade Total:</span>{" "}
-              {orderQuantity}
+              {order.quantity}
             </div>
             <div>
               <span className="text-muted-foreground">Recebido:</span>{" "}
@@ -61,7 +60,7 @@ const OrderBatchDetails = ({ orderBatches, orderQuantity, orderDate, expectedDat
         </div>
         
         <div className="py-4">
-          {orderBatches.length === 0 ? (
+          {batches.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               Nenhum recebimento registrado para este pedido.
             </div>
@@ -76,7 +75,7 @@ const OrderBatchDetails = ({ orderBatches, orderQuantity, orderDate, expectedDat
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {orderBatches.map((batch) => (
+                {batches.map((batch) => (
                   <TableRow key={batch.id}>
                     <TableCell>
                       {batch.received_date 
