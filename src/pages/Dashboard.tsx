@@ -52,14 +52,30 @@ const Dashboard = () => {
     setEndDate(newEndDate);
   };
 
+  // Function to format date for chart display
+  const formatDateForChart = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return `${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}`;
+  };
+
+  // Function to format date for tooltip
+  const formatDateForTooltip = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('pt-BR');
+  };
+
   // Function to group daily movements based on date range
   const groupMovementsByPeriod = (movements: any[], startDate: Date, endDate: Date) => {
     const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
     
     if (diffDays <= 31) {
-      // Show daily data for periods up to a month
-      return movements;
+      // Show daily data for periods up to a month with formatted dates
+      return movements.map(movement => ({
+        ...movement,
+        date: formatDateForChart(movement.date),
+        originalDate: movement.date
+      }));
     } else if (diffDays <= 90) {
       // Group by weeks for periods up to 3 months
       const weeklyData = new Map();
@@ -73,6 +89,7 @@ const Dashboard = () => {
         if (!weeklyData.has(weekKey)) {
           weeklyData.set(weekKey, {
             date: `Semana ${weekStart.getDate()}/${weekStart.getMonth() + 1}`,
+            originalDate: weekKey,
             entries: 0,
             exits: 0
           });
@@ -95,6 +112,7 @@ const Dashboard = () => {
         if (!monthlyData.has(monthKey)) {
           monthlyData.set(monthKey, {
             date: `${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`,
+            originalDate: monthKey,
             entries: 0,
             exits: 0
           });
@@ -340,9 +358,21 @@ const Dashboard = () => {
                 }}
               >
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
+                <XAxis 
+                  dataKey="date" 
+                  tick={{ fontSize: 12 }}
+                  interval={0}
+                  angle={0}
+                />
                 <YAxis />
-                <Tooltip />
+                <Tooltip 
+                  labelFormatter={(label, payload) => {
+                    if (payload && payload.length > 0 && payload[0]?.payload?.originalDate) {
+                      return formatDateForTooltip(payload[0].payload.originalDate);
+                    }
+                    return label;
+                  }}
+                />
                 <Legend />
                 <Bar dataKey="entries" name="Entradas" fill="#4ade80" />
                 <Bar dataKey="exits" name="Saídas" fill="#f59e0b" />

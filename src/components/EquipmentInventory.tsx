@@ -64,12 +64,12 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
     }
     
     // Apply brand filter - only if not empty string and not "all"
-    if (filters.brand && filters.brand !== "all") {
+    if (filters.brand && filters.brand !== "all" && filters.brand !== "todas") {
       filtered = filtered.filter(item => item.brand === filters.brand);
     }
     
     // Apply category filter - only if not empty string and not "all"
-    if (filters.category && filters.category !== "all") {
+    if (filters.category && filters.category !== "all" && filters.category !== "todas") {
       filtered = filtered.filter(item => item.category === filters.category);
     }
     
@@ -134,7 +134,7 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
                 <SelectValue placeholder="Todas as marcas" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas as marcas</SelectItem>
+                <SelectItem value="todas">Todas as marcas</SelectItem>
                 {uniqueBrands.map(brand => (
                   <SelectItem key={brand} value={brand}>{brand}</SelectItem>
                 ))}
@@ -152,7 +152,7 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
                 <SelectValue placeholder="Todas as categorias" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas as categorias</SelectItem>
+                <SelectItem value="todas">Todas as categorias</SelectItem>
                 {uniqueCategories.map(category => (
                   <SelectItem key={category || "unknown"} value={category || "unknown"}>{category || "Não especificado"}</SelectItem>
                 ))}
@@ -166,9 +166,9 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
             Nenhum equipamento encontrado para os filtros selecionados
           </div>
         ) : (
-          <div className="h-96">
+          <div className="h-[576px]">
             <ResponsiveContainer width="100%" height="100%">
-              {/* Vertical bar chart (instead of horizontal) with increased height */}
+              {/* Vertical bar chart with 50% increased height */}
               <BarChart
                 data={chartData}
                 layout="vertical"

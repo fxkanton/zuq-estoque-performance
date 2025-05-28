@@ -1,84 +1,126 @@
 
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Search, Filter } from "lucide-react";
+import React from 'react';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Search, Filter, X } from 'lucide-react';
 
 interface TaskFiltersProps {
-  filters: {
-    search: string;
-    category: string;
-    assignee: string;
-    priority: string;
-  };
-  onFiltersChange: (filters: any) => void;
+  searchTerm: string;
+  onSearchChange: (value: string) => void;
+  selectedCategory: string;
+  onCategoryChange: (value: string) => void;
+  selectedPriority: string;
+  onPriorityChange: (value: string) => void;
+  selectedAssignee: string;
+  onAssigneeChange: (value: string) => void;
+  onClearFilters: () => void;
 }
 
-export const TaskFilters = ({ filters, onFiltersChange }: TaskFiltersProps) => {
-  const updateFilter = (key: string, value: string) => {
-    onFiltersChange({ ...filters, [key]: value });
-  };
+const TaskFilters = ({
+  searchTerm,
+  onSearchChange,
+  selectedCategory,
+  onCategoryChange,
+  selectedPriority,
+  onPriorityChange,
+  selectedAssignee,
+  onAssigneeChange,
+  onClearFilters
+}: TaskFiltersProps) => {
+  const categories = ['Desenvolvimento', 'Design', 'Marketing', 'Vendas', 'Suporte'];
+  const priorities = ['Baixa', 'Média', 'Alta', 'Urgente'];
+  const assignees = ['João Silva', 'Maria Santos', 'Pedro Costa', 'Ana Oliveira'];
 
   return (
-    <div className="modern-card">
-      <div className="flex items-center gap-2 mb-4">
-        <Filter className="h-5 w-5 text-gray-500" />
-        <h3 className="font-semibold text-gray-900">Filtros</h3>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Search */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-          <Input
-            placeholder="Buscar tarefas..."
-            value={filters.search}
-            onChange={(e) => updateFilter('search', e.target.value)}
-            className="pl-10 border-gray-200 focus:border-zuq-turquoise focus:ring-zuq-turquoise/20"
-          />
+    <div className="bg-white p-4 rounded-lg shadow-sm border mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+        <div>
+          <Label htmlFor="search" className="text-sm font-medium mb-2 block">
+            Pesquisar
+          </Label>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+            <Input
+              id="search"
+              placeholder="Buscar tarefas..."
+              value={searchTerm}
+              onChange={(e) => onSearchChange(e.target.value)}
+              className="pl-10"
+            />
+          </div>
         </div>
 
-        {/* Category */}
-        <Select value={filters.category} onValueChange={(value) => updateFilter('category', value)}>
-          <SelectTrigger className="border-gray-200 focus:border-zuq-turquoise focus:ring-zuq-turquoise/20">
-            <SelectValue placeholder="Categoria" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value=" ">Todas as categorias</SelectItem>
-            <SelectItem value="Qualidade">Qualidade</SelectItem>
-            <SelectItem value="Administração">Administração</SelectItem>
-            <SelectItem value="Manutenção">Manutenção</SelectItem>
-            <SelectItem value="Logística">Logística</SelectItem>
-            <SelectItem value="Desenvolvimento">Desenvolvimento</SelectItem>
-          </SelectContent>
-        </Select>
+        <div>
+          <Label className="text-sm font-medium mb-2 block">Categoria</Label>
+          <Select value={selectedCategory} onValueChange={onCategoryChange}>
+            <SelectTrigger>
+              <SelectValue placeholder="Todas as categorias" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todas">Todas as categorias</SelectItem>
+              {categories.map((category) => (
+                <SelectItem key={category} value={category}>
+                  {category}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-        {/* Priority */}
-        <Select value={filters.priority} onValueChange={(value) => updateFilter('priority', value)}>
-          <SelectTrigger className="border-gray-200 focus:border-zuq-turquoise focus:ring-zuq-turquoise/20">
-            <SelectValue placeholder="Prioridade" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value=" ">Todas as prioridades</SelectItem>
-            <SelectItem value="alta">Alta</SelectItem>
-            <SelectItem value="media">Média</SelectItem>
-            <SelectItem value="baixa">Baixa</SelectItem>
-          </SelectContent>
-        </Select>
+        <div>
+          <Label className="text-sm font-medium mb-2 block">Prioridade</Label>
+          <Select value={selectedPriority} onValueChange={onPriorityChange}>
+            <SelectTrigger>
+              <SelectValue placeholder="Todas as prioridades" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todas">Todas as prioridades</SelectItem>
+              {priorities.map((priority) => (
+                <SelectItem key={priority} value={priority}>
+                  {priority}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
-        {/* Assignee */}
-        <Select value={filters.assignee} onValueChange={(value) => updateFilter('assignee', value)}>
-          <SelectTrigger className="border-gray-200 focus:border-zuq-turquoise focus:ring-zuq-turquoise/20">
-            <SelectValue placeholder="Responsável" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value=" ">Todos os responsáveis</SelectItem>
-            <SelectItem value="João Silva">João Silva</SelectItem>
-            <SelectItem value="Maria Santos">Maria Santos</SelectItem>
-            <SelectItem value="Carlos Oliveira">Carlos Oliveira</SelectItem>
-            <SelectItem value="Ana Costa">Ana Costa</SelectItem>
-          </SelectContent>
-        </Select>
+        <div>
+          <Label className="text-sm font-medium mb-2 block">Responsável</Label>
+          <Select value={selectedAssignee} onValueChange={onAssigneeChange}>
+            <SelectTrigger>
+              <SelectValue placeholder="Todos os responsáveis" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos os responsáveis</SelectItem>
+              {assignees.map((assignee) => (
+                <SelectItem key={assignee} value={assignee}>
+                  {assignee}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-2 text-sm text-gray-600">
+          <Filter className="h-4 w-4" />
+          <span>Filtros ativos</span>
+        </div>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={onClearFilters}
+          className="flex items-center gap-2"
+        >
+          <X className="h-4 w-4" />
+          Limpar filtros
+        </Button>
       </div>
     </div>
   );
 };
+
+export default TaskFilters;
