@@ -1,7 +1,11 @@
 
 import { UserMenu } from "./UserMenu";
 
-const Navbar = () => {
+interface NavbarProps {
+  title?: string;
+}
+
+const Navbar = ({ title }: NavbarProps) => {
   return (
     <nav className="bg-white border-b border-gray-200 px-6 py-4">
       <div className="flex items-center justify-between">
@@ -11,7 +15,9 @@ const Navbar = () => {
             alt="ZUQ Performance" 
             className="w-8 h-8"
           />
-          <h1 className="text-xl font-semibold text-zuq-darkblue">ZUQ Performance</h1>
+          <h1 className="text-xl font-semibold text-zuq-darkblue">
+            {title || "ZUQ Performance"}
+          </h1>
         </div>
         
         <div className="flex items-center space-x-4">
