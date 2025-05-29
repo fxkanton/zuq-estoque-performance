@@ -5,10 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Calendar, List, LayoutGrid } from 'lucide-react';
-import KanbanView from '@/components/tasks/KanbanView';
-import ListView from '@/components/tasks/ListView';
-import CalendarView from '@/components/tasks/CalendarView';
-import TaskModal from '@/components/tasks/TaskModal';
+import { KanbanView } from '@/components/tasks/KanbanView';
+import { ListView } from '@/components/tasks/ListView';
+import { CalendarView } from '@/components/tasks/CalendarView';
+import { TaskModal } from '@/components/tasks/TaskModal';
 import TaskFilters from '@/components/tasks/TaskFilters';
 
 export interface Task {
@@ -33,9 +33,9 @@ const FluxoTarefas = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [selectedPriority, setSelectedPriority] = useState('');
-  const [selectedAssignee, setSelectedAssignee] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('todas');
+  const [selectedPriority, setSelectedPriority] = useState('todas');
+  const [selectedAssignee, setSelectedAssignee] = useState('todos');
 
   // Mock data for tasks
   const [tasks, setTasks] = useState<Task[]>([
@@ -62,7 +62,7 @@ const FluxoTarefas = () => {
       id: '2',
       title: 'Design da página inicial',
       description: 'Criar mockups e protótipos da página principal',
-      category: 'Design',
+      category: 'Qualidade',
       priority: 'Média',
       assignee: 'Maria Santos',
       dueDate: new Date(2025, 4, 30),
@@ -81,17 +81,9 @@ const FluxoTarefas = () => {
       const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            task.description.toLowerCase().includes(searchTerm.toLowerCase());
       
-      const matchesCategory = !selectedCategory || 
-                             selectedCategory === 'todas' || 
-                             task.category === selectedCategory;
-      
-      const matchesPriority = !selectedPriority || 
-                             selectedPriority === 'todas' || 
-                             task.priority === selectedPriority;
-      
-      const matchesAssignee = !selectedAssignee || 
-                             selectedAssignee === 'todos' || 
-                             task.assignee === selectedAssignee;
+      const matchesCategory = selectedCategory === 'todas' || task.category === selectedCategory;
+      const matchesPriority = selectedPriority === 'todas' || task.priority === selectedPriority;
+      const matchesAssignee = selectedAssignee === 'todos' || task.assignee === selectedAssignee;
 
       return matchesSearch && matchesCategory && matchesPriority && matchesAssignee;
     });
@@ -128,8 +120,8 @@ const FluxoTarefas = () => {
         status: taskData.status || 'Sem prazo',
         attachments: 0,
         comments: 0,
-        checklist: taskData.checklist || [],
-        links: taskData.links || [],
+        checklist: [],
+        links: [],
         createdAt: new Date(),
         completedAt: null
       };
@@ -156,9 +148,9 @@ const FluxoTarefas = () => {
 
   const clearFilters = () => {
     setSearchTerm('');
-    setSelectedCategory('');
-    setSelectedPriority('');
-    setSelectedAssignee('');
+    setSelectedCategory('todas');
+    setSelectedPriority('todas');
+    setSelectedAssignee('todos');
   };
 
   return (
@@ -208,8 +200,7 @@ const FluxoTarefas = () => {
               <TabsContent value="kanban" className="space-y-4">
                 <KanbanView 
                   tasks={filteredTasks}
-                  onEditTask={handleEditTask}
-                  onDeleteTask={handleDeleteTask}
+                  onTaskEdit={handleEditTask}
                   onMoveTask={handleMoveTask}
                 />
               </TabsContent>
@@ -217,15 +208,14 @@ const FluxoTarefas = () => {
               <TabsContent value="list" className="space-y-4">
                 <ListView 
                   tasks={filteredTasks}
-                  onEditTask={handleEditTask}
-                  onDeleteTask={handleDeleteTask}
+                  onTaskEdit={handleEditTask}
                 />
               </TabsContent>
 
               <TabsContent value="calendar" className="space-y-4">
                 <CalendarView 
                   tasks={filteredTasks}
-                  onEditTask={handleEditTask}
+                  onTaskEdit={handleEditTask}
                 />
               </TabsContent>
             </Tabs>

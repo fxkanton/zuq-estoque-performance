@@ -11,9 +11,9 @@ interface TaskCardProps {
 export const TaskCard = ({ task, onEdit }: TaskCardProps) => {
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'alta': return 'badge-red';
-      case 'media': return 'badge-orange';
-      case 'baixa': return 'badge-green';
+      case 'Alta': return 'badge-red';
+      case 'Média': return 'badge-orange';
+      case 'Baixa': return 'badge-green';
       default: return 'badge-blue';
     }
   };
@@ -29,6 +29,12 @@ export const TaskCard = ({ task, onEdit }: TaskCardProps) => {
       day: '2-digit',
       month: '2-digit'
     }).format(date);
+  };
+
+  const getChecklistStats = (checklist: { id: string; text: string; completed: boolean }[]) => {
+    const completed = checklist.filter(item => item.completed).length;
+    const total = checklist.length;
+    return { completed, total };
   };
 
   return (
@@ -70,20 +76,20 @@ export const TaskCard = ({ task, onEdit }: TaskCardProps) => {
 
       {/* Footer */}
       <div className="flex items-center justify-between">
-        {/* Assignees */}
+        {/* Assignee */}
         <div className="flex items-center gap-1">
           <Users className="h-3 w-3 text-gray-400" />
           <span className="text-xs text-gray-500">
-            {task.assignees.length > 0 ? task.assignees.length : 0}
+            {task.assignee ? '1' : '0'}
           </span>
         </div>
 
         {/* Stats */}
         <div className="flex items-center gap-2">
-          {task.checklist && (
+          {task.checklist && task.checklist.length > 0 && (
             <div className="flex items-center gap-1 text-xs text-gray-500">
               <CheckSquare className="h-3 w-3" />
-              <span>{task.checklist.completed}/{task.checklist.total}</span>
+              <span>{getChecklistStats(task.checklist).completed}/{getChecklistStats(task.checklist).total}</span>
             </div>
           )}
           

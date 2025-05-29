@@ -13,34 +13,22 @@ interface ListViewProps {
 export const ListView = ({ tasks, onTaskEdit }: ListViewProps) => {
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'alta': return 'badge-red';
-      case 'media': return 'badge-orange';
-      case 'baixa': return 'badge-green';
+      case 'Alta': return 'badge-red';
+      case 'Média': return 'badge-orange';
+      case 'Baixa': return 'badge-green';
       default: return 'badge-blue';
     }
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'vencidos': return 'badge-red';
-      case 'vence-hoje': return 'badge-green';
-      case 'esta-semana': return 'badge-blue';
-      case 'proxima-semana': return 'badge-purple';
-      case 'sem-prazo': return 'badge-gray';
-      case 'concluidos': return 'bg-gray-100 text-gray-600';
+      case 'Vencidos': return 'badge-red';
+      case 'Vence hoje': return 'badge-green';
+      case 'Esta semana': return 'badge-blue';
+      case 'Próxima semana': return 'badge-purple';
+      case 'Sem prazo': return 'badge-gray';
+      case 'Concluídos': return 'bg-gray-100 text-gray-600';
       default: return 'badge-blue';
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'vencidos': return 'Vencidos';
-      case 'vence-hoje': return 'Vence hoje';
-      case 'esta-semana': return 'Esta semana';
-      case 'proxima-semana': return 'Próxima semana';
-      case 'sem-prazo': return 'Sem prazo';
-      case 'concluidos': return 'Concluídos';
-      default: return status;
     }
   };
 
@@ -91,15 +79,8 @@ export const ListView = ({ tasks, onTaskEdit }: ListViewProps) => {
                 <div className="flex items-center gap-2">
                   <Users className="h-4 w-4 text-gray-400" />
                   <div className="text-sm">
-                    {task.assignees.length > 0 ? (
-                      <div>
-                        <div className="font-medium">{task.assignees[0]}</div>
-                        {task.assignees.length > 1 && (
-                          <div className="text-xs text-gray-500">
-                            +{task.assignees.length - 1} outros
-                          </div>
-                        )}
-                      </div>
+                    {task.assignee ? (
+                      <div className="font-medium">{task.assignee}</div>
                     ) : (
                       <span className="text-gray-400">Não atribuído</span>
                     )}
@@ -123,7 +104,7 @@ export const ListView = ({ tasks, onTaskEdit }: ListViewProps) => {
               </TableCell>
               <TableCell>
                 <Badge className={getStatusColor(task.status)}>
-                  {getStatusLabel(task.status)}
+                  {task.status}
                 </Badge>
               </TableCell>
               <TableCell className="text-center">

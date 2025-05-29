@@ -7,47 +7,47 @@ import { Clock, AlertTriangle, Calendar, CalendarDays, Inbox, CheckCircle } from
 interface KanbanViewProps {
   tasks: Task[];
   onTaskEdit: (task: Task) => void;
-  onTaskUpdate: (tasks: Task[]) => void;
+  onMoveTask: (taskId: string, newStatus: Task['status']) => void;
 }
 
 const columns = [
   { 
-    id: 'vencidos', 
+    id: 'Vencidos', 
     title: 'Vencidos', 
     color: 'border-red-200 bg-red-50', 
     icon: AlertTriangle,
     iconColor: 'text-red-500'
   },
   { 
-    id: 'vence-hoje', 
+    id: 'Vence hoje', 
     title: 'Vence hoje', 
     color: 'border-green-200 bg-green-50', 
     icon: Clock,
     iconColor: 'text-green-500'
   },
   { 
-    id: 'esta-semana', 
+    id: 'Esta semana', 
     title: 'Esta semana', 
     color: 'border-blue-200 bg-blue-50', 
     icon: Calendar,
     iconColor: 'text-blue-500'
   },
   { 
-    id: 'proxima-semana', 
+    id: 'Próxima semana', 
     title: 'Próxima semana', 
     color: 'border-purple-200 bg-purple-50', 
     icon: CalendarDays,
     iconColor: 'text-purple-500'
   },
   { 
-    id: 'sem-prazo', 
+    id: 'Sem prazo', 
     title: 'Sem prazo', 
     color: 'border-gray-200 bg-gray-50', 
     icon: Inbox,
     iconColor: 'text-gray-500'
   },
   { 
-    id: 'concluidos', 
+    id: 'Concluídos', 
     title: 'Concluídos', 
     color: 'border-gray-300 bg-gray-100', 
     icon: CheckCircle,
@@ -55,7 +55,7 @@ const columns = [
   }
 ];
 
-export const KanbanView = ({ tasks, onTaskEdit, onTaskUpdate }: KanbanViewProps) => {
+export const KanbanView = ({ tasks, onTaskEdit, onMoveTask }: KanbanViewProps) => {
   const [draggedTask, setDraggedTask] = useState<Task | null>(null);
 
   const handleDragStart = (e: React.DragEvent, task: Task) => {
@@ -73,13 +73,7 @@ export const KanbanView = ({ tasks, onTaskEdit, onTaskUpdate }: KanbanViewProps)
     
     if (!draggedTask) return;
 
-    const updatedTasks = tasks.map(task => 
-      task.id === draggedTask.id 
-        ? { ...task, status: targetStatus as Task['status'] }
-        : task
-    );
-
-    onTaskUpdate(updatedTasks);
+    onMoveTask(draggedTask.id, targetStatus as Task['status']);
     setDraggedTask(null);
   };
 
