@@ -3,20 +3,32 @@ import React from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Shield, Mail, LogOut, Clock } from 'lucide-react';
+import { Shield, Mail, LogOut, Clock, RefreshCw } from 'lucide-react';
 
 const Intruso = () => {
-  const { signOut, profile } = useAuth();
+  const { signOut, profile, refreshProfile } = useAuth();
 
   const handleLogout = async () => {
     await signOut();
   };
 
+  const handleRefreshProfile = async () => {
+    await refreshProfile();
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
       <div className="w-full max-w-2xl">
-        {/* Header with logout */}
-        <div className="flex justify-end mb-6">
+        {/* Header with logout and refresh */}
+        <div className="flex justify-end gap-2 mb-6">
+          <Button 
+            variant="outline" 
+            onClick={handleRefreshProfile}
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Atualizar
+          </Button>
           <Button 
             variant="outline" 
             onClick={handleLogout}

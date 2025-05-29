@@ -2,6 +2,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate, useLocation } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useEffect } from 'react';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -9,8 +10,15 @@ interface ProtectedRouteProps {
 }
 
 export const ProtectedRoute = ({ children, requireMember = false }: ProtectedRouteProps) => {
-  const { user, profile, loading } = useAuth();
+  const { user, profile, loading, refreshProfile } = useAuth();
   const location = useLocation();
+
+  // Refresh profile when component mounts to get latest data
+  useEffect(() => {
+    if (user && !loading) {
+      refreshProfile();
+    }
+  }, [user, loading]);
 
   if (loading) {
     return (
@@ -28,11 +36,18 @@ export const ProtectedRoute = ({ children, requireMember = false }: ProtectedRou
     return <Navigate to="/auth/login" state={{ from: location }} replace />;
   }
 
+  // Se a rota requer membro mas o usuário é intruso
   if (requireMember && profile?.role !== 'membro') {
     return <Navigate to="/intruso" replace />;
   }
 
-  if (!requireMember && profile?.role === 'intruso' && location.pathname !== '/intruso') {
+  // Se o usuário é membro mas está na página de intruso, redireciona para dashboard
+  if (profile?.role === 'membro' && location.pathname === '/intruso') {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // Se o usuário é intruso e não está na página de intruso nem nas rotas de auth, redireciona
+  if (profile?.role === 'intruso' && !location.pathname.startsWith('/auth') && location.pathname !== '/intruso') {
     return <Navigate to="/intruso" replace />;
   }
 

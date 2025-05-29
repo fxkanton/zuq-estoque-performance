@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -13,11 +13,22 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const { signIn } = useAuth();
+  const { signIn, user, profile } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
   const from = location.state?.from?.pathname || '/dashboard';
+
+  // Redirect logged in users
+  useEffect(() => {
+    if (user && profile) {
+      if (profile.role === 'membro') {
+        navigate('/dashboard', { replace: true });
+      } else {
+        navigate('/intruso', { replace: true });
+      }
+    }
+  }, [user, profile, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,7 +36,7 @@ const Login = () => {
 
     try {
       await signIn(email, password);
-      navigate(from, { replace: true });
+      // Navigation will be handled by the useEffect above after profile is loaded
     } catch (error) {
       // Error is handled in context
     } finally {
