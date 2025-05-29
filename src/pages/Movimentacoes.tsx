@@ -13,12 +13,13 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Plus, Search, Edit, Trash2 } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Package, ArrowUp, ArrowDown } from "lucide-react";
 import { fetchMovements, createMovement, updateMovement, deleteMovement, Movement } from "@/services/movementService";
 import { supabase } from "@/integrations/supabase/client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { fetchEquipment, Equipment } from "@/services/equipmentService";
 import DateRangeFilter from "@/components/ui/date-range-filter";
+import { Textarea } from "@/components/ui/textarea";
 
 const Movimentacoes = () => {
   const [movements, setMovements] = useState<Movement[]>([]);
@@ -32,6 +33,9 @@ const Movimentacoes = () => {
   const [movementType, setMovementType] = useState<'Entrada' | 'Saída'>('Entrada');
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
+  const [selectedBrand, setSelectedBrand] = useState('');
+  const [selectedModel, setSelectedModel] = useState('');
+  const [availableModels, setAvailableModels] = useState<Equipment[]>([]);
 
   // Form state
   const [currentMovement, setCurrentMovement] = useState<Movement | null>(null);
@@ -83,6 +87,31 @@ const Movimentacoes = () => {
     };
   }, []);
 
+  // Get unique brands
+  const getUniqueBrands = () => {
+    const brands = equipmentList.map(eq => eq.brand);
+    return [...new Set(brands)].sort();
+  };
+
+  // Filter models by selected brand
+  useEffect(() => {
+    if (selectedBrand) {
+      const models = equipmentList.filter(eq => eq.brand === selectedBrand);
+      setAvailableModels(models);
+    } else {
+      setAvailableModels([]);
+    }
+    setSelectedModel('');
+  }, [selectedBrand, equipmentList]);
+
+  // Get selected equipment ID
+  const getSelectedEquipmentId = () => {
+    const equipment = equipmentList.find(eq => 
+      eq.brand === selectedBrand && eq.model === selectedModel
+    );
+    return equipment?.id || '';
+  };
+
   const handleDateRangeChange = (newStartDate: Date, newEndDate: Date) => {
     setStartDate(newStartDate);
     setEndDate(newEndDate);
@@ -112,6 +141,8 @@ const Movimentacoes = () => {
       movement_date: new Date().toISOString().split('T')[0],
       notes: ''
     });
+    setSelectedBrand('');
+    setSelectedModel('');
     setCurrentMovement(null);
   };
 
@@ -122,6 +153,11 @@ const Movimentacoes = () => {
 
   const handleOpenEditDialog = (item: Movement) => {
     setCurrentMovement(item);
+    const equipment = equipmentList.find(eq => eq.id === item.equipment_id);
+    if (equipment) {
+      setSelectedBrand(equipment.brand);
+      setSelectedModel(equipment.model);
+    }
     setFormData({
       equipment_id: item.equipment_id,
       movement_type: item.movement_type as 'Entrada' | 'Saída',
@@ -139,7 +175,16 @@ const Movimentacoes = () => {
 
   const handleSaveMovement = async () => {
     try {
-      await createMovement(formData);
+      const equipmentId = getSelectedEquipmentId();
+      if (!equipmentId) {
+        console.error("No equipment selected");
+        return;
+      }
+      
+      await createMovement({
+        ...formData,
+        equipment_id: equipmentId
+      });
       setIsAddDialogOpen(false);
       resetForm();
     } catch (error) {
@@ -151,7 +196,16 @@ const Movimentacoes = () => {
     if (!currentMovement) return;
     
     try {
-      await updateMovement(currentMovement.id, formData);
+      const equipmentId = getSelectedEquipmentId();
+      if (!equipmentId) {
+        console.error("No equipment selected");
+        return;
+      }
+      
+      await updateMovement(currentMovement.id, {
+        ...formData,
+        equipment_id: equipmentId
+      });
       setIsEditDialogOpen(false);
       resetForm();
     } catch (error) {
@@ -333,11 +387,20 @@ const Movimentacoes = () => {
                   return (
                     <TableRow key={item.id}>
                       <TableCell>
-                        {equipment ? equipment.brand : 'N/A'}
+                        {equipment ? `${equipment.brand} ${equipment.model}` : 'N/A'}
                       </TableCell>
-                      <TableCell>{item.movement_type}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {item.movement_type === 'Entrada' ? (
+                            <ArrowDown className="h-4 w-4 text-green-500" />
+                          ) : (
+                            <ArrowUp className="h-4 w-4 text-red-500" />
+                          )}
+                          {item.movement_type}
+                        </div>
+                      </TableCell>
                       <TableCell>{item.quantity}</TableCell>
-                      <TableCell>{new Date(item.movement_date).toLocaleDateString()}</TableCell>
+                      <TableCell>{new Date(item.movement_date).toLocaleDateString('pt-BR')}</TableCell>
                       <TableCell>
                         <EditDeleteButtons item={item} />
                       </TableCell>
@@ -352,37 +415,72 @@ const Movimentacoes = () => {
 
       {/* Add Movement Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[700px]">
           <DialogHeader>
-            <DialogTitle>Cadastrar Nova Movimentação</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Cadastrar Nova Movimentação
+            </DialogTitle>
             <DialogDescription>
               Preencha os dados da movimentação para cadastro no sistema.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          
+          <div className="grid gap-6 py-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="flex flex-col gap-2">
-                <Label htmlFor="equipment_id">Equipamento</Label>
-                <Select onValueChange={(value) => setFormData(prev => ({ ...prev, equipment_id: value }))}>
+                <Label htmlFor="brand" className="text-sm font-medium">Marca *</Label>
+                <Select onValueChange={setSelectedBrand} value={selectedBrand}>
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Selecione um equipamento" />
+                    <SelectValue placeholder="Selecione a marca" />
                   </SelectTrigger>
                   <SelectContent>
-                    {equipmentList.map((equipment) => (
-                      <SelectItem key={equipment.id} value={equipment.id}>{equipment.brand}</SelectItem>
+                    {getUniqueBrands().map((brand) => (
+                      <SelectItem key={brand} value={brand}>{brand}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
+              
               <div className="flex flex-col gap-2">
-                <Label htmlFor="movement_type">Tipo de Movimentação</Label>
-                <Select onValueChange={(value) => setFormData(prev => ({ ...prev, movement_type: value as 'Entrada' | 'Saída' }))}>
+                <Label htmlFor="model" className="text-sm font-medium">Modelo *</Label>
+                <Select 
+                  onValueChange={setSelectedModel} 
+                  value={selectedModel}
+                  disabled={!selectedBrand}
+                >
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Selecione o tipo" />
+                    <SelectValue placeholder="Selecione o modelo" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Entrada">Entrada</SelectItem>
-                    <SelectItem value="Saída">Saída</SelectItem>
+                    {availableModels.map((equipment) => (
+                      <SelectItem key={equipment.id} value={equipment.model}>
+                        {equipment.model}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="movement_type" className="text-sm font-medium">Tipo *</Label>
+                <Select onValueChange={(value) => setFormData(prev => ({ ...prev, movement_type: value as 'Entrada' | 'Saída' }))}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Tipo de movimento" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Entrada">
+                      <div className="flex items-center gap-2">
+                        <ArrowDown className="h-4 w-4 text-green-500" />
+                        Entrada
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="Saída">
+                      <div className="flex items-center gap-2">
+                        <ArrowUp className="h-4 w-4 text-red-500" />
+                        Saída
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -390,17 +488,19 @@ const Movimentacoes = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
-                <Label htmlFor="quantity">Quantidade</Label>
+                <Label htmlFor="quantity" className="text-sm font-medium">Quantidade *</Label>
                 <Input 
                   id="quantity" 
                   type="number" 
-                  placeholder="0"
+                  placeholder="Digite a quantidade"
+                  min="1"
                   value={formData.quantity}
                   onChange={handleInputChange}
+                  className="text-center"
                 />
               </div>
               <div className="flex flex-col gap-2">
-                <Label htmlFor="movement_date">Data da Movimentação</Label>
+                <Label htmlFor="movement_date" className="text-sm font-medium">Data da Movimentação *</Label>
                 <Input 
                   id="movement_date" 
                   type="date"
@@ -411,61 +511,103 @@ const Movimentacoes = () => {
             </div>
             
             <div className="flex flex-col gap-2">
-              <Label htmlFor="notes">Observações</Label>
-              <Input 
+              <Label htmlFor="notes" className="text-sm font-medium">Observações</Label>
+              <Textarea 
                 id="notes" 
-                placeholder="Observações adicionais"
+                placeholder="Observações adicionais sobre a movimentação..."
                 value={formData.notes}
                 onChange={handleInputChange}
+                rows={3}
               />
             </div>
           </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancelar</Button>
-            <Button className="bg-zuq-blue hover:bg-zuq-blue/80" onClick={handleSaveMovement}>Salvar</Button>
+          
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              className="bg-zuq-blue hover:bg-zuq-blue/80" 
+              onClick={handleSaveMovement}
+              disabled={!selectedBrand || !selectedModel || !formData.movement_type || formData.quantity <= 0}
+            >
+              Salvar Movimentação
+            </Button>
           </div>
         </DialogContent>
       </Dialog>
 
       {/* Edit Movement Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[700px]">
           <DialogHeader>
-            <DialogTitle>Editar Movimentação</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit className="h-5 w-5" />
+              Editar Movimentação
+            </DialogTitle>
             <DialogDescription>
               Atualize as informações da movimentação.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          
+          <div className="grid gap-6 py-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="flex flex-col gap-2">
-                <Label htmlFor="equipment_id">Equipamento</Label>
-                  <Select 
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, equipment_id: value }))}
-                    defaultValue={formData.equipment_id}
-                  >
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Selecione um equipamento" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {equipmentList.map((equipment) => (
-                        <SelectItem key={equipment.id} value={equipment.id}>{equipment.brand}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="movement_type">Tipo de Movimentação</Label>
-                <Select 
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, movement_type: value as 'Entrada' | 'Saída' }))}
-                  defaultValue={formData.movement_type}
-                >
+                <Label htmlFor="brand" className="text-sm font-medium">Marca *</Label>
+                <Select onValueChange={setSelectedBrand} value={selectedBrand}>
                   <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Selecione o tipo" />
+                    <SelectValue placeholder="Selecione a marca" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Entrada">Entrada</SelectItem>
-                    <SelectItem value="Saída">Saída</SelectItem>
+                    {getUniqueBrands().map((brand) => (
+                      <SelectItem key={brand} value={brand}>{brand}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="model" className="text-sm font-medium">Modelo *</Label>
+                <Select 
+                  onValueChange={setSelectedModel} 
+                  value={selectedModel}
+                  disabled={!selectedBrand}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selecione o modelo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableModels.map((equipment) => (
+                      <SelectItem key={equipment.id} value={equipment.model}>
+                        {equipment.model}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="movement_type" className="text-sm font-medium">Tipo *</Label>
+                <Select 
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, movement_type: value as 'Entrada' | 'Saída' }))}
+                  value={formData.movement_type}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Tipo de movimento" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Entrada">
+                      <div className="flex items-center gap-2">
+                        <ArrowDown className="h-4 w-4 text-green-500" />
+                        Entrada
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="Saída">
+                      <div className="flex items-center gap-2">
+                        <ArrowUp className="h-4 w-4 text-red-500" />
+                        Saída
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -473,17 +615,19 @@ const Movimentacoes = () => {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
-                <Label htmlFor="quantity">Quantidade</Label>
+                <Label htmlFor="quantity" className="text-sm font-medium">Quantidade *</Label>
                 <Input 
                   id="quantity" 
                   type="number" 
-                  placeholder="0"
+                  placeholder="Digite a quantidade"
+                  min="1"
                   value={formData.quantity}
                   onChange={handleInputChange}
+                  className="text-center"
                 />
               </div>
               <div className="flex flex-col gap-2">
-                <Label htmlFor="movement_date">Data da Movimentação</Label>
+                <Label htmlFor="movement_date" className="text-sm font-medium">Data da Movimentação *</Label>
                 <Input 
                   id="movement_date" 
                   type="date"
@@ -494,18 +638,28 @@ const Movimentacoes = () => {
             </div>
             
             <div className="flex flex-col gap-2">
-              <Label htmlFor="notes">Observações</Label>
-              <Input 
+              <Label htmlFor="notes" className="text-sm font-medium">Observações</Label>
+              <Textarea 
                 id="notes" 
-                placeholder="Observações adicionais"
+                placeholder="Observações adicionais sobre a movimentação..."
                 value={formData.notes}
                 onChange={handleInputChange}
+                rows={3}
               />
             </div>
           </div>
-          <div className="flex justify-end gap-2">
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancelar</Button>
-            <Button className="bg-zuq-blue hover:bg-zuq-blue/80" onClick={handleUpdateMovement}>Salvar</Button>
+          
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              className="bg-zuq-blue hover:bg-zuq-blue/80" 
+              onClick={handleUpdateMovement}
+              disabled={!selectedBrand || !selectedModel || !formData.movement_type || formData.quantity <= 0}
+            >
+              Atualizar Movimentação
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

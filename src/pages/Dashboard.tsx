@@ -25,6 +25,8 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import DateRangeFilter from "@/components/ui/date-range-filter";
 import { Edit, Trash2 } from 'lucide-react';
+import { MovementsDonutChart } from "@/components/dashboard/MovementsDonutChart";
+import { TaskReminders } from "@/components/dashboard/TaskReminders";
 
 const Dashboard = () => {
   // Date range state 
@@ -338,7 +340,16 @@ const Dashboard = () => {
         />
       </div>
 
-      {/* Novo componente de inventário de equipamentos com altura aumentada */}
+      {/* New section with donut chart and task reminders */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        <MovementsDonutChart 
+          entries={monthlyMovements.entries} 
+          exits={monthlyMovements.exits} 
+        />
+        <TaskReminders />
+      </div>
+
+      {/* Equipment inventory component with increased height */}
       <EquipmentInventory startDate={startDate.toISOString().split('T')[0]} endDate={endDate.toISOString().split('T')[0]} />
       
       <div className="grid grid-cols-1 mb-8">
