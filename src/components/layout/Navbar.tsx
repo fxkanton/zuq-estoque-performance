@@ -1,59 +1,25 @@
 
-import { SidebarTrigger, useSidebar } from "@/components/ui/sidebar";
-import { Button } from "@/components/ui/button";
-import { 
-  Bell,
-  User
-} from "lucide-react";
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuLabel, 
-  DropdownMenuSeparator, 
-  DropdownMenuTrigger 
-} from "@/components/ui/dropdown-menu";
+import { UserMenu } from "./UserMenu";
 
-export function Navbar({ title }: { title: string }) {
-  const { state } = useSidebar();
-  const isCollapsed = state === "collapsed";
-
+const Navbar = () => {
   return (
-    <header className="border-b border-white/20 bg-white/80 backdrop-blur-sm p-4 flex justify-between items-center shadow-sm">
-      <div className="flex items-center gap-4">
-        <SidebarTrigger className="text-zuq-darkblue hover:text-zuq-turquoise hover:bg-zuq-turquoise/10 rounded-lg transition-colors duration-200" />
-        <h1 className="text-xl font-bold text-zuq-darkblue">{title}</h1>
-      </div>
-      
-      <div className="flex items-center gap-2">
-        <Button 
-          variant="outline" 
-          size="icon" 
-          className="text-zuq-darkblue border-none hover:bg-zuq-turquoise/10 hover:text-zuq-turquoise transition-colors duration-200 rounded-lg"
-        >
-          <Bell className="h-5 w-5" />
-        </Button>
+    <nav className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <img 
+            src="/lovable-uploads/b063f862-dfa6-4ec2-bf1e-f6ba630f97b6.png" 
+            alt="ZUQ Performance" 
+            className="w-8 h-8"
+          />
+          <h1 className="text-xl font-semibold text-zuq-darkblue">ZUQ Performance</h1>
+        </div>
         
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button 
-              variant="outline" 
-              size="icon" 
-              className="text-zuq-darkblue border-none hover:bg-zuq-turquoise/10 hover:text-zuq-turquoise transition-colors duration-200 rounded-lg"
-            >
-              <User className="h-5 w-5" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48 bg-white/95 backdrop-blur-sm border-white/20">
-            <DropdownMenuLabel>Minha Conta</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>Perfil</DropdownMenuItem>
-            <DropdownMenuItem>Configurações</DropdownMenuItem>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem>Sair</DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center space-x-4">
+          <UserMenu />
+        </div>
       </div>
-    </header>
+    </nav>
   );
-}
+};
+
+export { Navbar };

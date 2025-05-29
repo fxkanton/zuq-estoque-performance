@@ -15,6 +15,7 @@ export type Database = {
           brand: string
           category: Database["public"]["Enums"]["equipment_category"]
           created_at: string | null
+          created_by: string | null
           id: string
           image_url: string | null
           min_stock: number | null
@@ -28,6 +29,7 @@ export type Database = {
           brand: string
           category: Database["public"]["Enums"]["equipment_category"]
           created_at?: string | null
+          created_by?: string | null
           id?: string
           image_url?: string | null
           min_stock?: number | null
@@ -41,6 +43,7 @@ export type Database = {
           brand?: string
           category?: Database["public"]["Enums"]["equipment_category"]
           created_at?: string | null
+          created_by?: string | null
           id?: string
           image_url?: string | null
           min_stock?: number | null
@@ -62,6 +65,7 @@ export type Database = {
       inventory_movements: {
         Row: {
           created_at: string | null
+          created_by: string | null
           equipment_id: string
           id: string
           movement_date: string | null
@@ -72,6 +76,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          created_by?: string | null
           equipment_id: string
           id?: string
           movement_date?: string | null
@@ -82,6 +87,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          created_by?: string | null
           equipment_id?: string
           id?: string
           movement_date?: string | null
@@ -104,6 +110,7 @@ export type Database = {
         Row: {
           completion_date: string | null
           created_at: string | null
+          created_by: string | null
           equipment_id: string
           expected_completion_date: string | null
           id: string
@@ -117,6 +124,7 @@ export type Database = {
         Insert: {
           completion_date?: string | null
           created_at?: string | null
+          created_by?: string | null
           equipment_id: string
           expected_completion_date?: string | null
           id?: string
@@ -130,6 +138,7 @@ export type Database = {
         Update: {
           completion_date?: string | null
           created_at?: string | null
+          created_by?: string | null
           equipment_id?: string
           expected_completion_date?: string | null
           id?: string
@@ -153,6 +162,7 @@ export type Database = {
       order_batches: {
         Row: {
           created_at: string | null
+          created_by: string | null
           id: string
           invoice_number: string | null
           notes: string | null
@@ -165,6 +175,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          created_by?: string | null
           id?: string
           invoice_number?: string | null
           notes?: string | null
@@ -177,6 +188,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          created_by?: string | null
           id?: string
           invoice_number?: string | null
           notes?: string | null
@@ -200,6 +212,7 @@ export type Database = {
       orders: {
         Row: {
           created_at: string | null
+          created_by: string | null
           equipment_id: string
           expected_arrival_date: string | null
           id: string
@@ -212,6 +225,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string | null
+          created_by?: string | null
           equipment_id: string
           expected_arrival_date?: string | null
           id?: string
@@ -224,6 +238,7 @@ export type Database = {
         }
         Update: {
           created_at?: string | null
+          created_by?: string | null
           equipment_id?: string
           expected_arrival_date?: string | null
           id?: string
@@ -251,11 +266,60 @@ export type Database = {
           },
         ]
       }
+      orphaned_records_claims: {
+        Row: {
+          claimed_at: string
+          claimed_by: string
+          id: string
+          record_id: string
+          table_name: string
+        }
+        Insert: {
+          claimed_at?: string
+          claimed_by: string
+          id?: string
+          record_id: string
+          table_name: string
+        }
+        Update: {
+          claimed_at?: string
+          claimed_by?: string
+          id?: string
+          record_id?: string
+          table_name?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string | null
+          id: string
+          role: Database["public"]["Enums"]["user_role"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          full_name?: string | null
+          id: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["user_role"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       readers: {
         Row: {
           code: string
           condition: Database["public"]["Enums"]["equipment_condition"] | null
           created_at: string | null
+          created_by: string | null
           equipment_id: string
           id: string
           status: Database["public"]["Enums"]["equipment_status"] | null
@@ -265,6 +329,7 @@ export type Database = {
           code: string
           condition?: Database["public"]["Enums"]["equipment_condition"] | null
           created_at?: string | null
+          created_by?: string | null
           equipment_id: string
           id?: string
           status?: Database["public"]["Enums"]["equipment_status"] | null
@@ -274,6 +339,7 @@ export type Database = {
           code?: string
           condition?: Database["public"]["Enums"]["equipment_condition"] | null
           created_at?: string | null
+          created_by?: string | null
           equipment_id?: string
           id?: string
           status?: Database["public"]["Enums"]["equipment_status"] | null
@@ -296,6 +362,7 @@ export type Database = {
           cnpj: string
           contact_name: string | null
           created_at: string | null
+          created_by: string | null
           email: string | null
           id: string
           image_url: string | null
@@ -309,6 +376,7 @@ export type Database = {
           cnpj: string
           contact_name?: string | null
           created_at?: string | null
+          created_by?: string | null
           email?: string | null
           id?: string
           image_url?: string | null
@@ -322,6 +390,7 @@ export type Database = {
           cnpj?: string
           contact_name?: string | null
           created_at?: string | null
+          created_by?: string | null
           email?: string | null
           id?: string
           image_url?: string | null
@@ -336,7 +405,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _user_id: string
+          _role: Database["public"]["Enums"]["user_role"]
+        }
+        Returns: boolean
+      }
+      is_member: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       equipment_category: "Leitora" | "Sensor" | "Rastreador" | "Acessório"
@@ -347,6 +426,7 @@ export type Database = {
         | "Parcialmente Recebido"
         | "Recebido"
         | "Arquivado"
+      user_role: "intruso" | "membro"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -471,6 +551,7 @@ export const Constants = {
         "Recebido",
         "Arquivado",
       ],
+      user_role: ["intruso", "membro"],
     },
   },
 } as const
