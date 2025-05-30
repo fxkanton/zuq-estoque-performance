@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { NavLink } from "react-router-dom";
 import { 
@@ -75,7 +74,7 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu className="space-y-1">
               <NavItem
-                to="/"
+                to="/dashboard"
                 icon={<BarChart3 className="h-5 w-5" />}
                 label="Dashboard"
                 isCollapsed={isCollapsed}

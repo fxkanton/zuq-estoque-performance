@@ -52,7 +52,7 @@ const Intruso = () => {
               ZUQ Performance
             </CardTitle>
             <p className="text-lg text-gray-600">
-              Sistema de Gestão de Inventário
+              Sistema de Gestão de Estoque
             </p>
           </CardHeader>
           

@@ -17,6 +17,8 @@ import Leitoras from "./pages/Leitoras";
 import Pedidos from "./pages/Pedidos";
 import FluxoTarefas from "./pages/FluxoTarefas";
 import Manutencao from "./pages/Manutencao";
+import Profile from "./pages/Profile";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 // Auth Pages
@@ -113,6 +115,22 @@ const App = () => (
               element={
                 <ProtectedRoute requireMember>
                   <Manutencao />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/profile" 
+              element={
+                <ProtectedRoute requireMember>
+                  <Profile />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/settings" 
+              element={
+                <ProtectedRoute requireMember>
+                  <Settings />
                 </ProtectedRoute>
               } 
             />

@@ -37,7 +37,7 @@ const Index = () => {
       <div className="container mx-auto px-4 py-16 text-center">
         <div className="max-w-4xl mx-auto">
           <h2 className="text-4xl md:text-6xl font-bold text-zuq-darkblue mb-6">
-            Sistema de Gestão de Inventário
+            Sistema de Gestão de Estoque
           </h2>
           <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
             Controle completo dos seus equipamentos, fornecedores, pedidos e muito mais. 
@@ -68,7 +68,7 @@ const Index = () => {
             </CardHeader>
             <CardContent className="text-center">
               <p className="text-gray-600">
-                Controle completo do seu inventário de equipamentos e leitoras.
+                Controle completo do seu estoque de equipamentos e leitoras.
               </p>
             </CardContent>
           </Card>
