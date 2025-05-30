@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 
@@ -15,21 +16,25 @@ export interface Equipment {
   quality_status?: string;
   created_at?: string;
   updated_at?: string;
+  created_by?: string; // Added this field
 }
 
 export const fetchEquipment = async (): Promise<Equipment[]> => {
+  console.log("Fetching equipment...");
   const { data, error } = await supabase
     .from('equipment')
     .select('*')
     .order('brand');
 
   if (error) {
+    console.error("Error fetching equipment:", error);
     toast.error('Erro ao carregar equipamentos', {
       description: error.message
     });
     return [];
   }
 
+  console.log("Equipment fetched:", data);
   return data || [];
 };
 
@@ -51,6 +56,7 @@ export const getEquipmentById = async (id: string): Promise<Equipment | null> =>
 };
 
 export const createEquipment = async (equipment: Omit<Equipment, 'id' | 'created_at' | 'updated_at'>): Promise<Equipment | null> => {
+  console.log("Creating equipment:", equipment);
   const { data, error } = await supabase
     .from('equipment')
     .insert(equipment)
@@ -58,17 +64,20 @@ export const createEquipment = async (equipment: Omit<Equipment, 'id' | 'created
     .single();
 
   if (error) {
+    console.error("Error creating equipment:", error);
     toast.error('Erro ao criar equipamento', {
       description: error.message
     });
     return null;
   }
 
+  console.log("Equipment created:", data);
   toast.success('Equipamento criado com sucesso');
   return data;
 };
 
 export const updateEquipment = async (id: string, equipment: Partial<Equipment>): Promise<Equipment | null> => {
+  console.log("Updating equipment:", id, equipment);
   const { data, error } = await supabase
     .from('equipment')
     .update(equipment)
@@ -77,12 +86,14 @@ export const updateEquipment = async (id: string, equipment: Partial<Equipment>)
     .single();
 
   if (error) {
+    console.error("Error updating equipment:", error);
     toast.error('Erro ao atualizar equipamento', {
       description: error.message
     });
     return null;
   }
 
+  console.log("Equipment updated:", data);
   toast.success('Equipamento atualizado com sucesso');
   return data;
 };

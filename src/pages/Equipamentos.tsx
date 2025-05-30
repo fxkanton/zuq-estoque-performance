@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { SearchInput } from "@/components/ui/search-input";
 import { Badge } from "@/components/ui/badge";
+import { OrphanedRecordBadge } from "@/components/OrphanedRecordBadge";
 import { 
   Select,
   SelectContent,
@@ -36,8 +37,12 @@ import {
 import { fetchSuppliers, Supplier } from "@/services/supplierService";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
+import { useAuth } from "@/contexts/AuthContext";
+import { useCreatorInfo } from "@/hooks/useCreatorInfo";
 
 const Equipamentos = () => {
+  const { profile } = useAuth();
+  const { getCreatorName } = useCreatorInfo();
   const [equipamentos, setEquipamentos] = useState<Array<Equipment & { stock?: number }>>([]);
   const [filteredEquipamentos, setFilteredEquipamentos] = useState<Array<Equipment & { stock?: number }>>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -72,7 +77,9 @@ const Equipamentos = () => {
 
   const loadData = async () => {
     try {
+      console.log("Loading equipment data...");
       const equipmentData = await getEquipmentWithStock();
+      console.log("Equipment data loaded:", equipmentData);
       setEquipamentos(equipmentData);
       setFilteredEquipamentos(equipmentData);
 
@@ -80,11 +87,14 @@ const Equipamentos = () => {
       setSuppliers(suppliersData);
     } catch (error) {
       console.error("Error loading equipment data:", error);
+      toast.error("Erro ao carregar dados dos equipamentos");
     }
   };
 
   useEffect(() => {
-    loadData();
+    if (profile?.role === 'membro') {
+      loadData();
+    }
 
     // Subscribe to realtime updates
     const equipmentChannel = supabase
@@ -94,6 +104,7 @@ const Equipamentos = () => {
         schema: 'public',
         table: 'equipment'
       }, () => {
+        console.log("Equipment table changed, reloading data...");
         loadData();
       })
       .subscribe();
@@ -105,6 +116,7 @@ const Equipamentos = () => {
         schema: 'public',
         table: 'inventory_movements'
       }, () => {
+        console.log("Inventory movements changed, reloading data...");
         loadData();
       })
       .subscribe();
@@ -113,7 +125,22 @@ const Equipamentos = () => {
       supabase.removeChannel(equipmentChannel);
       supabase.removeChannel(movementsChannel);
     };
-  }, []);
+  }, [profile]);
+
+  const handleAdoptEquipment = async (equipment: Equipment) => {
+    if (!profile?.id) return;
+    
+    try {
+      await updateEquipment(equipment.id, { 
+        created_by: profile.id 
+      });
+      toast.success("Equipamento adotado com sucesso!");
+      loadData();
+    } catch (error) {
+      console.error("Error adopting equipment:", error);
+      toast.error("Erro ao adotar equipamento");
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -241,17 +268,21 @@ const Equipamentos = () => {
         }
       }
       
-      // Then save equipment data with the image URL
+      // Then save equipment data with the image URL and created_by
       const dataToSave = {
         ...formData,
-        image_url: imageUrl
+        image_url: imageUrl,
+        created_by: profile?.id
       };
       
+      console.log("Saving equipment data:", dataToSave);
       await createEquipment(dataToSave);
       setIsAddDialogOpen(false);
       resetForm();
+      loadData(); // Reload data after creation
     } catch (error) {
       console.error("Error creating equipment:", error);
+      toast.error("Erro ao criar equipamento");
     } finally {
       setIsUploading(false);
     }
@@ -281,8 +312,10 @@ const Equipamentos = () => {
       await updateEquipment(currentEquipment.id, dataToUpdate);
       setIsEditDialogOpen(false);
       resetForm();
+      loadData(); // Reload data after update
     } catch (error) {
       console.error("Error updating equipment:", error);
+      toast.error("Erro ao atualizar equipamento");
     } finally {
       setIsUploading(false);
     }
@@ -295,8 +328,10 @@ const Equipamentos = () => {
       await deleteEquipment(currentEquipment.id);
       setIsDeleteDialogOpen(false);
       resetForm();
+      loadData(); // Reload data after deletion
     } catch (error) {
       console.error("Error deleting equipment:", error);
+      toast.error("Erro ao excluir equipamento");
     }
   };
 
@@ -354,6 +389,17 @@ const Equipamentos = () => {
         return 'bg-gray-100 text-gray-800';
     }
   };
+
+  // Only render if user is a member
+  if (profile?.role !== 'membro') {
+    return (
+      <MainLayout title="Cadastro de Equipamentos">
+        <div className="flex items-center justify-center h-64">
+          <p className="text-muted-foreground">Acesso restrito a membros.</p>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout title="Cadastro de Equipamentos">
@@ -446,6 +492,7 @@ const Equipamentos = () => {
                 <TableHead>Marca</TableHead>
                 <TableHead>Modelo</TableHead>
                 <TableHead>Categoria</TableHead>
+                <TableHead>Status</TableHead>
                 <TableHead>Status Qualidade</TableHead>
                 <TableHead className="text-right">Valor Médio</TableHead>
                 <TableHead className="text-center">Estoque</TableHead>
@@ -455,7 +502,7 @@ const Equipamentos = () => {
             <TableBody>
               {filteredEquipamentos.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
+                  <TableCell colSpan={9} className="text-center py-10 text-muted-foreground">
                     Nenhum equipamento encontrado
                   </TableCell>
                 </TableRow>
@@ -487,6 +534,15 @@ const Equipamentos = () => {
                       <span className={`px-2 py-1 rounded-full text-xs ${getCategoryBadgeStyle(item.category)}`}>
                         {item.category}
                       </span>
+                    </TableCell>
+                    <TableCell>
+                      <OrphanedRecordBadge
+                        isOrphaned={!item.created_by}
+                        createdBy={item.created_by}
+                        creatorName={item.created_by ? getCreatorName(item.created_by) : undefined}
+                        onAdopt={() => handleAdoptEquipment(item)}
+                        recordType="equipamento"
+                      />
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className={getQualityBadgeStyle(item.quality_status || 'Em Teste')}>
@@ -560,6 +616,7 @@ const Equipamentos = () => {
                       onClick={() => {
                         setImagePreview(null);
                         setImageFile(null);
+                        setFormData(prev => ({ ...prev, image_url: '' }));
                         if (fileInputRef.current) {
                           fileInputRef.current.value = '';
                         }
@@ -723,6 +780,23 @@ const Equipamentos = () => {
               Atualize as informações do equipamento.
             </DialogDescription>
           </DialogHeader>
+          
+          {/* Creator info and adoption option */}
+          {currentEquipment && (
+            <div className="mb-4">
+              <OrphanedRecordBadge
+                isOrphaned={!currentEquipment.created_by}
+                createdBy={currentEquipment.created_by}
+                creatorName={currentEquipment.created_by ? getCreatorName(currentEquipment.created_by) : undefined}
+                onAdopt={() => {
+                  handleAdoptEquipment(currentEquipment);
+                  setIsEditDialogOpen(false);
+                }}
+                recordType="equipamento"
+              />
+            </div>
+          )}
+          
           <div className="grid grid-cols-1 gap-6 py-4">
             {/* Image left, form fields right */}
             <div className="flex flex-col md:flex-row gap-6">
@@ -902,57 +976,54 @@ const Equipamentos = () => {
             <DialogTitle>Detalhes do Equipamento</DialogTitle>
           </DialogHeader>
           {currentEquipment && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 py-4">
-              <div className="md:col-span-1 flex flex-col items-center">
-                {currentEquipment.image_url ? (
-                  <img 
-                    src={currentEquipment.image_url} 
-                    alt={`${currentEquipment.brand} ${currentEquipment.model}`} 
-                    className="w-full aspect-square object-cover rounded-md shadow-md" 
-                  />
-                ) : (
-                  <div className="bg-zuq-gray/30 w-full aspect-square flex items-center justify-center rounded-md">
-                    <Package2 className="h-16 w-16 text-zuq-blue" />
-                  </div>
-                )}
-              </div>
-              <div className="md:col-span-2">
-                <div className="grid gap-3">
+            <div className="space-y-4">
+              {/* Creator info and adoption option */}
+              <OrphanedRecordBadge
+                isOrphaned={!currentEquipment.created_by}
+                createdBy={currentEquipment.created_by}
+                creatorName={currentEquipment.created_by ? getCreatorName(currentEquipment.created_by) : undefined}
+                onAdopt={() => {
+                  handleAdoptEquipment(currentEquipment);
+                  setIsViewDialogOpen(false);
+                }}
+                recordType="equipamento"
+              />
+              
+              <div className="grid gap-3">
+                <div>
+                  <h3 className="text-xl font-bold">{currentEquipment.brand} {currentEquipment.model}</h3>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4 mt-2">
                   <div>
-                    <h3 className="text-xl font-bold">{currentEquipment.brand} {currentEquipment.model}</h3>
+                    <p className="text-sm font-medium">Categoria</p>
+                    <span className={`px-2 py-1 rounded-full text-xs ${getCategoryBadgeStyle(currentEquipment.category)}`}>
+                      {currentEquipment.category}
+                    </span>
                   </div>
-                  
-                  <div className="grid grid-cols-2 gap-4 mt-2">
-                    <div>
-                      <p className="text-sm font-medium">Categoria</p>
-                      <span className={`px-2 py-1 rounded-full text-xs ${getCategoryBadgeStyle(currentEquipment.category)}`}>
-                        {currentEquipment.category}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Status de Qualidade</p>
-                      <Badge variant="outline" className={getQualityBadgeStyle(currentEquipment.quality_status || 'Em Teste')}>
-                        {currentEquipment.quality_status || 'Em Teste'}
-                      </Badge>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Valor Médio</p>
-                      <p>{currentEquipment.average_price ? `R$ ${Number(currentEquipment.average_price).toFixed(2)}` : 'N/A'}</p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Estoque Atual</p>
-                      <p className={`font-medium ${
-                        ((currentEquipment as any).stock || 0) < (currentEquipment.min_stock || 0) 
-                          ? 'text-red-500' 
-                          : 'text-green-600'}`
-                      }>
-                        {(currentEquipment as any).stock || 0} unidades
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium">Estoque Mínimo</p>
-                      <p>{currentEquipment.min_stock || 0} unidades</p>
-                    </div>
+                  <div>
+                    <p className="text-sm font-medium">Status de Qualidade</p>
+                    <Badge variant="outline" className={getQualityBadgeStyle(currentEquipment.quality_status || 'Em Teste')}>
+                      {currentEquipment.quality_status || 'Em Teste'}
+                    </Badge>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Valor Médio</p>
+                    <p>{currentEquipment.average_price ? `R$ ${Number(currentEquipment.average_price).toFixed(2)}` : 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Estoque Atual</p>
+                    <p className={`font-medium ${
+                      ((currentEquipment as any).stock || 0) < (currentEquipment.min_stock || 0) 
+                        ? 'text-red-500' 
+                        : 'text-green-600'}`
+                    }>
+                      {(currentEquipment as any).stock || 0} unidades
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Estoque Mínimo</p>
+                    <p>{currentEquipment.min_stock || 0} unidades</p>
                   </div>
                 </div>
               </div>
