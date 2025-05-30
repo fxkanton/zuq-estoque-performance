@@ -272,6 +272,7 @@ export type Database = {
           claimed_by: string
           id: string
           record_id: string
+          status: string | null
           table_name: string
         }
         Insert: {
@@ -279,6 +280,7 @@ export type Database = {
           claimed_by: string
           id?: string
           record_id: string
+          status?: string | null
           table_name: string
         }
         Update: {
@@ -286,6 +288,7 @@ export type Database = {
           claimed_by?: string
           id?: string
           record_id?: string
+          status?: string | null
           table_name?: string
         }
         Relationships: []
@@ -405,6 +408,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_creator_name: {
+        Args: { creator_id: string }
+        Returns: string
+      }
       has_role: {
         Args: {
           _user_id: string
