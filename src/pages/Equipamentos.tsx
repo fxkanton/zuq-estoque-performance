@@ -38,11 +38,9 @@ import { fetchSuppliers, Supplier } from "@/services/supplierService";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 import { useAuth } from "@/contexts/AuthContext";
-import { useCreatorInfo } from "@/hooks/useCreatorInfo";
 
 const Equipamentos = () => {
   const { profile } = useAuth();
-  const { getCreatorName } = useCreatorInfo();
   const [equipamentos, setEquipamentos] = useState<Array<Equipment & { stock?: number; creatorName?: string }>>([]);
   const [filteredEquipamentos, setFilteredEquipamentos] = useState<Array<Equipment & { stock?: number; creatorName?: string }>>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
