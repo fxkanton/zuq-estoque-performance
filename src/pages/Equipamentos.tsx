@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { SearchInput } from "@/components/ui/search-input";
 import { Badge } from "@/components/ui/badge";
-import { OrphanedRecordBadge } from "@/components/OrphanedRecordBadge";
+import OrphanedRecordBadge from "@/components/OrphanedRecordBadge";
 import { 
   Select,
   SelectContent,
@@ -43,8 +43,8 @@ import { useCreatorInfo } from "@/hooks/useCreatorInfo";
 const Equipamentos = () => {
   const { profile } = useAuth();
   const { getCreatorName } = useCreatorInfo();
-  const [equipamentos, setEquipamentos] = useState<Array<Equipment & { stock?: number }>>([]);
-  const [filteredEquipamentos, setFilteredEquipamentos] = useState<Array<Equipment & { stock?: number }>>([]);
+  const [equipamentos, setEquipamentos] = useState<Array<Equipment & { stock?: number; creatorName?: string }>>([]);
+  const [filteredEquipamentos, setFilteredEquipamentos] = useState<Array<Equipment & { stock?: number; creatorName?: string }>>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [categories, setCategories] = useState<string[]>(['Leitora', 'Sensor', 'Rastreador', 'Acessório']);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -76,12 +76,40 @@ const Equipamentos = () => {
   const [isUploading, setIsUploading] = useState(false);
 
   const loadData = async () => {
+    if (profile?.role !== 'membro') {
+      console.log("User is not a member, skipping data load");
+      return;
+    }
+
     try {
       console.log("Loading equipment data...");
       const equipmentData = await getEquipmentWithStock();
       console.log("Equipment data loaded:", equipmentData);
-      setEquipamentos(equipmentData);
-      setFilteredEquipamentos(equipmentData);
+      
+      // Add creator names to equipment data
+      const equipmentWithCreatorNames = await Promise.all(
+        equipmentData.map(async (item) => {
+          let creatorName = undefined;
+          if (item.created_by) {
+            try {
+              const { data } = await supabase.rpc('get_creator_name', {
+                creator_id: item.created_by
+              });
+              creatorName = data || 'Usuário Desconhecido';
+            } catch (error) {
+              console.error('Error fetching creator name:', error);
+              creatorName = 'Erro ao carregar';
+            }
+          }
+          return {
+            ...item,
+            creatorName
+          };
+        })
+      );
+      
+      setEquipamentos(equipmentWithCreatorNames);
+      setFilteredEquipamentos(equipmentWithCreatorNames);
 
       const suppliersData = await fetchSuppliers();
       setSuppliers(suppliersData);
@@ -92,9 +120,7 @@ const Equipamentos = () => {
   };
 
   useEffect(() => {
-    if (profile?.role === 'membro') {
-      loadData();
-    }
+    loadData();
 
     // Subscribe to realtime updates
     const equipmentChannel = supabase
@@ -539,7 +565,7 @@ const Equipamentos = () => {
                       <OrphanedRecordBadge
                         isOrphaned={!item.created_by}
                         createdBy={item.created_by}
-                        creatorName={item.created_by ? getCreatorName(item.created_by) : undefined}
+                        creatorName={item.creatorName}
                         onAdopt={() => handleAdoptEquipment(item)}
                         recordType="equipamento"
                       />
@@ -787,7 +813,7 @@ const Equipamentos = () => {
               <OrphanedRecordBadge
                 isOrphaned={!currentEquipment.created_by}
                 createdBy={currentEquipment.created_by}
-                creatorName={currentEquipment.created_by ? getCreatorName(currentEquipment.created_by) : undefined}
+                creatorName={(currentEquipment as any).creatorName}
                 onAdopt={() => {
                   handleAdoptEquipment(currentEquipment);
                   setIsEditDialogOpen(false);
@@ -798,9 +824,7 @@ const Equipamentos = () => {
           )}
           
           <div className="grid grid-cols-1 gap-6 py-4">
-            {/* Image left, form fields right */}
             <div className="flex flex-col md:flex-row gap-6">
-              {/* Left side - Image */}
               <div className="md:w-1/3">
                 <div className="flex flex-col gap-2">
                   <Label>Imagem</Label>
@@ -855,7 +879,6 @@ const Equipamentos = () => {
                 </div>
               </div>
               
-              {/* Right side - Form fields */}
               <div className="md:w-2/3">
                 <div className="grid gap-4">
                   <div className="grid grid-cols-2 gap-4">
@@ -981,7 +1004,7 @@ const Equipamentos = () => {
               <OrphanedRecordBadge
                 isOrphaned={!currentEquipment.created_by}
                 createdBy={currentEquipment.created_by}
-                creatorName={currentEquipment.created_by ? getCreatorName(currentEquipment.created_by) : undefined}
+                creatorName={(currentEquipment as any).creatorName}
                 onAdopt={() => {
                   handleAdoptEquipment(currentEquipment);
                   setIsViewDialogOpen(false);
