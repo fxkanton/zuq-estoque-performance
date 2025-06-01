@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -23,7 +24,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { ImageIcon, Package2, Plus, Search, Upload } from "lucide-react";
+import { ImageIcon, Package2, Plus, Search, Upload, UserPlus } from "lucide-react";
 import { 
   Equipment, 
   EquipmentCategory, 
@@ -38,6 +39,8 @@ import { fetchSuppliers, Supplier } from "@/services/supplierService";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 import { useAuth } from "@/contexts/AuthContext";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 const Equipamentos = () => {
   const { profile } = useAuth();
@@ -516,7 +519,6 @@ const Equipamentos = () => {
                 <TableHead>Marca</TableHead>
                 <TableHead>Modelo</TableHead>
                 <TableHead>Categoria</TableHead>
-                <TableHead>Status</TableHead>
                 <TableHead>Status Qualidade</TableHead>
                 <TableHead className="text-right">Valor Médio</TableHead>
                 <TableHead className="text-center">Estoque</TableHead>
@@ -526,7 +528,7 @@ const Equipamentos = () => {
             <TableBody>
               {filteredEquipamentos.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-10 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
                     Nenhum equipamento encontrado
                   </TableCell>
                 </TableRow>
@@ -558,15 +560,6 @@ const Equipamentos = () => {
                       <span className={`px-2 py-1 rounded-full text-xs ${getCategoryBadgeStyle(item.category)}`}>
                         {item.category}
                       </span>
-                    </TableCell>
-                    <TableCell>
-                      <OrphanedRecordBadge
-                        isOrphaned={!item.created_by}
-                        createdBy={item.created_by}
-                        creatorName={item.creatorName}
-                        onAdopt={() => handleAdoptEquipment(item)}
-                        recordType="equipamento"
-                      />
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className={getQualityBadgeStyle(item.quality_status || 'Em Teste')}>
@@ -603,6 +596,17 @@ const Equipamentos = () => {
                         >
                           Excluir
                         </Button>
+                        {!item.created_by && (
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="text-amber-700 border-amber-300 hover:bg-amber-100"
+                            onClick={() => handleAdoptEquipment(item)}
+                          >
+                            <UserPlus className="h-3 w-3 mr-1" />
+                            Adotar
+                          </Button>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>
@@ -805,19 +809,44 @@ const Equipamentos = () => {
             </DialogDescription>
           </DialogHeader>
           
-          {/* Creator info and adoption option */}
+          {/* Creator info and creation date */}
           {currentEquipment && (
-            <div className="mb-4">
-              <OrphanedRecordBadge
-                isOrphaned={!currentEquipment.created_by}
-                createdBy={currentEquipment.created_by}
-                creatorName={(currentEquipment as any).creatorName}
-                onAdopt={() => {
-                  handleAdoptEquipment(currentEquipment);
-                  setIsEditDialogOpen(false);
-                }}
-                recordType="equipamento"
-              />
+            <div className="mb-4 p-4 bg-gray-50 rounded-lg">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700">Informações de Criação</span>
+                  {!currentEquipment.created_by && (
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      className="text-amber-700 border-amber-300 hover:bg-amber-100"
+                      onClick={() => {
+                        handleAdoptEquipment(currentEquipment);
+                        setIsEditDialogOpen(false);
+                      }}
+                    >
+                      <UserPlus className="h-3 w-3 mr-1" />
+                      Adotar Registro
+                    </Button>
+                  )}
+                </div>
+                <div className="text-sm text-gray-600">
+                  <p>
+                    <strong>Criado por:</strong> {
+                      currentEquipment.created_by 
+                        ? ((currentEquipment as any).creatorName || 'Carregando...') 
+                        : 'Registro órfão (sem responsável)'
+                    }
+                  </p>
+                  {currentEquipment.created_at && (
+                    <p>
+                      <strong>Data de criação:</strong> {
+                        format(new Date(currentEquipment.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })
+                      }
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
           )}
           
