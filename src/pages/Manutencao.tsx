@@ -26,8 +26,8 @@ import {
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
 import { 
   fetchMaintenanceRecords, 
-  createMaintenance,
-  updateMaintenance,
+  createMaintenanceRecord,
+  updateMaintenanceRecord,
   MaintenanceRecord,
   MaintenanceStatus
 } from "@/services/maintenanceService";
@@ -66,6 +66,12 @@ const Manutencao = () => {
     completion_date: new Date().toISOString().split('T')[0],
     status: 'Concluído' as MaintenanceStatus
   });
+
+  // Helper function to get equipment display name
+  const getEquipmentName = (equipment: any) => {
+    if (!equipment) return 'N/A';
+    return `${equipment.brand} ${equipment.model}`;
+  };
 
   const loadData = async () => {
     try {
@@ -170,7 +176,7 @@ const Manutencao = () => {
 
   const handleSubmit = async () => {
     try {
-      await createMaintenance(formData);
+      await createMaintenanceRecord(formData);
       setIsAddDialogOpen(false);
       resetForm();
     } catch (error) {
@@ -182,7 +188,7 @@ const Manutencao = () => {
     if (!currentRecord) return;
     
     try {
-      await updateMaintenance(currentRecord.id, {
+      await updateMaintenanceRecord(currentRecord.id, {
         ...completeData,
         status: 'Concluído' as MaintenanceStatus
       });
@@ -202,8 +208,7 @@ const Manutencao = () => {
     
     if (searchTerm) {
       filtered = filtered.filter(record => 
-        record.equipment?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        record.equipment?.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        getEquipmentName(record.equipment).toLowerCase().includes(searchTerm.toLowerCase()) ||
         (record.notes && record.notes.toLowerCase().includes(searchTerm.toLowerCase()))
       );
     }
@@ -301,7 +306,7 @@ const Manutencao = () => {
                         <div className="bg-zuq-gray/30 p-2 rounded-md">
                           <Settings className="h-4 w-4 text-zuq-blue" />
                         </div>
-                        {record.equipment?.name} {record.equipment?.model}
+                        {getEquipmentName(record.equipment)}
                       </div>
                     </TableCell>
                     <TableCell className="text-center">{record.quantity}</TableCell>
@@ -323,7 +328,7 @@ const Manutencao = () => {
                         >
                           Detalhes
                         </Button>
-                        {record.status !== 'Concluído' && record.status !== 'Cancelado' && (
+                        {record.status !== 'Concluído' && (
                           <Button 
                             variant="outline" 
                             size="sm"
@@ -366,7 +371,7 @@ const Manutencao = () => {
                 <SelectContent>
                   {equipment.map(item => (
                     <SelectItem key={item.id} value={item.id}>
-                      {item.name} {item.model}
+                      {item.brand} {item.model}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -454,7 +459,7 @@ const Manutencao = () => {
               <div className="mb-6">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-semibold text-zuq-darkblue">
-                    {currentRecord.equipment?.name} {currentRecord.equipment?.model}
+                    {getEquipmentName(currentRecord.equipment)}
                   </h3>
                   <Badge className={getStatusBadgeClass(currentRecord.status)}>
                     {currentRecord.status}
@@ -542,7 +547,7 @@ const Manutencao = () => {
             <div className="grid gap-4 py-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h4 className="font-medium">{currentRecord.equipment?.name} {currentRecord.equipment?.model}</h4>
+                  <h4 className="font-medium">{getEquipmentName(currentRecord.equipment)}</h4>
                   <p className="text-sm text-muted-foreground">Quantidade: {currentRecord.quantity}</p>
                 </div>
                 <Badge className={getStatusBadgeClass(currentRecord.status)}>

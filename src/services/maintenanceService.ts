@@ -45,7 +45,10 @@ export const fetchMaintenanceRecords = async (): Promise<MaintenanceRecord[]> =>
     return [];
   }
 
-  return data || [];
+  return (data || []).map(item => ({
+    ...item,
+    status: item.status as MaintenanceStatus
+  }));
 };
 
 export const createMaintenanceRecord = async (recordData: Omit<MaintenanceRecord, 'id' | 'created_at' | 'updated_at' | 'created_by' | 'equipment'>): Promise<MaintenanceRecord | null> => {
@@ -67,7 +70,10 @@ export const createMaintenanceRecord = async (recordData: Omit<MaintenanceRecord
   }
 
   toast.success('Registro de manutenção criado com sucesso!');
-  return data;
+  return {
+    ...data,
+    status: data.status as MaintenanceStatus
+  };
 };
 
 export const updateMaintenanceRecord = async (id: string, recordData: Partial<MaintenanceRecord>): Promise<MaintenanceRecord | null> => {
@@ -85,7 +91,10 @@ export const updateMaintenanceRecord = async (id: string, recordData: Partial<Ma
   }
 
   toast.success('Registro de manutenção atualizado com sucesso!');
-  return data;
+  return {
+    ...data,
+    status: data.status as MaintenanceStatus
+  };
 };
 
 export const deleteMaintenanceRecord = async (id: string): Promise<boolean> => {
@@ -123,7 +132,10 @@ export const completeMaintenanceRecord = async (id: string, technicianNotes?: st
   }
 
   toast.success('Manutenção concluída com sucesso!');
-  return data;
+  return {
+    ...data,
+    status: data.status as MaintenanceStatus
+  };
 };
 
 export const reopenMaintenanceRecord = async (id: string): Promise<MaintenanceRecord | null> => {
@@ -144,7 +156,10 @@ export const reopenMaintenanceRecord = async (id: string): Promise<MaintenanceRe
   }
 
   toast.success('Manutenção reaberta com sucesso!');
-  return data;
+  return {
+    ...data,
+    status: data.status as MaintenanceStatus
+  };
 };
 
 export const adoptMaintenanceRecord = async (recordId: string): Promise<boolean> => {

@@ -129,23 +129,31 @@ export const adoptReader = async (readerId: string): Promise<boolean> => {
 };
 
 // Dashboard helper functions
-export const getReadersByStatus = async () => {
+export const getReadersByStatus = async (): Promise<Record<EquipmentStatus, number>> => {
   const { data, error } = await supabase
     .from('readers')
-    .select(`
-      *,
-      equipment:equipment_id (
-        id,
-        brand,
-        model,
-        category
-      )
-    `);
+    .select('status');
 
   if (error) {
     console.error('Error fetching readers by status:', error);
-    return [];
+    return {
+      'Disponível': 0,
+      'Em Uso': 0,
+      'Em Manutenção': 0
+    };
   }
 
-  return data || [];
+  const statusCounts: Record<EquipmentStatus, number> = {
+    'Disponível': 0,
+    'Em Uso': 0,
+    'Em Manutenção': 0
+  };
+
+  data?.forEach(reader => {
+    if (reader.status in statusCounts) {
+      statusCounts[reader.status as EquipmentStatus]++;
+    }
+  });
+
+  return statusCounts;
 };

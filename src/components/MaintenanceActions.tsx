@@ -85,6 +85,12 @@ const MaintenanceActions = ({ record, onUpdate }: MaintenanceActionsProps) => {
     }
   };
 
+  // Helper function to get equipment display name
+  const getEquipmentName = () => {
+    if (!record.equipment) return 'N/A';
+    return `${record.equipment.brand} ${record.equipment.model}`;
+  };
+
   return (
     <div className="flex space-x-2">
       <Button variant="outline" size="sm" onClick={() => setIsEditOpen(true)}>
@@ -165,7 +171,7 @@ const MaintenanceActions = ({ record, onUpdate }: MaintenanceActionsProps) => {
           </DialogHeader>
           <div className="py-4">
             <div className="border-l-4 border-red-500 pl-4">
-              <p className="font-medium">Equipamento: {record.equipment?.name || 'N/A'}</p>
+              <p className="font-medium">Equipamento: {getEquipmentName()}</p>
               <p className="text-sm text-muted-foreground">Status: {record.status}</p>
               <p className="text-sm text-muted-foreground">Data de Envio: {new Date(record.send_date).toLocaleDateString('pt-BR')}</p>
             </div>
@@ -188,7 +194,7 @@ const MaintenanceActions = ({ record, onUpdate }: MaintenanceActionsProps) => {
           </DialogHeader>
           <div className="py-4">
             <div className="border-l-4 border-amber-500 pl-4">
-              <p className="font-medium">Equipamento: {record.equipment?.name || 'N/A'}</p>
+              <p className="font-medium">Equipamento: {getEquipmentName()}</p>
               <p className="text-sm text-muted-foreground">Status atual: {record.status}</p>
             </div>
           </div>
