@@ -1,18 +1,20 @@
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/components/ui/sonner";
+
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/components/ui/sonner';
 
 export interface Supplier {
   id: string;
   name: string;
   cnpj: string;
-  address?: string;
-  phone?: string;
   contact_name?: string;
+  phone?: string;
   email?: string;
+  address?: string;
   average_delivery_days?: number;
   image_url?: string;
   created_at?: string;
   updated_at?: string;
+  created_by?: string;
 }
 
 export const fetchSuppliers = async (): Promise<Supplier[]> => {
@@ -22,66 +24,51 @@ export const fetchSuppliers = async (): Promise<Supplier[]> => {
     .order('name');
 
   if (error) {
-    toast.error('Erro ao carregar fornecedores', {
-      description: error.message
-    });
+    console.error('Error fetching suppliers:', error);
+    toast.error('Erro ao carregar fornecedores');
     return [];
   }
 
   return data || [];
 };
 
-export const getSupplierById = async (id: string): Promise<Supplier | null> => {
+export const createSupplier = async (supplierData: Omit<Supplier, 'id' | 'created_at' | 'updated_at' | 'created_by'>): Promise<Supplier | null> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  
   const { data, error } = await supabase
     .from('suppliers')
-    .select('*')
-    .eq('id', id)
-    .single();
-
-  if (error) {
-    toast.error('Erro ao carregar dados do fornecedor', {
-      description: error.message
-    });
-    return null;
-  }
-
-  return data;
-};
-
-export const createSupplier = async (supplier: Omit<Supplier, 'id' | 'created_at' | 'updated_at'>): Promise<Supplier | null> => {
-  const { data, error } = await supabase
-    .from('suppliers')
-    .insert([supplier])
+    .insert({
+      ...supplierData,
+      created_by: user?.id
+    })
     .select()
     .single();
 
   if (error) {
-    toast.error('Erro ao criar fornecedor', {
-      description: error.message
-    });
+    console.error('Error creating supplier:', error);
+    toast.error('Erro ao criar fornecedor');
     return null;
   }
 
-  toast.success('Fornecedor criado com sucesso');
+  toast.success('Fornecedor criado com sucesso!');
   return data;
 };
 
-export const updateSupplier = async (id: string, supplier: Partial<Supplier>): Promise<Supplier | null> => {
+export const updateSupplier = async (id: string, supplierData: Partial<Supplier>): Promise<Supplier | null> => {
   const { data, error } = await supabase
     .from('suppliers')
-    .update(supplier)
+    .update(supplierData)
     .eq('id', id)
     .select()
     .single();
 
   if (error) {
-    toast.error('Erro ao atualizar fornecedor', {
-      description: error.message
-    });
+    console.error('Error updating supplier:', error);
+    toast.error('Erro ao atualizar fornecedor');
     return null;
   }
 
-  toast.success('Fornecedor atualizado com sucesso');
+  toast.success('Fornecedor atualizado com sucesso!');
   return data;
 };
 
@@ -92,59 +79,34 @@ export const deleteSupplier = async (id: string): Promise<boolean> => {
     .eq('id', id);
 
   if (error) {
-    toast.error('Erro ao excluir fornecedor', {
-      description: error.message
-    });
+    console.error('Error deleting supplier:', error);
+    toast.error('Erro ao excluir fornecedor');
     return false;
   }
 
-  toast.success('Fornecedor excluído com sucesso');
+  toast.success('Fornecedor excluído com sucesso!');
   return true;
 };
 
-// Enable realtime updates for suppliers table
-export const enableSupplierRealtime = () => {
-  return supabase
-    .channel('supplier-changes')
-    .on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'suppliers'
-    }, () => {
-      // This callback will be empty since we'll handle the refresh in the component
-    })
-    .subscribe();
-};
-
-// Upload supplier image to Supabase storage
-export const uploadSupplierImage = async (file: File): Promise<string | null> => {
-  try {
-    // Create a unique filename
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-    const filePath = `suppliers/${fileName}`;
-    
-    const { data, error } = await supabase.storage
-      .from('suppliers')
-      .upload(filePath, file);
-    
-    if (error) {
-      toast.error('Erro ao fazer upload da imagem', {
-        description: error.message
-      });
-      return null;
-    }
-    
-    // Get public URL
-    const { data: publicUrlData } = supabase.storage
-      .from('suppliers')
-      .getPublicUrl(filePath);
-    
-    return publicUrlData.publicUrl;
-  } catch (error: any) {
-    toast.error('Erro ao fazer upload da imagem', {
-      description: error.message
-    });
-    return null;
+export const adoptSupplier = async (supplierId: string): Promise<boolean> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    toast.error('Usuário não autenticado');
+    return false;
   }
+
+  const { error } = await supabase
+    .from('suppliers')
+    .update({ created_by: user.id })
+    .eq('id', supplierId);
+
+  if (error) {
+    console.error('Error adopting supplier:', error);
+    toast.error('Erro ao adotar fornecedor');
+    return false;
+  }
+
+  toast.success('Fornecedor adotado com sucesso!');
+  return true;
 };

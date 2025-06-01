@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Database, Plus, Search } from "lucide-react";
+import { Database, Plus, Search, Edit, Trash2 } from "lucide-react";
 import { 
   Dialog, 
   DialogContent, 
@@ -26,12 +26,16 @@ import {
   createReader, 
   updateReader, 
   deleteReader,
+  adoptReader,
   ReaderWithEquipment, 
   EquipmentCondition, 
   EquipmentStatus 
 } from "@/services/readerService";
 import { fetchEquipment, Equipment } from "@/services/equipmentService";
 import { supabase } from "@/integrations/supabase/client";
+import { useCreatorInfo } from "@/hooks/useCreatorInfo";
+import CreatorInfo from "@/components/CreatorInfo";
+import AdoptButton from "@/components/AdoptButton";
 
 const Leitoras = () => {
   const [readers, setReaders] = useState<ReaderWithEquipment[]>([]);
@@ -52,6 +56,8 @@ const Leitoras = () => {
     condition: 'Novo' as EquipmentCondition,
     acquisition_date: new Date().toISOString().split('T')[0]
   });
+
+  const { creatorInfo } = useCreatorInfo(currentReader?.created_by);
 
   const loadData = async () => {
     try {
@@ -169,6 +175,16 @@ const Leitoras = () => {
     }
   };
 
+  const handleAdoptReader = async (readerId: string) => {
+    const result = await adoptReader(readerId);
+    if (result) {
+      loadData();
+      if (currentReader?.id === readerId) {
+        setIsEditDialogOpen(false);
+      }
+    }
+  };
+
   // Filter readers based on search term and status
   useEffect(() => {
     let filtered = readers;
@@ -187,6 +203,8 @@ const Leitoras = () => {
     
     setFilteredReaders(filtered);
   }, [searchTerm, statusFilter, readers]);
+
+  const isOrphaned = (reader: ReaderWithEquipment) => !reader.created_by;
 
   return (
     <MainLayout title="Controle de Leitoras">
@@ -297,7 +315,7 @@ const Leitoras = () => {
                           size="sm"
                           onClick={() => handleOpenEditDialog(reader)}
                         >
-                          Editar
+                          <Edit className="h-4 w-4" />
                         </Button>
                         <Button 
                           variant="outline" 
@@ -305,8 +323,13 @@ const Leitoras = () => {
                           className="text-red-500"
                           onClick={() => handleOpenDeleteDialog(reader)}
                         >
-                          Excluir
+                          <Trash2 className="h-4 w-4" />
                         </Button>
+                        <AdoptButton
+                          isOrphaned={isOrphaned(reader)}
+                          onAdopt={() => handleAdoptReader(reader.id)}
+                          size="icon"
+                        />
                       </div>
                     </TableCell>
                   </TableRow>
@@ -418,7 +441,7 @@ const Leitoras = () => {
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="edit-code">Código da Leitora</Label>
+              <Label htmlFor="code">Código da Leitora</Label>
               <Input 
                 id="code" 
                 placeholder="Insira o código único" 
@@ -428,7 +451,7 @@ const Leitoras = () => {
             </div>
             
             <div className="flex flex-col gap-2">
-              <Label htmlFor="edit-equipment">Modelo de Equipamento</Label>
+              <Label htmlFor="equipment_id">Modelo de Equipamento</Label>
               <Select 
                 value={formData.equipment_id} 
                 onValueChange={(value) => handleSelectChange('equipment_id', value)}
@@ -458,7 +481,7 @@ const Leitoras = () => {
             
             <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-2">
-                <Label htmlFor="edit-status">Status</Label>
+                <Label htmlFor="status">Status</Label>
                 <Select 
                   value={formData.status} 
                   onValueChange={(value) => handleSelectChange('status', value as EquipmentStatus)}
@@ -474,7 +497,7 @@ const Leitoras = () => {
                 </Select>
               </div>
               <div className="flex flex-col gap-2">
-                <Label htmlFor="edit-condition">Condição</Label>
+                <Label htmlFor="condition">Condição</Label>
                 <Select 
                   value={formData.condition} 
                   onValueChange={(value) => handleSelectChange('condition', value as EquipmentCondition)}
@@ -489,6 +512,21 @@ const Leitoras = () => {
                 </Select>
               </div>
             </div>
+
+            {currentReader && (
+              <>
+                <AdoptButton
+                  isOrphaned={isOrphaned(currentReader)}
+                  onAdopt={() => handleAdoptReader(currentReader.id)}
+                  className="self-start"
+                />
+                <CreatorInfo
+                  createdBy={currentReader.created_by}
+                  createdAt={currentReader.created_at}
+                  creatorName={creatorInfo.creatorName}
+                />
+              </>
+            )}
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancelar</Button>

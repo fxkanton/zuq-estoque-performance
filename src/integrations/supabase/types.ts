@@ -319,6 +319,7 @@ export type Database = {
       }
       readers: {
         Row: {
+          acquisition_date: string | null
           code: string
           condition: Database["public"]["Enums"]["equipment_condition"] | null
           created_at: string | null
@@ -329,6 +330,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          acquisition_date?: string | null
           code: string
           condition?: Database["public"]["Enums"]["equipment_condition"] | null
           created_at?: string | null
@@ -339,6 +341,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          acquisition_date?: string | null
           code?: string
           condition?: Database["public"]["Enums"]["equipment_condition"] | null
           created_at?: string | null

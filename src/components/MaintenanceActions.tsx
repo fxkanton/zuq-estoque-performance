@@ -13,9 +13,13 @@ import {
   updateMaintenanceRecord, 
   deleteMaintenanceRecord, 
   reopenMaintenanceRecord,
+  adoptMaintenanceRecord,
   MaintenanceRecord 
 } from '@/services/maintenanceService';
 import { toast } from '@/components/ui/sonner';
+import { useCreatorInfo } from "@/hooks/useCreatorInfo";
+import CreatorInfo from "@/components/CreatorInfo";
+import AdoptButton from "@/components/AdoptButton";
 
 interface MaintenanceActionsProps {
   record: MaintenanceRecord;
@@ -29,6 +33,9 @@ const MaintenanceActions = ({ record, onUpdate }: MaintenanceActionsProps) => {
   const [notes, setNotes] = useState(record.notes || '');
   const [technicianNotes, setTechnicianNotes] = useState(record.technician_notes || '');
   const isCompleted = record.status === 'Concluído';
+  const isOrphaned = !record.created_by;
+
+  const { creatorInfo } = useCreatorInfo(record.created_by);
 
   const handleEdit = async () => {
     try {
@@ -70,6 +77,14 @@ const MaintenanceActions = ({ record, onUpdate }: MaintenanceActionsProps) => {
     }
   };
 
+  const handleAdopt = async () => {
+    const result = await adoptMaintenanceRecord(record.id);
+    if (result) {
+      setIsEditOpen(false);
+      onUpdate();
+    }
+  };
+
   return (
     <div className="flex space-x-2">
       <Button variant="outline" size="sm" onClick={() => setIsEditOpen(true)}>
@@ -85,6 +100,11 @@ const MaintenanceActions = ({ record, onUpdate }: MaintenanceActionsProps) => {
           <RotateCw className="h-4 w-4 mr-1" /> Reabrir
         </Button>
       )}
+
+      <AdoptButton
+        isOrphaned={isOrphaned}
+        onAdopt={handleAdopt}
+      />
 
       {/* Edit Dialog */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
@@ -114,6 +134,18 @@ const MaintenanceActions = ({ record, onUpdate }: MaintenanceActionsProps) => {
                 rows={3}
               />
             </div>
+
+            <AdoptButton
+              isOrphaned={isOrphaned}
+              onAdopt={handleAdopt}
+              className="self-start"
+            />
+
+            <CreatorInfo
+              createdBy={record.created_by}
+              createdAt={record.created_at}
+              creatorName={creatorInfo.creatorName}
+            />
           </div>
           <div className="flex justify-end gap-2">
             <Button variant="outline" onClick={() => setIsEditOpen(false)}>Cancelar</Button>

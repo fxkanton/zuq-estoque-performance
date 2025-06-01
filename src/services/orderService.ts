@@ -1,8 +1,6 @@
 
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/components/ui/sonner";
-import { Equipment } from "./equipmentService";
-import { Supplier } from "./supplierService";
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/components/ui/sonner';
 
 export type OrderStatus = 'Pendente' | 'Parcialmente Recebido' | 'Recebido' | 'Arquivado';
 
@@ -14,164 +12,102 @@ export interface Order {
   expected_arrival_date?: string;
   invoice_number?: string;
   notes?: string;
-  status: OrderStatus;
+  status?: OrderStatus;
   created_at?: string;
   updated_at?: string;
+  created_by?: string;
 }
 
 export interface OrderWithDetails extends Order {
-  equipment: Equipment;
-  supplier: Supplier;
+  equipment: {
+    id: string;
+    brand: string;
+    model: string;
+    category: string;
+  };
+  supplier: {
+    id: string;
+    name: string;
+  };
 }
 
 export interface OrderBatch {
   id: string;
   order_id: string;
-  shipping_date?: string;
-  tracking_code?: string;
-  received_date?: string;
   received_quantity: number;
+  received_date?: string;
   invoice_number?: string;
   notes?: string;
   created_at?: string;
   updated_at?: string;
+  created_by?: string;
 }
 
-export const fetchOrders = async (includeArchived: boolean = false): Promise<OrderWithDetails[]> => {
-  let query = supabase
+export const fetchOrders = async (): Promise<OrderWithDetails[]> => {
+  const { data, error } = await supabase
     .from('orders')
     .select(`
       *,
-      equipment:equipment_id (*),
-      supplier:supplier_id (*)
+      equipment:equipment_id (
+        id,
+        brand,
+        model,
+        category
+      ),
+      supplier:supplier_id (
+        id,
+        name
+      )
     `)
     .order('created_at', { ascending: false });
-    
-  if (!includeArchived) {
-    query = query.neq('status', 'Arquivado');
-  } else {
-    query = query.eq('status', 'Arquivado');
-  }
-
-  const { data, error } = await query;
 
   if (error) {
-    toast.error('Erro ao carregar pedidos', {
-      description: error.message
-    });
+    console.error('Error fetching orders:', error);
+    toast.error('Erro ao carregar pedidos');
     return [];
   }
 
   return data || [];
 };
 
-export const getOrderById = async (id: string): Promise<OrderWithDetails | null> => {
+export const createOrder = async (orderData: Omit<Order, 'id' | 'created_at' | 'updated_at' | 'created_by'>): Promise<Order | null> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  
   const { data, error } = await supabase
     .from('orders')
-    .select(`
-      *,
-      equipment:equipment_id (*),
-      supplier:supplier_id (*)
-    `)
-    .eq('id', id)
-    .single();
-
-  if (error) {
-    toast.error('Erro ao carregar dados do pedido', {
-      description: error.message
-    });
-    return null;
-  }
-
-  return data;
-};
-
-export const createOrder = async (order: Omit<Order, 'id' | 'created_at' | 'updated_at' | 'status'>): Promise<Order | null> => {
-  const { data, error } = await supabase
-    .from('orders')
-    .insert([{ ...order, status: 'Pendente' }])
+    .insert({
+      ...orderData,
+      created_by: user?.id
+    })
     .select()
     .single();
 
   if (error) {
-    toast.error('Erro ao criar pedido', {
-      description: error.message
-    });
+    console.error('Error creating order:', error);
+    toast.error('Erro ao criar pedido');
     return null;
   }
 
-  toast.success('Pedido criado com sucesso');
+  toast.success('Pedido criado com sucesso!');
   return data;
 };
 
-export const updateOrder = async (id: string, order: Partial<Order>): Promise<Order | null> => {
+export const updateOrder = async (id: string, orderData: Partial<Order>): Promise<Order | null> => {
   const { data, error } = await supabase
     .from('orders')
-    .update(order)
+    .update(orderData)
     .eq('id', id)
     .select()
     .single();
 
   if (error) {
-    toast.error('Erro ao atualizar pedido', {
-      description: error.message
-    });
+    console.error('Error updating order:', error);
+    toast.error('Erro ao atualizar pedido');
     return null;
   }
 
-  toast.success('Pedido atualizado com sucesso');
+  toast.success('Pedido atualizado com sucesso!');
   return data;
-};
-
-export const archiveOrder = async (id: string): Promise<boolean> => {
-  const { error } = await supabase
-    .from('orders')
-    .update({ status: 'Arquivado' })
-    .eq('id', id);
-
-  if (error) {
-    toast.error('Erro ao arquivar pedido', {
-      description: error.message
-    });
-    return false;
-  }
-
-  toast.success('Pedido arquivado com sucesso');
-  return true;
-};
-
-export const unarchiveOrder = async (id: string): Promise<boolean> => {
-  const { error } = await supabase
-    .from('orders')
-    .update({ status: 'Pendente' })
-    .eq('id', id);
-
-  if (error) {
-    toast.error('Erro ao desarquivar pedido', {
-      description: error.message
-    });
-    return false;
-  }
-
-  toast.success('Pedido desarquivado com sucesso');
-  return true;
-};
-
-export const completeOrder = async (id: string): Promise<boolean> => {
-  const { error } = await supabase
-    .from('orders')
-    .update({ status: 'Recebido' })
-    .eq('id', id);
-
-  if (error) {
-    toast.error('Erro ao concluir pedido', {
-      description: error.message
-    });
-    return false;
-  }
-
-  toast.success('Pedido concluído com sucesso');
-  return true;
 };
 
 export const deleteOrder = async (id: string): Promise<boolean> => {
@@ -181,13 +117,35 @@ export const deleteOrder = async (id: string): Promise<boolean> => {
     .eq('id', id);
 
   if (error) {
-    toast.error('Erro ao excluir pedido', {
-      description: error.message
-    });
+    console.error('Error deleting order:', error);
+    toast.error('Erro ao excluir pedido');
     return false;
   }
 
-  toast.success('Pedido excluído com sucesso');
+  toast.success('Pedido excluído com sucesso!');
+  return true;
+};
+
+export const adoptOrder = async (orderId: string): Promise<boolean> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    toast.error('Usuário não autenticado');
+    return false;
+  }
+
+  const { error } = await supabase
+    .from('orders')
+    .update({ created_by: user.id })
+    .eq('id', orderId);
+
+  if (error) {
+    console.error('Error adopting order:', error);
+    toast.error('Erro ao adotar pedido');
+    return false;
+  }
+
+  toast.success('Pedido adotado com sucesso!');
   return true;
 };
 
@@ -196,89 +154,57 @@ export const fetchOrderBatches = async (orderId: string): Promise<OrderBatch[]> 
     .from('order_batches')
     .select('*')
     .eq('order_id', orderId)
-    .order('created_at', { ascending: false });
+    .order('received_date', { ascending: false });
 
   if (error) {
-    toast.error('Erro ao carregar lotes do pedido', {
-      description: error.message
-    });
+    console.error('Error fetching order batches:', error);
     return [];
   }
 
   return data || [];
 };
 
-export const createOrderBatch = async (batch: Omit<OrderBatch, 'id' | 'created_at' | 'updated_at'>): Promise<OrderBatch | null> => {
+export const createOrderBatch = async (batchData: Omit<OrderBatch, 'id' | 'created_at' | 'updated_at' | 'created_by'>): Promise<OrderBatch | null> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  
   const { data, error } = await supabase
     .from('order_batches')
-    .insert([batch])
+    .insert({
+      ...batchData,
+      created_by: user?.id
+    })
     .select()
     .single();
 
   if (error) {
-    toast.error('Erro ao registrar lote', {
-      description: error.message
-    });
+    console.error('Error creating order batch:', error);
+    toast.error('Erro ao criar recebimento');
     return null;
   }
 
-  toast.success('Lote registrado com sucesso');
+  toast.success('Recebimento registrado com sucesso!');
   return data;
 };
 
-export const getOrderTotalReceived = async (orderId: string): Promise<number> => {
-  const { data, error } = await supabase
+export const adoptOrderBatch = async (batchId: string): Promise<boolean> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    toast.error('Usuário não autenticado');
+    return false;
+  }
+
+  const { error } = await supabase
     .from('order_batches')
-    .select('received_quantity')
-    .eq('order_id', orderId);
+    .update({ created_by: user.id })
+    .eq('id', batchId);
 
   if (error) {
-    console.error('Error fetching order batches:', error);
-    return 0;
+    console.error('Error adopting order batch:', error);
+    toast.error('Erro ao adotar recebimento');
+    return false;
   }
 
-  return data.reduce((total, batch) => total + batch.received_quantity, 0);
-};
-
-export const getPendingOrders = async (limit: number = 3): Promise<OrderWithDetails[]> => {
-  const { data, error } = await supabase
-    .from('orders')
-    .select(`
-      *,
-      equipment:equipment_id (*),
-      supplier:supplier_id (*)
-    `)
-    .not('status', 'in', '("Recebido","Arquivado")')
-    .order('expected_arrival_date', { ascending: true })
-    .limit(limit);
-
-  if (error) {
-    console.error('Error fetching pending orders:', error);
-    return [];
-  }
-
-  return data || [];
-};
-
-export const getOrdersStats = async (): Promise<{ pendingCount: number, partialCount: number, receivedCount: number }> => {
-  const { data, error } = await supabase
-    .from('orders')
-    .select('status');
-
-  if (error) {
-    console.error('Error fetching orders stats:', error);
-    return { pendingCount: 0, partialCount: 0, receivedCount: 0 };
-  }
-
-  let pendingCount = 0;
-  let partialCount = 0;
-  let receivedCount = 0;
-
-  data.forEach(order => {
-    if (order.status === 'Pendente') pendingCount++;
-    if (order.status === 'Parcialmente Recebido') partialCount++;
-    if (order.status === 'Recebido') receivedCount++;
-  });
-
-  return { pendingCount, partialCount, receivedCount };
+  toast.success('Recebimento adotado com sucesso!');
+  return true;
 };

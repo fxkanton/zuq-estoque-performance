@@ -1,9 +1,9 @@
-import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/components/ui/sonner";
-import { Equipment } from "./equipmentService";
 
-export type EquipmentCondition = 'Novo' | 'Recondicionado';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from '@/components/ui/sonner';
+
 export type EquipmentStatus = 'Disponível' | 'Em Uso' | 'Em Manutenção';
+export type EquipmentCondition = 'Novo' | 'Recondicionado';
 
 export interface Reader {
   id: string;
@@ -14,10 +14,16 @@ export interface Reader {
   acquisition_date?: string;
   created_at?: string;
   updated_at?: string;
+  created_by?: string;
 }
 
 export interface ReaderWithEquipment extends Reader {
-  equipment: Equipment;
+  equipment: {
+    id: string;
+    brand: string;
+    model: string;
+    category: string;
+  };
 }
 
 export const fetchReaders = async (): Promise<ReaderWithEquipment[]> => {
@@ -25,74 +31,61 @@ export const fetchReaders = async (): Promise<ReaderWithEquipment[]> => {
     .from('readers')
     .select(`
       *,
-      equipment:equipment_id (*)
+      equipment:equipment_id (
+        id,
+        brand,
+        model,
+        category
+      )
     `)
     .order('code');
 
   if (error) {
-    toast.error('Erro ao carregar leitoras', {
-      description: error.message
-    });
+    console.error('Error fetching readers:', error);
+    toast.error('Erro ao carregar leitoras');
     return [];
   }
 
   return data || [];
 };
 
-export const getReaderById = async (id: string): Promise<ReaderWithEquipment | null> => {
+export const createReader = async (readerData: Omit<Reader, 'id' | 'created_at' | 'updated_at' | 'created_by'>): Promise<Reader | null> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  
   const { data, error } = await supabase
     .from('readers')
-    .select(`
-      *,
-      equipment:equipment_id (*)
-    `)
-    .eq('id', id)
-    .single();
-
-  if (error) {
-    toast.error('Erro ao carregar dados da leitora', {
-      description: error.message
-    });
-    return null;
-  }
-
-  return data;
-};
-
-export const createReader = async (reader: Omit<Reader, 'id' | 'created_at' | 'updated_at'>): Promise<Reader | null> => {
-  const { data, error } = await supabase
-    .from('readers')
-    .insert([reader])
+    .insert({
+      ...readerData,
+      created_by: user?.id
+    })
     .select()
     .single();
 
   if (error) {
-    toast.error('Erro ao criar leitora', {
-      description: error.message
-    });
+    console.error('Error creating reader:', error);
+    toast.error('Erro ao criar leitora');
     return null;
   }
 
-  toast.success('Leitora criada com sucesso');
+  toast.success('Leitora criada com sucesso!');
   return data;
 };
 
-export const updateReader = async (id: string, reader: Partial<Reader>): Promise<Reader | null> => {
+export const updateReader = async (id: string, readerData: Partial<Reader>): Promise<Reader | null> => {
   const { data, error } = await supabase
     .from('readers')
-    .update(reader)
+    .update(readerData)
     .eq('id', id)
     .select()
     .single();
 
   if (error) {
-    toast.error('Erro ao atualizar leitora', {
-      description: error.message
-    });
+    console.error('Error updating reader:', error);
+    toast.error('Erro ao atualizar leitora');
     return null;
   }
 
-  toast.success('Leitora atualizada com sucesso');
+  toast.success('Leitora atualizada com sucesso!');
   return data;
 };
 
@@ -103,55 +96,34 @@ export const deleteReader = async (id: string): Promise<boolean> => {
     .eq('id', id);
 
   if (error) {
-    toast.error('Erro ao excluir leitora', {
-      description: error.message
-    });
+    console.error('Error deleting reader:', error);
+    toast.error('Erro ao excluir leitora');
     return false;
   }
 
-  toast.success('Leitora excluída com sucesso');
+  toast.success('Leitora excluída com sucesso!');
   return true;
 };
 
-export const getReadersByStatus = async (): Promise<Record<EquipmentStatus, number>> => {
-  const { data, error } = await supabase
-    .from('readers')
-    .select('status');
-
-  if (error) {
-    toast.error('Erro ao carregar estatísticas de leitoras', {
-      description: error.message
-    });
-    return {
-      'Disponível': 0,
-      'Em Uso': 0,
-      'Em Manutenção': 0
-    };
+export const adoptReader = async (readerId: string): Promise<boolean> => {
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    toast.error('Usuário não autenticado');
+    return false;
   }
 
-  const counts: Record<EquipmentStatus, number> = {
-    'Disponível': 0,
-    'Em Uso': 0,
-    'Em Manutenção': 0
-  };
+  const { error } = await supabase
+    .from('readers')
+    .update({ created_by: user.id })
+    .eq('id', readerId);
 
-  data.forEach(reader => {
-    counts[reader.status] = (counts[reader.status] || 0) + 1;
-  });
+  if (error) {
+    console.error('Error adopting reader:', error);
+    toast.error('Erro ao adotar leitora');
+    return false;
+  }
 
-  return counts;
-};
-
-// Enable realtime updates for readers table
-export const enableReaderRealtime = () => {
-  return supabase
-    .channel('reader-changes')
-    .on('postgres_changes', {
-      event: '*',
-      schema: 'public',
-      table: 'readers'
-    }, () => {
-      // This callback will be empty since we'll handle the refresh in the component
-    })
-    .subscribe();
+  toast.success('Leitora adotada com sucesso!');
+  return true;
 };

@@ -22,7 +22,7 @@ interface OrderBatchFormProps {
 }
 
 const OrderBatchForm = ({ order, isOpen, onClose, onSave }: OrderBatchFormProps) => {
-  const [formData, setFormData] = useState<Omit<OrderBatch, 'id' | 'created_at' | 'updated_at'>>({
+  const [formData, setFormData] = useState<Omit<OrderBatch, 'id' | 'created_at' | 'updated_at' | 'created_by'>>({
     order_id: order.id,
     received_quantity: 0,
     received_date: new Date().toISOString().split('T')[0],

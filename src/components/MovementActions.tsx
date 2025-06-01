@@ -20,8 +20,11 @@ import {
   SelectContent, 
   SelectItem 
 } from "@/components/ui/select";
-import { Movement, MovementType, updateMovement, deleteMovement } from '@/services/movementService';
+import { Movement, MovementType, updateMovement, deleteMovement, adoptMovement } from '@/services/movementService';
 import { Equipment } from '@/services/equipmentService';
+import { useCreatorInfo } from "@/hooks/useCreatorInfo";
+import CreatorInfo from "@/components/CreatorInfo";
+import AdoptButton from "@/components/AdoptButton";
 
 interface MovementActionsProps {
   movement: Movement;
@@ -41,6 +44,8 @@ const MovementActions = ({ movement, equipment, allEquipment, onSuccess }: Movem
     movement_date: movement.movement_date ? new Date(movement.movement_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
     notes: movement.notes || ''
   });
+
+  const { creatorInfo } = useCreatorInfo(movement.created_by);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { id, value } = e.target;
@@ -81,6 +86,16 @@ const MovementActions = ({ movement, equipment, allEquipment, onSuccess }: Movem
     }
   };
 
+  const handleAdoptMovement = async () => {
+    const result = await adoptMovement(movement.id);
+    if (result) {
+      setIsEditDialogOpen(false);
+      onSuccess();
+    }
+  };
+
+  const isOrphaned = !movement.created_by;
+
   return (
     <>
       <div className="flex gap-1">
@@ -103,6 +118,12 @@ const MovementActions = ({ movement, equipment, allEquipment, onSuccess }: Movem
         >
           <Trash2 className="h-3.5 w-3.5" />
         </Button>
+
+        <AdoptButton
+          isOrphaned={isOrphaned}
+          onAdopt={handleAdoptMovement}
+          size="icon"
+        />
       </div>
       
       {/* Edit Movement Dialog */}
@@ -183,6 +204,18 @@ const MovementActions = ({ movement, equipment, allEquipment, onSuccess }: Movem
                 onChange={handleInputChange}
               />
             </div>
+
+            <AdoptButton
+              isOrphaned={isOrphaned}
+              onAdopt={handleAdoptMovement}
+              className="self-start"
+            />
+
+            <CreatorInfo
+              createdBy={movement.created_by}
+              createdAt={movement.created_at}
+              creatorName={creatorInfo.creatorName}
+            />
           </div>
           
           <DialogFooter>
