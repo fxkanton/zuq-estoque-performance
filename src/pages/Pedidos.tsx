@@ -352,7 +352,7 @@ const Pedidos = () => {
                   <SelectItem value="Parcialmente Recebido">Parcialmente Recebido</SelectItem>
                   <SelectItem value="Recebido">Recebido</SelectItem>
                   <SelectItem value="Cancelado">Cancelado</SelectItem>
-                  {showArchived && <SelectItem value="Arquivado">Arquivado</SelectItem>}
+                  {showArchived && <SelectItem value="Cancelado">Cancelado</SelectItem>}
                 </SelectContent>
               </Select>
             </div>
@@ -497,7 +497,7 @@ const Pedidos = () => {
                               <ArchiveRestore className="h-3.5 w-3.5" />
                             </Button>
                           ) : (
-                            order.status !== 'Arquivado' && (
+                            order.status !== 'Cancelado' && (
                               <Button 
                                 variant="outline" 
                                 size="icon"
