@@ -29,6 +29,20 @@ export interface Order {
   };
 }
 
+export interface OrderWithDetails extends Order {
+  equipment: {
+    id: string;
+    brand: string;
+    model: string;
+    category: string;
+  };
+  supplier: {
+    id: string;
+    name: string;
+    cnpj: string;
+  };
+}
+
 export interface OrderBatch {
   id: string;
   order_id: string;
@@ -43,7 +57,9 @@ export interface OrderBatch {
   created_by?: string;
 }
 
-export const fetchOrders = async (): Promise<Order[]> => {
+export const fetchOrders = async (showArchived: boolean = false): Promise<OrderWithDetails[]> => {
+  const statusFilter = showArchived ? ['Cancelado'] : ['Pendente', 'Parcialmente Recebido', 'Recebido'];
+  
   const { data, error } = await supabase
     .from('orders')
     .select(`
@@ -60,6 +76,7 @@ export const fetchOrders = async (): Promise<Order[]> => {
         cnpj
       )
     `)
+    .in('status', statusFilter)
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -68,7 +85,10 @@ export const fetchOrders = async (): Promise<Order[]> => {
     return [];
   }
 
-  return data || [];
+  return (data || []).map(order => ({
+    ...order,
+    status: order.status as OrderStatus
+  })) as OrderWithDetails[];
 };
 
 export const createOrder = async (orderData: Omit<Order, 'id' | 'created_at' | 'updated_at' | 'created_by' | 'equipment' | 'supplier'>): Promise<Order | null> => {
@@ -90,7 +110,10 @@ export const createOrder = async (orderData: Omit<Order, 'id' | 'created_at' | '
   }
 
   toast.success('Pedido criado com sucesso!');
-  return data;
+  return {
+    ...data,
+    status: data.status as OrderStatus
+  } as Order;
 };
 
 export const updateOrder = async (id: string, orderData: Partial<Order>): Promise<Order | null> => {
@@ -108,7 +131,10 @@ export const updateOrder = async (id: string, orderData: Partial<Order>): Promis
   }
 
   toast.success('Pedido atualizado com sucesso!');
-  return data;
+  return {
+    ...data,
+    status: data.status as OrderStatus
+  } as Order;
 };
 
 export const deleteOrder = async (id: string): Promise<boolean> => {
@@ -189,7 +215,7 @@ export const createOrderBatch = async (batchData: Omit<OrderBatch, 'id' | 'creat
 };
 
 // Dashboard helper functions
-export const getPendingOrders = async (): Promise<Order[]> => {
+export const getPendingOrders = async (): Promise<OrderWithDetails[]> => {
   const { data, error } = await supabase
     .from('orders')
     .select(`
@@ -214,7 +240,10 @@ export const getPendingOrders = async (): Promise<Order[]> => {
     return [];
   }
 
-  return data || [];
+  return (data || []).map(order => ({
+    ...order,
+    status: order.status as OrderStatus
+  })) as OrderWithDetails[];
 };
 
 export const getOrderTotalReceived = async (orderId: string): Promise<number> => {
