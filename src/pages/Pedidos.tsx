@@ -351,6 +351,7 @@ const Pedidos = () => {
                   <SelectItem value="Pendente">Pendente</SelectItem>
                   <SelectItem value="Parcialmente Recebido">Parcialmente Recebido</SelectItem>
                   <SelectItem value="Recebido">Recebido</SelectItem>
+                  <SelectItem value="Cancelado">Cancelado</SelectItem>
                   {showArchived && <SelectItem value="Arquivado">Arquivado</SelectItem>}
                 </SelectContent>
               </Select>
@@ -719,6 +720,7 @@ const Pedidos = () => {
                   <SelectItem value="Pendente">Pendente</SelectItem>
                   <SelectItem value="Parcialmente Recebido">Parcialmente Recebido</SelectItem>
                   <SelectItem value="Recebido">Recebido</SelectItem>
+                  <SelectItem value="Cancelado">Cancelado</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -801,7 +803,7 @@ const getStatusBadgeStyle = (status: string) => {
       return 'bg-blue-100 text-blue-800';
     case 'Recebido':
       return 'bg-green-100 text-green-800';
-    case 'Arquivado':
+    case 'Cancelado':
       return 'bg-gray-100 text-gray-800';
     default:
       return 'bg-gray-100 text-gray-800';

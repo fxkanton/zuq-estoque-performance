@@ -76,7 +76,7 @@ export const fetchOrders = async (showArchived: boolean = false): Promise<OrderW
         cnpj
       )
     `)
-    .in('status', statusFilter)
+    .in('status', statusFilter as any)
     .order('created_at', { ascending: false });
 
   if (error) {
@@ -99,7 +99,7 @@ export const createOrder = async (orderData: Omit<Order, 'id' | 'created_at' | '
     .insert({
       ...orderData,
       created_by: user?.id
-    })
+    } as any)
     .select()
     .single();
 
@@ -119,7 +119,7 @@ export const createOrder = async (orderData: Omit<Order, 'id' | 'created_at' | '
 export const updateOrder = async (id: string, orderData: Partial<Order>): Promise<Order | null> => {
   const { data, error } = await supabase
     .from('orders')
-    .update(orderData)
+    .update(orderData as any)
     .eq('id', id)
     .select()
     .single();
@@ -232,7 +232,7 @@ export const getPendingOrders = async (): Promise<OrderWithDetails[]> => {
         cnpj
       )
     `)
-    .in('status', ['Pendente', 'Parcialmente Recebido'])
+    .in('status', ['Pendente', 'Parcialmente Recebido'] as any)
     .order('expected_arrival_date', { ascending: true });
 
   if (error) {
@@ -263,7 +263,7 @@ export const getOrderTotalReceived = async (orderId: string): Promise<number> =>
 export const completeOrder = async (orderId: string): Promise<boolean> => {
   const { error } = await supabase
     .from('orders')
-    .update({ status: 'Recebido' })
+    .update({ status: 'Recebido' } as any)
     .eq('id', orderId);
 
   if (error) {
@@ -279,7 +279,7 @@ export const completeOrder = async (orderId: string): Promise<boolean> => {
 export const archiveOrder = async (orderId: string): Promise<boolean> => {
   const { error } = await supabase
     .from('orders')
-    .update({ status: 'Cancelado' })
+    .update({ status: 'Cancelado' } as any)
     .eq('id', orderId);
 
   if (error) {
@@ -295,7 +295,7 @@ export const archiveOrder = async (orderId: string): Promise<boolean> => {
 export const unarchiveOrder = async (orderId: string): Promise<boolean> => {
   const { error } = await supabase
     .from('orders')
-    .update({ status: 'Pendente' })
+    .update({ status: 'Pendente' } as any)
     .eq('id', orderId);
 
   if (error) {
