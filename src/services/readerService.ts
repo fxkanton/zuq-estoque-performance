@@ -127,3 +127,25 @@ export const adoptReader = async (readerId: string): Promise<boolean> => {
   toast.success('Leitora adotada com sucesso!');
   return true;
 };
+
+// Dashboard helper functions
+export const getReadersByStatus = async () => {
+  const { data, error } = await supabase
+    .from('readers')
+    .select(`
+      *,
+      equipment:equipment_id (
+        id,
+        brand,
+        model,
+        category
+      )
+    `);
+
+  if (error) {
+    console.error('Error fetching readers by status:', error);
+    return [];
+  }
+
+  return data || [];
+};

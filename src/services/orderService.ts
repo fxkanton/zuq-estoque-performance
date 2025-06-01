@@ -208,3 +208,92 @@ export const adoptOrderBatch = async (batchId: string): Promise<boolean> => {
   toast.success('Recebimento adotado com sucesso!');
   return true;
 };
+
+// Dashboard helper functions
+export const getPendingOrders = async () => {
+  const { data, error } = await supabase
+    .from('orders')
+    .select(`
+      *,
+      equipment:equipment_id (
+        id,
+        brand,
+        model,
+        category
+      ),
+      supplier:supplier_id (
+        id,
+        name
+      )
+    `)
+    .eq('status', 'Pendente');
+
+  if (error) {
+    console.error('Error fetching pending orders:', error);
+    return [];
+  }
+
+  return data || [];
+};
+
+export const getOrderTotalReceived = async (orderId: string) => {
+  const { data, error } = await supabase
+    .from('order_batches')
+    .select('received_quantity')
+    .eq('order_id', orderId);
+
+  if (error) {
+    console.error('Error fetching order total received:', error);
+    return 0;
+  }
+
+  return data.reduce((total, batch) => total + batch.received_quantity, 0);
+};
+
+export const completeOrder = async (orderId: string): Promise<boolean> => {
+  const { error } = await supabase
+    .from('orders')
+    .update({ status: 'Recebido' })
+    .eq('id', orderId);
+
+  if (error) {
+    console.error('Error completing order:', error);
+    toast.error('Erro ao completar pedido');
+    return false;
+  }
+
+  toast.success('Pedido completado com sucesso!');
+  return true;
+};
+
+export const archiveOrder = async (orderId: string): Promise<boolean> => {
+  const { error } = await supabase
+    .from('orders')
+    .update({ status: 'Arquivado' })
+    .eq('id', orderId);
+
+  if (error) {
+    console.error('Error archiving order:', error);
+    toast.error('Erro ao arquivar pedido');
+    return false;
+  }
+
+  toast.success('Pedido arquivado com sucesso!');
+  return true;
+};
+
+export const unarchiveOrder = async (orderId: string): Promise<boolean> => {
+  const { error } = await supabase
+    .from('orders')
+    .update({ status: 'Pendente' })
+    .eq('id', orderId);
+
+  if (error) {
+    console.error('Error unarchiving order:', error);
+    toast.error('Erro ao desarquivar pedido');
+    return false;
+  }
+
+  toast.success('Pedido desarquivado com sucesso!');
+  return true;
+};

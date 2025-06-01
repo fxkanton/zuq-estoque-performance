@@ -4,12 +4,16 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface CreatorInfo {
   id: string;
-  name: string;
+  creatorName: string;
   isOrphaned: boolean;
 }
 
 export const useCreatorInfo = (createdBy: string | null) => {
-  const [creatorInfo, setCreatorInfo] = useState<CreatorInfo | null>(null);
+  const [creatorInfo, setCreatorInfo] = useState<CreatorInfo>({
+    id: '',
+    creatorName: '',
+    isOrphaned: true
+  });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -17,7 +21,7 @@ export const useCreatorInfo = (createdBy: string | null) => {
       if (!createdBy) {
         setCreatorInfo({
           id: '',
-          name: '',
+          creatorName: '',
           isOrphaned: true
         });
         return;
@@ -31,14 +35,14 @@ export const useCreatorInfo = (createdBy: string | null) => {
 
         setCreatorInfo({
           id: createdBy,
-          name: data || 'Usuário Desconhecido',
+          creatorName: data || 'Usuário Desconhecido',
           isOrphaned: false
         });
       } catch (error) {
         console.error('Error fetching creator info:', error);
         setCreatorInfo({
           id: createdBy,
-          name: 'Erro ao carregar',
+          creatorName: 'Erro ao carregar',
           isOrphaned: false
         });
       } finally {

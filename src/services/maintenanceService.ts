@@ -2,6 +2,8 @@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
 
+export type MaintenanceStatus = 'Em Andamento' | 'Concluído';
+
 export interface MaintenanceRecord {
   id: string;
   equipment_id: string;
@@ -9,7 +11,7 @@ export interface MaintenanceRecord {
   send_date: string;
   expected_completion_date?: string;
   completion_date?: string;
-  status: string;
+  status: MaintenanceStatus;
   notes?: string;
   technician_notes?: string;
   created_at?: string;
@@ -167,3 +169,22 @@ export const adoptMaintenanceRecord = async (recordId: string): Promise<boolean>
   toast.success('Registro de manutenção adotado com sucesso!');
   return true;
 };
+
+// Dashboard helper functions
+export const getMaintenceCount = async () => {
+  const { data, error } = await supabase
+    .from('maintenance_records')
+    .select('*')
+    .eq('status', 'Em Andamento');
+
+  if (error) {
+    console.error('Error fetching maintenance count:', error);
+    return 0;
+  }
+
+  return data?.length || 0;
+};
+
+// Legacy exports for backward compatibility
+export const createMaintenance = createMaintenanceRecord;
+export const updateMaintenance = updateMaintenanceRecord;

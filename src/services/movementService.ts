@@ -45,7 +45,10 @@ export const fetchMovements = async (): Promise<MovementWithEquipment[]> => {
     return [];
   }
 
-  return data || [];
+  return (data || []).map(item => ({
+    ...item,
+    movement_type: item.movement_type as MovementType
+  }));
 };
 
 export const createMovement = async (movementData: Omit<Movement, 'id' | 'created_at' | 'updated_at' | 'created_by'>): Promise<Movement | null> => {
@@ -67,7 +70,10 @@ export const createMovement = async (movementData: Omit<Movement, 'id' | 'create
   }
 
   toast.success('Movimentação criada com sucesso!');
-  return data;
+  return {
+    ...data,
+    movement_type: data.movement_type as MovementType
+  };
 };
 
 export const updateMovement = async (id: string, movementData: Partial<Movement>): Promise<Movement | null> => {
@@ -85,7 +91,10 @@ export const updateMovement = async (id: string, movementData: Partial<Movement>
   }
 
   toast.success('Movimentação atualizada com sucesso!');
-  return data;
+  return {
+    ...data,
+    movement_type: data.movement_type as MovementType
+  };
 };
 
 export const deleteMovement = async (id: string): Promise<boolean> => {
@@ -125,4 +134,42 @@ export const adoptMovement = async (movementId: string): Promise<boolean> => {
 
   toast.success('Movimentação adotada com sucesso!');
   return true;
+};
+
+// Dashboard helper functions
+export const getMonthlyMovements = async () => {
+  const { data, error } = await supabase
+    .from('inventory_movements')
+    .select('*')
+    .gte('movement_date', new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString());
+
+  if (error) {
+    console.error('Error fetching monthly movements:', error);
+    return [];
+  }
+
+  return data || [];
+};
+
+export const getRecentMovements = async () => {
+  const { data, error } = await supabase
+    .from('inventory_movements')
+    .select(`
+      *,
+      equipment:equipment_id (
+        id,
+        brand,
+        model,
+        category
+      )
+    `)
+    .order('movement_date', { ascending: false })
+    .limit(5);
+
+  if (error) {
+    console.error('Error fetching recent movements:', error);
+    return [];
+  }
+
+  return data || [];
 };
