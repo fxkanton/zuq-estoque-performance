@@ -8,9 +8,9 @@ interface ManagerRouteProps {
 }
 
 export const ManagerRoute = ({ children }: ManagerRouteProps) => {
-  const { profile, isLoading } = useAuth();
+  const { profile, loading } = useAuth();
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">

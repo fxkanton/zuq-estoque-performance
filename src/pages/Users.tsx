@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -41,7 +40,7 @@ const Users = () => {
 
   // Mutation para alterar role do usuário
   const updateUserRole = useMutation({
-    mutationFn: async ({ userId, newRole }: { userId: string; newRole: string }) => {
+    mutationFn: async ({ userId, newRole }: { userId: string; newRole: 'intruso' | 'membro' | 'gerente' }) => {
       const { error } = await supabase
         .from('profiles')
         .update({ role: newRole })
@@ -66,7 +65,7 @@ const Users = () => {
     }
   });
 
-  const handleRoleChange = (userId: string, newRole: string) => {
+  const handleRoleChange = (userId: string, newRole: 'intruso' | 'membro' | 'gerente') => {
     updateUserRole.mutate({ userId, newRole });
   };
 
@@ -260,7 +259,7 @@ const Users = () => {
                         <p className="text-sm text-gray-600">Alterar tipo:</p>
                         <Select 
                           value={user.role} 
-                          onValueChange={(newRole) => handleRoleChange(user.id, newRole)}
+                          onValueChange={(newRole: 'intruso' | 'membro' | 'gerente') => handleRoleChange(user.id, newRole)}
                           disabled={updateUserRole.isPending}
                         >
                           <SelectTrigger className="w-32">

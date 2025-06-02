@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,7 +6,8 @@ import { useToast } from '@/hooks/use-toast';
 interface Profile {
   id: string;
   full_name: string | null;
-  role: 'intruso' | 'membro';
+  role: 'intruso' | 'membro' | 'gerente';
+  avatar_url: string | null;
   created_at: string;
   updated_at: string;
 }

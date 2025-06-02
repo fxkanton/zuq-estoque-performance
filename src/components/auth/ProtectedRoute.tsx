@@ -37,12 +37,12 @@ export const ProtectedRoute = ({ children, requireMember = false }: ProtectedRou
   }
 
   // Se a rota requer membro mas o usuário é intruso
-  if (requireMember && profile?.role !== 'membro') {
+  if (requireMember && profile?.role === 'intruso') {
     return <Navigate to="/intruso" replace />;
   }
 
-  // Se o usuário é membro mas está na página de intruso, redireciona para dashboard
-  if (profile?.role === 'membro' && location.pathname === '/intruso') {
+  // Se o usuário é membro ou gerente mas está na página de intruso, redireciona para dashboard
+  if ((profile?.role === 'membro' || profile?.role === 'gerente') && location.pathname === '/intruso') {
     return <Navigate to="/dashboard" replace />;
   }
 
