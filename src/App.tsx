@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { ManagerRoute } from "@/components/auth/ManagerRoute";
 
 // Pages
 import Index from "./pages/Index";
@@ -19,6 +20,7 @@ import FluxoTarefas from "./pages/FluxoTarefas";
 import Manutencao from "./pages/Manutencao";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
+import Users from "./pages/Users";
 import NotFound from "./pages/NotFound";
 
 // Auth Pages
@@ -132,6 +134,16 @@ const App = () => (
                 <ProtectedRoute requireMember>
                   <Settings />
                 </ProtectedRoute>
+              } 
+            />
+            
+            {/* Manager-only routes */}
+            <Route 
+              path="/users" 
+              element={
+                <ManagerRoute>
+                  <Users />
+                </ManagerRoute>
               } 
             />
             

@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,8 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { User, Mail, Calendar, Shield } from 'lucide-react';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { User, Mail, Calendar, Shield, Camera, Lock, Eye, EyeOff } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { supabase } from '@/integrations/supabase/client';
 
 const Profile = () => {
   const { profile, updateProfile } = useAuth();
@@ -16,6 +17,17 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [fullName, setFullName] = useState(profile?.full_name || '');
   const [isLoading, setIsLoading] = useState(false);
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleSave = async () => {
     if (!profile) return;
@@ -42,6 +54,131 @@ const Profile = () => {
   const handleCancel = () => {
     setFullName(profile?.full_name || '');
     setIsEditing(false);
+  };
+
+  const handleAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !profile?.id) return;
+
+    // Validar tipo de arquivo
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: 'Erro',
+        description: 'Por favor, selecione apenas arquivos de imagem.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validar tamanho (5MB máximo)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: 'Erro',
+        description: 'A imagem deve ter no máximo 5MB.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsUploadingAvatar(true);
+    try {
+      const fileName = `${profile.id}-${Date.now()}.${file.name.split('.').pop()}`;
+      
+      // Upload para o Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('avatars')
+        .upload(fileName, file, {
+          upsert: true
+        });
+
+      if (uploadError) throw uploadError;
+
+      // Obter URL pública
+      const { data: { publicUrl } } = supabase.storage
+        .from('avatars')
+        .getPublicUrl(fileName);
+
+      // Atualizar perfil com a nova URL do avatar
+      await updateProfile({ avatar_url: publicUrl });
+
+      toast({
+        title: 'Avatar atualizado!',
+        description: 'Sua foto de perfil foi alterada com sucesso.',
+      });
+
+    } catch (error) {
+      console.error('Erro ao fazer upload do avatar:', error);
+      toast({
+        title: 'Erro no upload',
+        description: 'Não foi possível atualizar sua foto de perfil.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUploadingAvatar(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handlePasswordChange = async () => {
+    if (!passwordData.newPassword || !passwordData.confirmPassword) {
+      toast({
+        title: 'Erro',
+        description: 'Por favor, preencha todos os campos.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast({
+        title: 'Erro',
+        description: 'As senhas não coincidem.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      toast({
+        title: 'Erro',
+        description: 'A nova senha deve ter pelo menos 6 caracteres.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: passwordData.newPassword
+      });
+
+      if (error) throw error;
+
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+      setIsChangingPassword(false);
+
+      toast({
+        title: 'Senha alterada!',
+        description: 'Sua senha foi atualizada com sucesso.',
+      });
+
+    } catch (error: any) {
+      console.error('Erro ao alterar senha:', error);
+      toast({
+        title: 'Erro',
+        description: error.message || 'Não foi possível alterar a senha.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (!profile) {
@@ -74,18 +211,44 @@ const Profile = () => {
           {/* Avatar Card */}
           <Card>
             <CardHeader className="text-center">
-              <div className="flex justify-center mb-4">
+              <div className="flex justify-center mb-4 relative">
                 <Avatar className="w-24 h-24">
-                  <AvatarFallback className="bg-zuq-blue text-white text-2xl">
-                    {initials}
-                  </AvatarFallback>
+                  {profile.avatar_url ? (
+                    <AvatarImage src={profile.avatar_url} alt="Avatar" />
+                  ) : (
+                    <AvatarFallback className="bg-zuq-blue text-white text-2xl">
+                      {initials}
+                    </AvatarFallback>
+                  )}
                 </Avatar>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="absolute -bottom-2 -right-2 rounded-full h-8 w-8"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isUploadingAvatar}
+                >
+                  <Camera className="h-4 w-4" />
+                </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  className="hidden"
+                />
               </div>
               <CardTitle className="text-xl">{profile.full_name || 'Usuário'}</CardTitle>
               <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
                 <Shield className="h-4 w-4" />
-                <span>{profile.role === 'membro' ? 'Membro' : 'Acesso Limitado'}</span>
+                <span>
+                  {profile.role === 'membro' ? 'Membro' : 
+                   profile.role === 'gerente' ? 'Gerente' : 'Acesso Limitado'}
+                </span>
               </div>
+              {isUploadingAvatar && (
+                <p className="text-xs text-blue-600">Enviando imagem...</p>
+              )}
             </CardHeader>
           </Card>
 
@@ -120,7 +283,10 @@ const Profile = () => {
                 <div>
                   <Label htmlFor="role">Função</Label>
                   <Input
-                    value={profile.role === 'membro' ? 'Membro' : 'Acesso Limitado'}
+                    value={
+                      profile.role === 'membro' ? 'Membro' : 
+                      profile.role === 'gerente' ? 'Gerente' : 'Acesso Limitado'
+                    }
                     readOnly
                     className="bg-gray-50"
                   />
@@ -179,6 +345,102 @@ const Profile = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Security Settings */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Lock className="h-5 w-5" />
+              Segurança
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {!isChangingPassword ? (
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-medium">Senha</h3>
+                  <p className="text-sm text-gray-600">Altere sua senha de acesso</p>
+                </div>
+                <Button 
+                  variant="outline"
+                  onClick={() => setIsChangingPassword(true)}
+                >
+                  Alterar Senha
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="newPassword">Nova Senha</Label>
+                  <div className="relative">
+                    <Input
+                      id="newPassword"
+                      type={showNewPassword ? "text" : "password"}
+                      value={passwordData.newPassword}
+                      onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+                      placeholder="Digite sua nova senha"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                    >
+                      {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                </div>
+
+                <div>
+                  <Label htmlFor="confirmPassword">Confirmar Nova Senha</Label>
+                  <div className="relative">
+                    <Input
+                      id="confirmPassword"
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={passwordData.confirmPassword}
+                      onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                      placeholder="Confirme sua nova senha"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    >
+                      {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <Button 
+                    onClick={handlePasswordChange}
+                    disabled={isLoading}
+                    className="bg-zuq-blue hover:bg-zuq-blue/90"
+                  >
+                    {isLoading ? 'Alterando...' : 'Alterar Senha'}
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    onClick={() => {
+                      setIsChangingPassword(false);
+                      setPasswordData({
+                        currentPassword: '',
+                        newPassword: '',
+                        confirmPassword: ''
+                      });
+                    }}
+                    disabled={isLoading}
+                  >
+                    Cancelar
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </MainLayout>
   );

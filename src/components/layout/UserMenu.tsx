@@ -1,5 +1,5 @@
 
-import { User, Settings, LogOut } from "lucide-react";
+import { User, Settings, LogOut, Users } from "lucide-react";
 import { Link } from "react-router-dom";
 import {
   DropdownMenu,
@@ -10,7 +10,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 
 export const UserMenu = () => {
@@ -31,14 +31,21 @@ export const UserMenu = () => {
         .slice(0, 2)
     : 'U';
 
+  const isManagerOrMember = profile.role === 'membro' || profile.role === 'gerente';
+  const isManager = profile.role === 'gerente';
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
-            <AvatarFallback className="bg-zuq-blue text-white text-xs">
-              {initials}
-            </AvatarFallback>
+            {profile.avatar_url ? (
+              <AvatarImage src={profile.avatar_url} alt="Avatar" />
+            ) : (
+              <AvatarFallback className="bg-zuq-blue text-white text-xs">
+                {initials}
+              </AvatarFallback>
+            )}
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
@@ -49,13 +56,14 @@ export const UserMenu = () => {
               {profile.full_name || 'Usuário'}
             </p>
             <p className="text-xs leading-none text-muted-foreground">
-              {profile.role === 'membro' ? 'Membro' : 'Acesso Limitado'}
+              {profile.role === 'membro' ? 'Membro' : 
+               profile.role === 'gerente' ? 'Gerente' : 'Acesso Limitado'}
             </p>
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
         
-        {profile.role === 'membro' && (
+        {isManagerOrMember && (
           <>
             <DropdownMenuItem asChild>
               <Link to="/profile" className="flex items-center w-full">
@@ -69,6 +77,15 @@ export const UserMenu = () => {
                 <span>Configurações</span>
               </Link>
             </DropdownMenuItem>
+            
+            {isManager && (
+              <DropdownMenuItem asChild>
+                <Link to="/users" className="flex items-center w-full">
+                  <Users className="mr-2 h-4 w-4" />
+                  <span>Usuários</span>
+                </Link>
+              </DropdownMenuItem>
+            )}
             <DropdownMenuSeparator />
           </>
         )}

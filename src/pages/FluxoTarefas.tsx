@@ -10,6 +10,7 @@ import { ListView } from '@/components/tasks/ListView';
 import { CalendarView } from '@/components/tasks/CalendarView';
 import { TaskModal } from '@/components/tasks/TaskModal';
 import TaskFilters from '@/components/tasks/TaskFilters';
+import { useAuth } from '@/contexts/AuthContext';
 
 export interface Task {
   id: string;
@@ -25,10 +26,12 @@ export interface Task {
   checklist: { id: string; text: string; completed: boolean }[];
   links: string[];
   createdAt: Date;
+  createdBy: string;
   completedAt: Date | null;
 }
 
 const FluxoTarefas = () => {
+  const { profile } = useAuth();
   const [activeTab, setActiveTab] = useState('kanban');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -37,7 +40,7 @@ const FluxoTarefas = () => {
   const [selectedPriority, setSelectedPriority] = useState('todas');
   const [selectedAssignee, setSelectedAssignee] = useState('todos');
 
-  // Mock data for tasks
+  // Mock data for tasks com informações do criador
   const [tasks, setTasks] = useState<Task[]>([
     {
       id: '1',
@@ -56,6 +59,7 @@ const FluxoTarefas = () => {
       ],
       links: ['https://github.com/projeto'],
       createdAt: new Date(2025, 4, 20),
+      createdBy: 'Pedro Costa',
       completedAt: null
     },
     {
@@ -72,6 +76,7 @@ const FluxoTarefas = () => {
       checklist: [],
       links: [],
       createdAt: new Date(2025, 4, 22),
+      createdBy: 'Ana Oliveira',
       completedAt: null
     }
   ]);
@@ -115,7 +120,7 @@ const FluxoTarefas = () => {
         description: taskData.description || '',
         category: taskData.category || 'Desenvolvimento',
         priority: taskData.priority || 'Média',
-        assignee: taskData.assignee || 'João Silva',
+        assignee: taskData.assignee || '',
         dueDate: taskData.dueDate || null,
         status: taskData.status || 'Sem prazo',
         attachments: 0,
@@ -123,6 +128,7 @@ const FluxoTarefas = () => {
         checklist: [],
         links: [],
         createdAt: new Date(),
+        createdBy: profile?.full_name || 'Usuário',
         completedAt: null
       };
       setTasks(prev => [...prev, newTask]);

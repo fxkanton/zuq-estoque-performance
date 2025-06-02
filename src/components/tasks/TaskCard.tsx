@@ -1,7 +1,7 @@
 
 import { Task } from "@/pages/FluxoTarefas";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, MessageCircle, Paperclip, Users, CheckSquare } from "lucide-react";
+import { Calendar, MessageCircle, Paperclip, Users, CheckSquare, User } from "lucide-react";
 
 interface TaskCardProps {
   task: Task;
@@ -31,6 +31,15 @@ export const TaskCard = ({ task, onEdit }: TaskCardProps) => {
     }).format(date);
   };
 
+  const formatCreatedAt = (date: Date) => {
+    return new Intl.DateTimeFormat('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date);
+  };
+
   const getChecklistStats = (checklist: { id: string; text: string; completed: boolean }[]) => {
     const completed = checklist.filter(item => item.completed).length;
     const total = checklist.length;
@@ -42,11 +51,21 @@ export const TaskCard = ({ task, onEdit }: TaskCardProps) => {
       className="kanban-card group"
       onClick={onEdit}
     >
-      {/* Header */}
-      <div className="flex items-start justify-between mb-3">
+      {/* Header with creator info */}
+      <div className="flex items-start justify-between mb-2">
         <h4 className="text-sm font-medium text-gray-900 line-clamp-2 flex-1">
           {task.title}
         </h4>
+      </div>
+
+      {/* Creator and creation date */}
+      <div className="flex items-center gap-1 mb-2 text-xs text-gray-500">
+        <User className="h-3 w-3" />
+        <span>Criado por {task.createdBy || 'Usuário'}</span>
+      </div>
+      
+      <div className="text-xs text-gray-400 mb-3">
+        {formatCreatedAt(task.createdAt)}
       </div>
 
       {/* Description */}
@@ -80,7 +99,7 @@ export const TaskCard = ({ task, onEdit }: TaskCardProps) => {
         <div className="flex items-center gap-1">
           <Users className="h-3 w-3 text-gray-400" />
           <span className="text-xs text-gray-500">
-            {task.assignee ? '1' : '0'}
+            {task.assignee ? task.assignee : 'Não atribuído'}
           </span>
         </div>
 

@@ -295,6 +295,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          avatar_url: string | null
           created_at: string
           full_name: string | null
           id: string
@@ -302,6 +303,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          avatar_url?: string | null
           created_at?: string
           full_name?: string | null
           id: string
@@ -309,6 +311,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          avatar_url?: string | null
           created_at?: string
           full_name?: string | null
           id?: string
@@ -406,6 +409,39 @@ export type Database = {
         }
         Relationships: []
       }
+      task_attachments: {
+        Row: {
+          created_at: string
+          file_name: string
+          file_size: number | null
+          file_type: string
+          file_url: string
+          id: string
+          task_id: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          file_name: string
+          file_size?: number | null
+          file_type: string
+          file_url: string
+          id?: string
+          task_id: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          file_name?: string
+          file_size?: number | null
+          file_type?: string
+          file_url?: string
+          id?: string
+          task_id?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -422,6 +458,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_manager: {
+        Args: { _user_id: string }
+        Returns: boolean
+      }
       is_member: {
         Args: { _user_id: string }
         Returns: boolean
@@ -436,7 +476,7 @@ export type Database = {
         | "Parcialmente Recebido"
         | "Recebido"
         | "Arquivado"
-      user_role: "intruso" | "membro"
+      user_role: "intruso" | "membro" | "gerente"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -561,7 +601,7 @@ export const Constants = {
         "Recebido",
         "Arquivado",
       ],
-      user_role: ["intruso", "membro"],
+      user_role: ["intruso", "membro", "gerente"],
     },
   },
 } as const
