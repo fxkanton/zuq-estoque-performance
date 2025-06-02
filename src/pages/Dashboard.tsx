@@ -27,6 +27,7 @@ import DateRangeFilter from "@/components/ui/date-range-filter";
 import { Edit, Trash2 } from 'lucide-react';
 import { MovementsDonutChart } from "@/components/dashboard/MovementsDonutChart";
 import { TaskReminders } from "@/components/dashboard/TaskReminders";
+import { ReportButton } from "@/components/reports/ReportButton";
 
 const Dashboard = () => {
   // Date range state 
@@ -311,6 +312,7 @@ const Dashboard = () => {
     <MainLayout title="Dashboard">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold text-zuq-darkblue">Dashboard</h1>
+        <ReportButton />
       </div>
       
       <DateRangeFilter 

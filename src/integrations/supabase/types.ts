@@ -364,6 +364,72 @@ export type Database = {
           },
         ]
       }
+      report_configs: {
+        Row: {
+          created_at: string
+          id: string
+          kpis: Json
+          name: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kpis?: Json
+          name: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kpis?: Json
+          name?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      report_history: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          file_url: string | null
+          id: string
+          kpis_included: Json
+          period_end: string
+          period_start: string
+          report_name: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          file_url?: string | null
+          id?: string
+          kpis_included?: Json
+          period_end: string
+          period_start: string
+          report_name: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          file_url?: string | null
+          id?: string
+          kpis_included?: Json
+          period_end?: string
+          period_start?: string
+          report_name?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       suppliers: {
         Row: {
           address: string | null
