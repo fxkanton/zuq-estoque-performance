@@ -22,9 +22,16 @@ export interface ReportHistory {
 export const reportService = {
   // Configurações de relatório
   async saveReportConfig(config: ReportConfig) {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      throw new Error('Usuário não autenticado');
+    }
+
     const { data, error } = await supabase
       .from('report_configs')
       .insert({
+        user_id: user.id,
         name: config.name,
         kpis: config.kpis
       })
