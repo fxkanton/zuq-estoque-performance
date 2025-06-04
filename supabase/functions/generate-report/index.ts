@@ -23,7 +23,6 @@ serve(async (req) => {
   try {
     console.log('Iniciando geração de relatório...');
     
-    // Get authorization header
     const authorization = req.headers.get('Authorization');
     if (!authorization) {
       console.error('No authorization header found');
@@ -38,7 +37,7 @@ serve(async (req) => {
 
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         global: {
           headers: {
@@ -48,7 +47,6 @@ serve(async (req) => {
       }
     );
 
-    // Verify user is authenticated
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
     if (userError || !user) {
       console.error('User authentication failed:', userError);
@@ -105,7 +103,6 @@ serve(async (req) => {
       suppliers: suppliersData.data?.length || 0
     });
 
-    // Check for errors in data fetching
     if (equipmentData.error || movementsData.error || ordersData.error || readersData.error || maintenanceData.error || suppliersData.error) {
       console.error('Error fetching data:', {
         equipment: equipmentData.error,
@@ -138,19 +135,17 @@ serve(async (req) => {
     console.log('Gerando HTML...');
     const htmlContent = generateHTMLReport(reportData, reportName, startDate, endDate);
     
-    // Converter HTML para buffer
     const fileBuffer = new TextEncoder().encode(htmlContent);
     console.log('HTML gerado, tamanho:', fileBuffer.length);
 
-    // Fazer upload do arquivo para o Storage
-    const fileName = `${reportId}/${reportName.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.html`;
-    console.log('Fazendo upload do arquivo:', fileName);
-    
     // Use service role client for storage operations
     const serviceRoleClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
+    
+    const fileName = `${reportId}/${reportName.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.html`;
+    console.log('Fazendo upload do arquivo:', fileName);
     
     const { data: uploadData, error: uploadError } = await serviceRoleClient.storage
       .from('reports')
@@ -166,7 +161,6 @@ serve(async (req) => {
 
     console.log('Upload realizado com sucesso:', uploadData);
 
-    // Obter URL pública do arquivo
     const { data: urlData } = serviceRoleClient.storage
       .from('reports')
       .getPublicUrl(fileName);
@@ -203,7 +197,6 @@ function calculateKPIs(data: any) {
   const kpiResults: any = {};
 
   try {
-    // Calcular estoque total
     if (selectedKpis.includes('stock_summary')) {
       console.log('Calculando stock_summary...');
       const stockSummary = equipment.reduce((acc: any, item: any) => {
@@ -226,7 +219,6 @@ function calculateKPIs(data: any) {
       console.log('Stock summary:', stockSummary);
     }
 
-    // Calcular movimentações
     if (selectedKpis.includes('movements_summary')) {
       console.log('Calculando movements_summary...');
       const movementsSummary = movements.reduce((acc: any, movement: any) => {
@@ -244,7 +236,6 @@ function calculateKPIs(data: any) {
       console.log('Movements summary:', movementsSummary);
     }
 
-    // Calcular pedidos
     if (selectedKpis.includes('orders_summary')) {
       console.log('Calculando orders_summary...');
       const ordersSummary = orders.reduce((acc: any, order: any) => {
@@ -262,7 +253,6 @@ function calculateKPIs(data: any) {
       console.log('Orders summary:', ordersSummary);
     }
 
-    // Calcular status das leitoras
     if (selectedKpis.includes('readers_status')) {
       console.log('Calculando readers_status...');
       const readersStatus = readers.reduce((acc: any, reader: any) => {
@@ -275,7 +265,6 @@ function calculateKPIs(data: any) {
       console.log('Readers status:', readersStatus);
     }
 
-    // Calcular manutenções
     if (selectedKpis.includes('maintenance_summary')) {
       console.log('Calculando maintenance_summary...');
       const maintenanceSummary = maintenance.reduce((acc: any, record: any) => {
@@ -309,201 +298,204 @@ function generateHTMLReport(data: any, reportName: string, startDate: string, en
   const formattedEndDate = new Date(endDate).toLocaleDateString('pt-BR');
   const generatedAt = today.toLocaleDateString('pt-BR') + ' às ' + today.toLocaleTimeString('pt-BR');
 
-  let html = `
-    <!DOCTYPE html>
-    <html lang="pt-BR">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>${reportName}</title>
-        <style>
-            body { 
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-                margin: 20px; 
-                line-height: 1.6;
-                color: #333;
-            }
-            .header { 
-                color: #1e40af; 
-                margin-bottom: 30px; 
-                border-bottom: 3px solid #1e40af;
-                padding-bottom: 20px;
-            }
-            .header h1 {
-                margin: 0;
-                font-size: 2.5em;
-                font-weight: 300;
-            }
-            .header p {
-                margin: 5px 0;
-                color: #666;
-            }
-            .section { 
-                margin: 30px 0; 
-                padding: 20px;
-                background: #f8f9fa;
-                border-radius: 8px;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            }
-            .section h2 { 
-                color: #1e40af; 
-                border-bottom: 2px solid #1e40af; 
-                padding-bottom: 10px;
-                margin-top: 0;
-                font-size: 1.5em;
-            }
-            .metric { 
-                margin: 15px 0; 
-                padding: 10px;
-                background: white;
-                border-radius: 4px;
-                border-left: 4px solid #1e40af;
-            }
-            .metric-label {
-                font-weight: bold;
-                color: #555;
-            }
-            .metric-value {
-                font-size: 1.2em;
-                color: #1e40af;
-                font-weight: bold;
-            }
-            .footer {
-                margin-top: 50px;
-                text-align: center;
-                color: #666;
-                font-size: 0.9em;
-                border-top: 1px solid #ddd;
-                padding-top: 20px;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="header">
-            <h1>${reportName}</h1>
-            <p><strong>Período:</strong> ${formattedStartDate} - ${formattedEndDate}</p>
-            <p><strong>Gerado em:</strong> ${generatedAt}</p>
-        </div>
-        
-        <div class="section">
-            <h2>📊 RESUMO EXECUTIVO</h2>
-            <p>Este relatório apresenta os principais indicadores de desempenho do sistema de inventário ZUQ para o período selecionado.</p>
-        </div>
-  `;
+  let html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline'; script-src 'none';">
+    <title>${reportName}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            line-height: 1.6;
+            color: #333;
+            background-color: #fff;
+        }
+        .header { 
+            color: #1e40af; 
+            margin-bottom: 30px; 
+            border-bottom: 3px solid #1e40af;
+            padding-bottom: 20px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 2.5em;
+            font-weight: normal;
+        }
+        .header p {
+            margin: 5px 0;
+            color: #666;
+        }
+        .section { 
+            margin: 30px 0; 
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+        }
+        .section h2 { 
+            color: #1e40af; 
+            border-bottom: 2px solid #1e40af; 
+            padding-bottom: 10px;
+            margin-top: 0;
+            font-size: 1.5em;
+        }
+        .metric { 
+            margin: 15px 0; 
+            padding: 10px;
+            background: white;
+            border-radius: 4px;
+            border-left: 4px solid #1e40af;
+        }
+        .metric-label {
+            font-weight: bold;
+            color: #555;
+        }
+        .metric-value {
+            font-size: 1.2em;
+            color: #1e40af;
+            font-weight: bold;
+        }
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+            border-top: 1px solid #ddd;
+            padding-top: 20px;
+        }
+        @media print {
+            body { margin: 0; }
+            .section { break-inside: avoid; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>${reportName}</h1>
+        <p><strong>Período:</strong> ${formattedStartDate} - ${formattedEndDate}</p>
+        <p><strong>Gerado em:</strong> ${generatedAt}</p>
+    </div>
+    
+    <div class="section">
+        <h2>📊 RESUMO EXECUTIVO</h2>
+        <p>Este relatório apresenta os principais indicadores de desempenho do sistema de inventário ZUQ para o período selecionado.</p>
+    </div>`;
 
   // Adicionar seções baseadas nos KPIs
   if (data.stock_summary) {
     html += `
-        <div class="section">
-            <h2>📦 ESTOQUE</h2>
-            <div class="metric">
-                <span class="metric-label">Total de Itens:</span>
-                <span class="metric-value">${data.stock_summary.totalItems}</span>
-            </div>
-            <div class="metric">
-                <span class="metric-label">Estoque Total:</span>
-                <span class="metric-value">${data.stock_summary.totalStock} unidades</span>
-            </div>
-            <div class="metric">
-                <span class="metric-label">Itens com Estoque Baixo:</span>
-                <span class="metric-value">${data.stock_summary.lowStockItems}</span>
-            </div>
+    <div class="section">
+        <h2>📦 ESTOQUE</h2>
+        <div class="metric">
+            <span class="metric-label">Total de Itens:</span>
+            <span class="metric-value">${data.stock_summary.totalItems}</span>
         </div>
-    `;
+        <div class="metric">
+            <span class="metric-label">Estoque Total:</span>
+            <span class="metric-value">${data.stock_summary.totalStock} unidades</span>
+        </div>
+        <div class="metric">
+            <span class="metric-label">Itens com Estoque Baixo:</span>
+            <span class="metric-value">${data.stock_summary.lowStockItems}</span>
+        </div>
+    </div>`;
   }
 
   if (data.movements_summary) {
     html += `
-        <div class="section">
-            <h2>🔄 MOVIMENTAÇÕES</h2>
-            <div class="metric">
-                <span class="metric-label">Total de Entradas:</span>
-                <span class="metric-value">${data.movements_summary.totalEntries} (${data.movements_summary.entriesCount} movimentações)</span>
-            </div>
-            <div class="metric">
-                <span class="metric-label">Total de Saídas:</span>
-                <span class="metric-value">${data.movements_summary.totalExits} (${data.movements_summary.exitsCount} movimentações)</span>
-            </div>
-            <div class="metric">
-                <span class="metric-label">Saldo Líquido:</span>
-                <span class="metric-value">${data.movements_summary.totalEntries - data.movements_summary.totalExits}</span>
-            </div>
+    <div class="section">
+        <h2>🔄 MOVIMENTAÇÕES</h2>
+        <div class="metric">
+            <span class="metric-label">Total de Entradas:</span>
+            <span class="metric-value">${data.movements_summary.totalEntries} (${data.movements_summary.entriesCount} movimentações)</span>
         </div>
-    `;
+        <div class="metric">
+            <span class="metric-label">Total de Saídas:</span>
+            <span class="metric-value">${data.movements_summary.totalExits} (${data.movements_summary.exitsCount} movimentações)</span>
+        </div>
+        <div class="metric">
+            <span class="metric-label">Saldo Líquido:</span>
+            <span class="metric-value">${data.movements_summary.totalEntries - data.movements_summary.totalExits}</span>
+        </div>
+    </div>`;
   }
 
   if (data.orders_summary) {
     html += `
-        <div class="section">
-            <h2>📋 PEDIDOS</h2>
-            <div class="metric">
-                <span class="metric-label">Total de Pedidos:</span>
-                <span class="metric-value">${data.orders_summary.totalOrders}</span>
-            </div>
-            <div class="metric">
-                <span class="metric-label">Quantidade Total:</span>
-                <span class="metric-value">${data.orders_summary.totalQuantity} unidades</span>
-            </div>
-            <div class="metric">
-                <span class="metric-label">Status dos Pedidos:</span>
-                <span class="metric-value">Concluídos: ${data.orders_summary.completedOrders} | Parciais: ${data.orders_summary.partialOrders} | Pendentes: ${data.orders_summary.pendingOrders}</span>
-            </div>
+    <div class="section">
+        <h2>📋 PEDIDOS</h2>
+        <div class="metric">
+            <span class="metric-label">Total de Pedidos:</span>
+            <span class="metric-value">${data.orders_summary.totalOrders}</span>
         </div>
-    `;
+        <div class="metric">
+            <span class="metric-label">Quantidade Total:</span>
+            <span class="metric-value">${data.orders_summary.totalQuantity} unidades</span>
+        </div>
+        <div class="metric">
+            <span class="metric-label">Status dos Pedidos:</span>
+            <span class="metric-value">Concluídos: ${data.orders_summary.completedOrders} | Parciais: ${data.orders_summary.partialOrders} | Pendentes: ${data.orders_summary.pendingOrders}</span>
+        </div>
+    </div>`;
   }
 
   if (data.readers_status) {
     html += `
-        <div class="section">
-            <h2>📱 LEITORAS</h2>
-            <div class="metric">
-                <span class="metric-label">Total de Leitoras:</span>
-                <span class="metric-value">${data.readers_status.total}</span>
-            </div>
-            <div class="metric">
-                <span class="metric-label">Disponíveis:</span>
-                <span class="metric-value">${data.readers_status['Disponível'] || 0}</span>
-            </div>
-            <div class="metric">
-                <span class="metric-label">Em Uso:</span>
-                <span class="metric-value">${data.readers_status['Em Uso'] || 0}</span>
-            </div>
-            <div class="metric">
-                <span class="metric-label">Em Manutenção:</span>
-                <span class="metric-value">${data.readers_status['Em Manutenção'] || 0}</span>
-            </div>
+    <div class="section">
+        <h2>📱 LEITORAS</h2>
+        <div class="metric">
+            <span class="metric-label">Total de Leitoras:</span>
+            <span class="metric-value">${data.readers_status.total}</span>
         </div>
-    `;
+        <div class="metric">
+            <span class="metric-label">Disponíveis:</span>
+            <span class="metric-value">${data.readers_status['Disponível'] || 0}</span>
+        </div>
+        <div class="metric">
+            <span class="metric-label">Em Uso:</span>
+            <span class="metric-value">${data.readers_status['Em Uso'] || 0}</span>
+        </div>
+        <div class="metric">
+            <span class="metric-label">Em Manutenção:</span>
+            <span class="metric-value">${data.readers_status['Em Manutenção'] || 0}</span>
+        </div>
+    </div>`;
   }
 
   if (data.maintenance_summary) {
     html += `
-        <div class="section">
-            <h2>🔧 MANUTENÇÃO</h2>
-            <div class="metric">
-                <span class="metric-label">Total de Registros:</span>
-                <span class="metric-value">${data.maintenance_summary.totalRecords}</span>
-            </div>
-            <div class="metric">
-                <span class="metric-label">Quantidade Total:</span>
-                <span class="metric-value">${data.maintenance_summary.totalQuantity} unidades</span>
-            </div>
-            <div class="metric">
-                <span class="metric-label">Status das Manutenções:</span>
-                <span class="metric-value">Concluídas: ${data.maintenance_summary.completed} | Em Andamento: ${data.maintenance_summary.inProgress} | Pendentes: ${data.maintenance_summary.pending}</span>
-            </div>
+    <div class="section">
+        <h2>🔧 MANUTENÇÃO</h2>
+        <div class="metric">
+            <span class="metric-label">Total de Registros:</span>
+            <span class="metric-value">${data.maintenance_summary.totalRecords}</span>
         </div>
-    `;
+        <div class="metric">
+            <span class="metric-label">Quantidade Total:</span>
+            <span class="metric-value">${data.maintenance_summary.totalQuantity} unidades</span>
+        </div>
+        <div class="metric">
+            <span class="metric-label">Status das Manutenções:</span>
+            <span class="metric-value">Concluídas: ${data.maintenance_summary.completed} | Em Andamento: ${data.maintenance_summary.inProgress} | Pendentes: ${data.maintenance_summary.pending}</span>
+        </div>
+    </div>`;
   }
 
   html += `
-        <div class="footer">
-            <p><strong>Sistema de Inventário ZUQ</strong></p>
-            <p>Relatório gerado automaticamente pelo sistema</p>
-        </div>
-    </body>
-    </html>
-  `;
+    <div class="footer">
+        <p><strong>Sistema de Inventário ZUQ</strong></p>
+        <p>Relatório gerado automaticamente pelo sistema</p>
+    </div>
+</body>
+</html>`;
 
   console.log('HTML gerado com sucesso');
   return html;
