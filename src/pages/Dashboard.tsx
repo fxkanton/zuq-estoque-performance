@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -37,6 +37,7 @@ const Dashboard = () => {
   
   const [startDate, setStartDate] = useState(firstDayOfMonth);
   const [endDate, setEndDate] = useState(lastDayOfMonth);
+  const [loading, setLoading] = useState(true);
   
   const [equipmentBalance, setEquipmentBalance] = useState(0);
   const [monthlyMovements, setMonthlyMovements] = useState({ entries: 0, exits: 0, entriesChange: 0, exitsChange: 0, entriesCount: 0, exitsCount: 0 });
@@ -50,10 +51,13 @@ const Dashboard = () => {
   });
   const [dailyMovements, setDailyMovements] = useState<any[]>([]);
 
-  const handleDateRangeChange = (newStartDate: Date, newEndDate: Date) => {
+  // Refs to store channel references for cleanup
+  const channelsRef = useRef<any[]>([]);
+
+  const handleDateRangeChange = useCallback((newStartDate: Date, newEndDate: Date) => {
     setStartDate(newStartDate);
     setEndDate(newEndDate);
-  };
+  }, []);
 
   // Function to format date for chart display
   const formatDateForChart = (dateStr: string) => {
@@ -130,31 +134,56 @@ const Dashboard = () => {
     }
   };
 
-  const loadDashboardData = async () => {
+  const loadDashboardData = useCallback(async () => {
     try {
+      setLoading(true);
       const startDateStr = startDate.toISOString().split('T')[0];
       const endDateStr = endDate.toISOString().split('T')[0];
 
-      // Calcular saldo de equipamentos para o período selecionado
-      const { data: movementsData, error: movementsError } = await supabase
-        .from('inventory_movements')
-        .select('movement_type, quantity')
-        .gte('movement_date', startDateStr)
-        .lte('movement_date', endDateStr);
+      // Parallelize all data fetching
+      const [
+        movementsData,
+        entryData,
+        exitData,
+        orders,
+        equipmentWithStock,
+        readerStatistics
+      ] = await Promise.all([
+        supabase
+          .from('inventory_movements')
+          .select('movement_type, quantity')
+          .gte('movement_date', startDateStr)
+          .lte('movement_date', endDateStr),
+        supabase
+          .from('inventory_movements')
+          .select('movement_date, quantity')
+          .eq('movement_type', 'Entrada')
+          .gte('movement_date', startDateStr)
+          .lte('movement_date', endDateStr),
+        supabase
+          .from('inventory_movements')
+          .select('movement_date, quantity')
+          .eq('movement_type', 'Saída')
+          .gte('movement_date', startDateStr)
+          .lte('movement_date', endDateStr),
+        getPendingOrders(),
+        getEquipmentWithStock(),
+        getReadersByStatus()
+      ]);
         
-      if (movementsError) {
-        console.error("Error fetching movements data:", movementsError);
+      if (movementsData.error) {
+        console.error("Error fetching movements data:", movementsData.error);
         return;
       }
       
-      // Calcular o saldo baseado nas movimentações do período
+      // Calculate balance and movements
       let balance = 0;
       let entries = 0;
       let exits = 0;
       let entriesCount = 0;
       let exitsCount = 0;
       
-      movementsData.forEach(movement => {
+      movementsData.data?.forEach(movement => {
         if (movement.movement_type === 'Entrada') {
           balance += movement.quantity;
           entries += movement.quantity;
@@ -172,42 +201,21 @@ const Dashboard = () => {
         exits,
         entriesCount,
         exitsCount,
-        entriesChange: 0, // Mantendo esses valores, podem ser calculados se necessário
+        entriesChange: 0,
         exitsChange: 0
       });
       
-      // Obter pedidos pendentes
-      const orders = await getPendingOrders();
       setPendingOrders(orders);
       
-      // Obter itens com estoque baixo
-      const equipmentWithStock = await getEquipmentWithStock();
       const lowStock = equipmentWithStock.filter(item => 
         (item.min_stock || 0) > 0 && item.stock < (item.min_stock || 0)
       ).slice(0, 4);
       setLowStockItems(lowStock);
       
-      // Obter estatísticas de leitoras
-      const readerStatistics = await getReadersByStatus();
       setReaderStats(readerStatistics);
       
-      // Obter movimentações diárias para o gráfico
-      const { data: entryData, error: entryError } = await supabase
-        .from('inventory_movements')
-        .select('movement_date, quantity')
-        .eq('movement_type', 'Entrada')
-        .gte('movement_date', startDateStr)
-        .lte('movement_date', endDateStr);
-        
-      const { data: exitData, error: exitError } = await supabase
-        .from('inventory_movements')
-        .select('movement_date, quantity')
-        .eq('movement_type', 'Saída')
-        .gte('movement_date', startDateStr)
-        .lte('movement_date', endDateStr);
-        
-      if (entryError || exitError) {
-        console.error("Error fetching movement data:", entryError || exitError);
+      if (entryData.error || exitData.error) {
+        console.error("Error fetching movement data:", entryData.error || exitData.error);
         return;
       }
       
@@ -223,7 +231,7 @@ const Dashboard = () => {
       }
       
       // Add entry data
-      entryData.forEach(entry => {
+      entryData.data?.forEach(entry => {
         const dateStr = new Date(entry.movement_date).toISOString().split('T')[0];
         if (daysMap.has(dateStr)) {
           const day = daysMap.get(dateStr);
@@ -232,7 +240,7 @@ const Dashboard = () => {
       });
       
       // Add exit data
-      exitData.forEach(exit => {
+      exitData.data?.forEach(exit => {
         const dateStr = new Date(exit.movement_date).toISOString().split('T')[0];
         if (daysMap.has(dateStr)) {
           const day = daysMap.get(dateStr);
@@ -247,11 +255,30 @@ const Dashboard = () => {
       
     } catch (error) {
       console.error("Error loading dashboard data:", error);
+    } finally {
+      setLoading(false);
     }
-  };
+  }, [startDate, endDate]);
 
   useEffect(() => {
     loadDashboardData();
+  }, [loadDashboardData]);
+
+  useEffect(() => {
+    // Clean up existing channels
+    channelsRef.current.forEach(channel => {
+      supabase.removeChannel(channel);
+    });
+    channelsRef.current = [];
+
+    // Create new channels with debounced reload
+    let reloadTimeout: NodeJS.Timeout;
+    const debouncedReload = () => {
+      clearTimeout(reloadTimeout);
+      reloadTimeout = setTimeout(() => {
+        loadDashboardData();
+      }, 1000);
+    };
 
     // Subscribe to realtime updates
     const equipmentChannel = supabase
@@ -260,7 +287,7 @@ const Dashboard = () => {
         event: '*',
         schema: 'public',
         table: 'equipment',
-      }, () => loadDashboardData())
+      }, debouncedReload)
       .subscribe();
 
     const movementsChannel = supabase
@@ -269,7 +296,7 @@ const Dashboard = () => {
         event: '*',
         schema: 'public',
         table: 'inventory_movements',
-      }, () => loadDashboardData())
+      }, debouncedReload)
       .subscribe();
 
     const ordersChannel = supabase
@@ -278,7 +305,7 @@ const Dashboard = () => {
         event: '*',
         schema: 'public',
         table: 'orders',
-      }, () => loadDashboardData())
+      }, debouncedReload)
       .subscribe();
 
     const readersChannel = supabase
@@ -287,7 +314,7 @@ const Dashboard = () => {
         event: '*',
         schema: 'public',
         table: 'readers',
-      }, () => loadDashboardData())
+      }, debouncedReload)
       .subscribe();
 
     const maintenanceChannel = supabase
@@ -296,17 +323,39 @@ const Dashboard = () => {
         event: '*',
         schema: 'public',
         table: 'maintenance_records',
-      }, () => loadDashboardData())
+      }, debouncedReload)
       .subscribe();
 
+    // Store channels for cleanup
+    channelsRef.current = [
+      equipmentChannel,
+      movementsChannel,
+      ordersChannel,
+      readersChannel,
+      maintenanceChannel
+    ];
+
     return () => {
-      supabase.removeChannel(equipmentChannel);
-      supabase.removeChannel(movementsChannel);
-      supabase.removeChannel(ordersChannel);
-      supabase.removeChannel(readersChannel);
-      supabase.removeChannel(maintenanceChannel);
+      clearTimeout(reloadTimeout);
+      channelsRef.current.forEach(channel => {
+        supabase.removeChannel(channel);
+      });
+      channelsRef.current = [];
     };
-  }, [startDate, endDate]);
+  }, [loadDashboardData]);
+
+  if (loading) {
+    return (
+      <MainLayout title="Dashboard">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-zuq-blue mx-auto mb-4"></div>
+            <p className="text-gray-600">Carregando dashboard...</p>
+          </div>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
     <MainLayout title="Dashboard">
