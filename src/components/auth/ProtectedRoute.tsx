@@ -2,6 +2,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { Navigate, useLocation } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
+import { isMemberOrManager } from '@/utils/permissions';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -28,7 +29,7 @@ export const ProtectedRoute = ({ children, requireMember = false }: ProtectedRou
   }
 
   // Se requireMember for true, verificar se o usuário é membro ou gerente
-  if (requireMember && profile && profile.role === 'intruso') {
+  if (requireMember && profile && !isMemberOrManager(profile.role)) {
     return <Navigate to="/intruso" replace />;
   }
 

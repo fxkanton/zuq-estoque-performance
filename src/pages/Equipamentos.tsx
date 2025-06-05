@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -41,9 +40,11 @@ import { toast } from "@/components/ui/sonner";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { isMemberOrManager } from "@/utils/permissions";
 
 const Equipamentos = () => {
   const { profile } = useAuth();
+  
   const [equipamentos, setEquipamentos] = useState<Array<Equipment & { stock?: number; creatorName?: string }>>([]);
   const [filteredEquipamentos, setFilteredEquipamentos] = useState<Array<Equipment & { stock?: number; creatorName?: string }>>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -77,8 +78,8 @@ const Equipamentos = () => {
   const [isUploading, setIsUploading] = useState(false);
 
   const loadData = async () => {
-    if (profile?.role !== 'membro') {
-      console.log("User is not a member, skipping data load");
+    if (!isMemberOrManager(profile?.role)) {
+      console.log("User doesn't have access, skipping data load");
       return;
     }
 
@@ -417,12 +418,12 @@ const Equipamentos = () => {
     }
   };
 
-  // Only render if user is a member
-  if (profile?.role !== 'membro') {
+  // Only render if user has access (member or manager)
+  if (!isMemberOrManager(profile?.role)) {
     return (
       <MainLayout title="Cadastro de Equipamentos">
         <div className="flex items-center justify-center h-64">
-          <p className="text-muted-foreground">Acesso restrito a membros.</p>
+          <p className="text-muted-foreground">Acesso restrito a membros e gerentes.</p>
         </div>
       </MainLayout>
     );

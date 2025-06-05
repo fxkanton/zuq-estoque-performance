@@ -1,5 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { generateReportLocal } from './reportGenerationService';
 
 export interface ReportConfig {
   id?: string;
@@ -20,6 +21,24 @@ export interface ReportHistory {
 }
 
 export const reportService = {
+  // Gerar relatório usando abordagem local
+  async generateReport(data: {
+    reportName: string;
+    startDate: string;
+    endDate: string;
+    kpis: string[];
+  }) {
+    const reportData = {
+      reportId: crypto.randomUUID(),
+      reportName: data.reportName,
+      startDate: data.startDate,
+      endDate: data.endDate,
+      kpis: data.kpis
+    };
+
+    return await generateReportLocal(reportData);
+  },
+
   // Configurações de relatório
   async saveReportConfig(config: ReportConfig) {
     const { data: { user } } = await supabase.auth.getUser();
