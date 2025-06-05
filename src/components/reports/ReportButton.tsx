@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { FileText, Download } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ReportModal } from './ReportModal';
 
@@ -14,7 +14,7 @@ export const ReportButton = () => {
         className="bg-zuq-blue hover:bg-zuq-blue/90 text-white"
       >
         <FileText className="h-4 w-4 mr-2" />
-        Gerar Relatório PDF
+        Gerar Relatório HTML
       </Button>
       
       <ReportModal 

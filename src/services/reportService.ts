@@ -1,5 +1,4 @@
 
-import { supabase } from '@/integrations/supabase/client';
 import { generateReportLocal } from './reportGenerationService';
 
 export interface ReportConfig {
@@ -37,58 +36,6 @@ export const reportService = {
     };
 
     return await generateReportLocal(reportData);
-  },
-
-  // Configurações de relatório
-  async saveReportConfig(config: ReportConfig) {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
-      throw new Error('Usuário não autenticado');
-    }
-
-    const { data, error } = await supabase
-      .from('report_configs')
-      .insert({
-        user_id: user.id,
-        name: config.name,
-        kpis: config.kpis
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    return data;
-  },
-
-  async getReportConfigs() {
-    const { data, error } = await supabase
-      .from('report_configs')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-    return data;
-  },
-
-  async deleteReportConfig(id: string) {
-    const { error } = await supabase
-      .from('report_configs')
-      .delete()
-      .eq('id', id);
-
-    if (error) throw error;
-  },
-
-  // Histórico de relatórios
-  async getReportHistory() {
-    const { data, error } = await supabase
-      .from('report_history')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) throw error;
-    return data as ReportHistory[];
   },
 
   async downloadReport(fileUrl: string, fileName: string) {

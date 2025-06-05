@@ -17,8 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
+import { reportService } from '@/services/reportService';
 
 interface ReportModalProps {
   isOpen: boolean;
@@ -42,7 +41,6 @@ const AVAILABLE_KPIS = [
 ];
 
 export const ReportModal = ({ isOpen, onClose }: ReportModalProps) => {
-  const { user } = useAuth();
   const { toast } = useToast();
   const [reportName, setReportName] = useState('');
   const [startDate, setStartDate] = useState<Date>();
@@ -73,7 +71,7 @@ export const ReportModal = ({ isOpen, onClose }: ReportModalProps) => {
   };
 
   const generateReport = async () => {
-    if (!user || !startDate || !endDate || selectedKpis.length === 0) {
+    if (!startDate || !endDate || selectedKpis.length === 0) {
       toast({
         title: 'Dados incompletos',
         description: 'Preencha todos os campos obrigatórios.',
@@ -82,64 +80,22 @@ export const ReportModal = ({ isOpen, onClose }: ReportModalProps) => {
       return;
     }
 
-    if (!reportName.trim()) {
-      setReportName(`Relatório ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}`);
-    }
+    const finalReportName = reportName.trim() || `Relatório ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}`;
 
     setIsGenerating(true);
 
     try {
-      // Criar registro na tabela de histórico
-      const { data: historyData, error: historyError } = await supabase
-        .from('report_history')
-        .insert({
-          user_id: user.id,
-          report_name: reportName.trim() || `Relatório ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}`,
-          period_start: format(startDate, 'yyyy-MM-dd'),
-          period_end: format(endDate, 'yyyy-MM-dd'),
-          kpis_included: selectedKpis,
-          status: 'generating'
-        })
-        .select()
-        .single();
-
-      if (historyError) throw historyError;
-
-      // Chamar edge function para gerar PDF
-      const { data, error } = await supabase.functions.invoke('generate-report', {
-        body: {
-          reportId: historyData.id,
-          startDate: format(startDate, 'yyyy-MM-dd'),
-          endDate: format(endDate, 'yyyy-MM-dd'),
-          kpis: selectedKpis,
-          reportName: reportName.trim() || `Relatório ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}`
-        }
+      await reportService.generateReport({
+        reportName: finalReportName,
+        startDate: format(startDate, 'yyyy-MM-dd'),
+        endDate: format(endDate, 'yyyy-MM-dd'),
+        kpis: selectedKpis
       });
-
-      if (error) throw error;
-
-      // Atualizar status para completo
-      await supabase
-        .from('report_history')
-        .update({ 
-          status: 'completed',
-          completed_at: new Date().toISOString(),
-          file_url: data.fileUrl
-        })
-        .eq('id', historyData.id);
 
       toast({
         title: 'Relatório gerado com sucesso!',
-        description: 'O download começará automaticamente.',
+        description: 'O download foi iniciado automaticamente.',
       });
-
-      // Fazer download do arquivo
-      const link = document.createElement('a');
-      link.href = data.fileUrl;
-      link.download = `${reportName.trim() || 'relatorio'}.pdf`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
 
       onClose();
     } catch (error) {
@@ -168,7 +124,7 @@ export const ReportModal = ({ isOpen, onClose }: ReportModalProps) => {
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5" />
-            Gerar Relatório PDF
+            Gerar Relatório HTML
           </DialogTitle>
         </DialogHeader>
 
