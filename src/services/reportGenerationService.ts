@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 export interface ReportData {
@@ -229,6 +230,9 @@ function generateHTMLReport(data: any, reportName: string, startDate: string, en
   const formattedStartDate = new Date(startDate).toLocaleDateString('pt-BR');
   const formattedEndDate = new Date(endDate).toLocaleDateString('pt-BR');
   const generatedAt = today.toLocaleDateString('pt-BR') + ' às ' + today.toLocaleTimeString('pt-BR');
+
+  // ZUQ Logo em base64 como fallback
+  const zuqLogoBase64 = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwIiBoZWlnaHQ9IjQwIiB2aWV3Qm94PSIwIDAgMTIwIDQwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iMTIwIiBoZWlnaHQ9IjQwIiBmaWxsPSIjMWUzYzcyIiByeD0iNSIvPgo8dGV4dCB4PSI2MCIgeT0iMjUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IndoaXRlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjAiIGZvbnQtd2VpZ2h0PSJib2xkIj5aVVE8L3RleHQ+Cjwvc3ZnPgo=";
 
   return `<!DOCTYPE html>
 <html lang="pt-BR">
@@ -561,7 +565,8 @@ function generateHTMLReport(data: any, reportName: string, startDate: string, en
         
         <div class="report-header">
             <div class="logo-container">
-                <img src="/lovable-uploads/142370cc-3220-4b19-b8ec-4245d180049a.png" alt="ZUQ Logo" class="logo">
+                <img src="${zuqLogoBase64}" alt="ZUQ Logo" class="logo" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                <div style="display:none; color:white; font-weight:bold; font-size:18px; background:#1e3c72; padding:10px; border-radius:5px;">ZUQ</div>
             </div>
             <h1 class="report-title">${reportName}</h1>
             <p class="report-subtitle">Relatório Executivo de Gestão</p>
