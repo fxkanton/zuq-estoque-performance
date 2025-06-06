@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface ReportData {
@@ -300,6 +299,27 @@ function generateHTMLReport(data: any, reportName: string, startDate: string, en
             90% { transform: translate(-10%, 10%); }
         }
         
+        .logo-container {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 1;
+        }
+        
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 24px;
+            color: #1e3c72;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
         .report-title {
             font-size: 2.5rem;
             font-weight: 700;
@@ -384,6 +404,10 @@ function generateHTMLReport(data: any, reportName: string, startDate: string, en
         .kpi-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 15px 40px rgba(0,0,0,0.15);
+        }
+        
+        .kpi-card.full-width {
+            grid-column: 1 / -1;
         }
         
         .kpi-title {
@@ -506,7 +530,7 @@ function generateHTMLReport(data: any, reportName: string, startDate: string, en
         @media print {
             body { background: white; padding: 0; }
             .report-container { box-shadow: none; border-radius: 0; }
-            .export-controls { display: none; }
+            .export-controls { display: none !important; }
         }
         
         @media (max-width: 768px) {
@@ -514,6 +538,10 @@ function generateHTMLReport(data: any, reportName: string, startDate: string, en
             .kpi-grid { grid-template-columns: 1fr; }
             .metric-grid { grid-template-columns: repeat(2, 1fr); }
             .export-controls { position: static; margin-bottom: 20px; }
+        }
+        
+        .movements-chart-block {
+            margin-bottom: 40px;
         }
     </style>
 </head>
@@ -524,6 +552,9 @@ function generateHTMLReport(data: any, reportName: string, startDate: string, en
         </div>
         
         <div class="report-header">
+            <div class="logo-container">
+                <div class="logo">ZUQ</div>
+            </div>
             <h1 class="report-title">${reportName}</h1>
             <p class="report-subtitle">Relatório Executivo de Gestão</p>
             <div class="report-meta">
@@ -536,10 +567,25 @@ function generateHTMLReport(data: any, reportName: string, startDate: string, en
             <div class="kpi-grid">
                 ${generateKPISections(data)}
             </div>
+            
+            ${data.movements_summary ? `
+            <div class="movements-chart-block">
+                <div class="kpi-card full-width">
+                    <h2 class="kpi-title">
+                        <span class="kpi-icon">🔄</span>
+                        MOVIMENTAÇÕES POR PERÍODO
+                    </h2>
+                    <div class="chart-container">
+                        <div class="chart-title">Entradas vs Saídas ao Longo do Tempo</div>
+                        <canvas id="movementsTimeChart" width="400" height="200"></canvas>
+                    </div>
+                </div>
+            </div>
+            ` : ''}
         </div>
         
         <div class="footer">
-            <p>© ${new Date().getFullYear()} - Relatório gerado automaticamente pelo sistema de gestão</p>
+            <p>© ${new Date().getFullYear()} - Relatório gerado automaticamente pelo sistema de gestão ZUQ</p>
             <p>Este documento contém informações confidenciais e estratégicas da organização</p>
         </div>
     </div>
@@ -552,6 +598,7 @@ function generateHTMLReport(data: any, reportName: string, startDate: string, en
             const originalText = button.innerHTML;
             button.innerHTML = '⏳ Gerando PDF...';
             button.disabled = true;
+            button.style.display = 'none';
             
             try {
                 const element = document.getElementById('reportContent');
@@ -589,6 +636,7 @@ function generateHTMLReport(data: any, reportName: string, startDate: string, en
             } finally {
                 button.innerHTML = originalText;
                 button.disabled = false;
+                button.style.display = 'block';
             }
         }
         
@@ -630,29 +678,38 @@ function generateKPISections(data: any): string {
             <div class="chart-title">Distribuição do Estoque por Categoria</div>
             <canvas id="stockChart" width="400" height="200"></canvas>
         </div>
-        ${stockData.stockDetails && stockData.stockDetails.length > 0 ? `
-        <table class="data-table">
-            <thead>
-                <tr>
-                    <th>Equipamento</th>
-                    <th>Estoque Atual</th>
-                    <th>Estoque Mínimo</th>
-                    <th>Status</th>
-                </tr>
-            </thead>
-            <tbody>
-                ${stockData.stockDetails.map((item: any) => `
-                <tr>
-                    <td>${item.name}</td>
-                    <td>${item.currentStock}</td>
-                    <td>${item.minStock}</td>
-                    <td><span class="status-badge status-${item.status.toLowerCase()}">${item.status}</span></td>
-                </tr>
-                `).join('')}
-            </tbody>
-        </table>
-        ` : ''}
     </div>`;
+    
+    // Tabela de equipamentos em bloco separado
+    if (stockData.stockDetails && stockData.stockDetails.length > 0) {
+      sections += `
+      <div class="kpi-card full-width">
+          <h2 class="kpi-title">
+              <span class="kpi-icon">📋</span>
+              DETALHES DO ESTOQUE
+          </h2>
+          <table class="data-table">
+              <thead>
+                  <tr>
+                      <th>Equipamento</th>
+                      <th>Estoque Atual</th>
+                      <th>Estoque Mínimo</th>
+                      <th>Status</th>
+                  </tr>
+              </thead>
+              <tbody>
+                  ${stockData.stockDetails.map((item: any) => `
+                  <tr>
+                      <td>${item.name}</td>
+                      <td>${item.currentStock}</td>
+                      <td>${item.minStock}</td>
+                      <td><span class="status-badge status-${item.status.toLowerCase()}">${item.status}</span></td>
+                  </tr>
+                  `).join('')}
+              </tbody>
+          </table>
+      </div>`;
+    }
   }
 
   if (data.movements_summary) {
@@ -676,10 +733,6 @@ function generateKPISections(data: any): string {
                 <div class="metric-value">${movData.totalEntries - movData.totalExits}</div>
                 <div class="metric-label">Saldo Líquido</div>
             </div>
-        </div>
-        <div class="chart-container">
-            <div class="chart-title">Movimentações por Período</div>
-            <canvas id="movementsChart" width="400" height="200"></canvas>
         </div>
     </div>`;
   }
@@ -816,9 +869,9 @@ function generateChartScripts(data: any): string {
     const entries = dates.map(date => data.movements_summary.movementsByDate[date].entries);
     const exits = dates.map(date => data.movements_summary.movementsByDate[date].exits);
     scripts += `
-      const movCtx = document.getElementById('movementsChart');
-      if (movCtx) {
-        new Chart(movCtx, {
+      const movTimeCtx = document.getElementById('movementsTimeChart');
+      if (movTimeCtx) {
+        new Chart(movTimeCtx, {
           type: 'line',
           data: {
             labels: ${JSON.stringify(dates)},
@@ -827,19 +880,42 @@ function generateChartScripts(data: any): string {
               data: ${JSON.stringify(entries)},
               borderColor: '#4facfe',
               backgroundColor: 'rgba(79, 172, 254, 0.1)',
-              tension: 0.4
+              tension: 0.4,
+              fill: true
             }, {
               label: 'Saídas',
               data: ${JSON.stringify(exits)},
               borderColor: '#f5576c',
               backgroundColor: 'rgba(245, 87, 108, 0.1)',
-              tension: 0.4
+              tension: 0.4,
+              fill: true
             }]
           },
           options: {
             responsive: true,
+            interaction: {
+              mode: 'index',
+              intersect: false,
+            },
             scales: {
-              y: { beginAtZero: true }
+              y: { 
+                beginAtZero: true,
+                grid: {
+                  color: 'rgba(0,0,0,0.1)'
+                }
+              },
+              x: {
+                grid: {
+                  color: 'rgba(0,0,0,0.1)'
+                }
+              }
+            },
+            plugins: {
+              tooltip: {
+                backgroundColor: 'rgba(0,0,0,0.8)',
+                titleColor: 'white',
+                bodyColor: 'white'
+              }
             }
           }
         });
@@ -887,7 +963,8 @@ function generateChartScripts(data: any): string {
             datasets: [{
               data: ${JSON.stringify(statusCounts)},
               backgroundColor: ['#4facfe', '#f093fb', '#f5576c'],
-              borderWidth: 0
+              borderWidth: 0,
+              borderRadius: 8
             }]
           },
           options: {
@@ -896,7 +973,17 @@ function generateChartScripts(data: any): string {
               legend: { display: false }
             },
             scales: {
-              y: { beginAtZero: true }
+              y: { 
+                beginAtZero: true,
+                grid: {
+                  color: 'rgba(0,0,0,0.1)'
+                }
+              },
+              x: {
+                grid: {
+                  display: false
+                }
+              }
             }
           }
         });
