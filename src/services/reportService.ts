@@ -1,5 +1,6 @@
 
 import { generateReportLocal } from './reportGenerationService';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface ReportConfig {
   id?: string;
@@ -36,6 +37,27 @@ export const reportService = {
     };
 
     return await generateReportLocal(reportData);
+  },
+
+  // Buscar histórico de relatórios
+  async getReportHistory(): Promise<ReportHistory[]> {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      throw new Error('Usuário não autenticado');
+    }
+
+    const { data, error } = await supabase
+      .from('report_history')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      throw new Error('Erro ao buscar histórico de relatórios');
+    }
+
+    return data || [];
   },
 
   async downloadReport(fileUrl: string, fileName: string) {
