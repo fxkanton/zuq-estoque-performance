@@ -307,16 +307,9 @@ function generateHTMLReport(data: any, reportName: string, startDate: string, en
         }
         
         .logo {
-            width: 80px;
-            height: 80px;
-            background: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            font-size: 24px;
-            color: #1e3c72;
+            width: 120px;
+            height: auto;
+            border-radius: 10px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
         
@@ -374,6 +367,20 @@ function generateHTMLReport(data: any, reportName: string, startDate: string, en
         }
         
         .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .main-kpis-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+        
+        .secondary-kpis-row {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 30px;
@@ -535,7 +542,8 @@ function generateHTMLReport(data: any, reportName: string, startDate: string, en
         
         @media (max-width: 768px) {
             .report-title { font-size: 2rem; }
-            .kpi-grid { grid-template-columns: 1fr; }
+            .main-kpis-row { grid-template-columns: 1fr; }
+            .secondary-kpis-row { grid-template-columns: 1fr; }
             .metric-grid { grid-template-columns: repeat(2, 1fr); }
             .export-controls { position: static; margin-bottom: 20px; }
         }
@@ -553,7 +561,7 @@ function generateHTMLReport(data: any, reportName: string, startDate: string, en
         
         <div class="report-header">
             <div class="logo-container">
-                <div class="logo">ZUQ</div>
+                <img src="/lovable-uploads/142370cc-3220-4b19-b8ec-4245d180049a.png" alt="ZUQ Logo" class="logo">
             </div>
             <h1 class="report-title">${reportName}</h1>
             <p class="report-subtitle">Relatório Executivo de Gestão</p>
@@ -564,10 +572,17 @@ function generateHTMLReport(data: any, reportName: string, startDate: string, en
         </div>
 
         <div class="report-content">
-            <div class="kpi-grid">
-                ${generateKPISections(data)}
+            <!-- KPIs Principais em uma linha -->
+            <div class="main-kpis-row">
+                ${generateMainKPISections(data)}
             </div>
             
+            <!-- KPIs Secundários -->
+            <div class="secondary-kpis-row">
+                ${generateSecondaryKPISections(data)}
+            </div>
+            
+            <!-- Gráfico de Movimentações em bloco separado -->
             ${data.movements_summary ? `
             <div class="movements-chart-block">
                 <div class="kpi-card full-width">
@@ -582,6 +597,9 @@ function generateHTMLReport(data: any, reportName: string, startDate: string, en
                 </div>
             </div>
             ` : ''}
+            
+            <!-- Tabela de Equipamentos em bloco separado -->
+            ${generateEquipmentTable(data)}
         </div>
         
         <div class="footer">
@@ -649,9 +667,10 @@ function generateHTMLReport(data: any, reportName: string, startDate: string, en
 </html>`;
 }
 
-function generateKPISections(data: any): string {
+function generateMainKPISections(data: any): string {
   let sections = '';
 
+  // Estoque sempre primeiro
   if (data.stock_summary) {
     const stockData = data.stock_summary;
     sections += `
@@ -679,39 +698,9 @@ function generateKPISections(data: any): string {
             <canvas id="stockChart" width="400" height="200"></canvas>
         </div>
     </div>`;
-    
-    // Tabela de equipamentos em bloco separado
-    if (stockData.stockDetails && stockData.stockDetails.length > 0) {
-      sections += `
-      <div class="kpi-card full-width">
-          <h2 class="kpi-title">
-              <span class="kpi-icon">📋</span>
-              DETALHES DO ESTOQUE
-          </h2>
-          <table class="data-table">
-              <thead>
-                  <tr>
-                      <th>Equipamento</th>
-                      <th>Estoque Atual</th>
-                      <th>Estoque Mínimo</th>
-                      <th>Status</th>
-                  </tr>
-              </thead>
-              <tbody>
-                  ${stockData.stockDetails.map((item: any) => `
-                  <tr>
-                      <td>${item.name}</td>
-                      <td>${item.currentStock}</td>
-                      <td>${item.minStock}</td>
-                      <td><span class="status-badge status-${item.status.toLowerCase()}">${item.status}</span></td>
-                  </tr>
-                  `).join('')}
-              </tbody>
-          </table>
-      </div>`;
-    }
   }
 
+  // Movimentações
   if (data.movements_summary) {
     const movData = data.movements_summary;
     sections += `
@@ -737,6 +726,7 @@ function generateKPISections(data: any): string {
     </div>`;
   }
 
+  // Pedidos
   if (data.orders_summary) {
     const orderData = data.orders_summary;
     sections += `
@@ -765,6 +755,12 @@ function generateKPISections(data: any): string {
         </div>
     </div>`;
   }
+
+  return sections;
+}
+
+function generateSecondaryKPISections(data: any): string {
+  let sections = '';
 
   if (data.readers_status) {
     const readersData = data.readers_status;
@@ -825,6 +821,41 @@ function generateKPISections(data: any): string {
   }
 
   return sections;
+}
+
+function generateEquipmentTable(data: any): string {
+  if (!data.stock_summary || !data.stock_summary.stockDetails || data.stock_summary.stockDetails.length === 0) {
+    return '';
+  }
+
+  const stockDetails = data.stock_summary.stockDetails;
+  return `
+  <div class="kpi-card full-width">
+      <h2 class="kpi-title">
+          <span class="kpi-icon">📋</span>
+          DETALHES DO ESTOQUE
+      </h2>
+      <table class="data-table">
+          <thead>
+              <tr>
+                  <th>Equipamento</th>
+                  <th>Estoque Atual</th>
+                  <th>Estoque Mínimo</th>
+                  <th>Status</th>
+              </tr>
+          </thead>
+          <tbody>
+              ${stockDetails.map((item: any) => `
+              <tr>
+                  <td>${item.name}</td>
+                  <td>${item.currentStock}</td>
+                  <td>${item.minStock}</td>
+                  <td><span class="status-badge status-${item.status.toLowerCase()}">${item.status}</span></td>
+              </tr>
+              `).join('')}
+          </tbody>
+      </table>
+  </div>`;
 }
 
 function generateChartScripts(data: any): string {
