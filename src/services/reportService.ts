@@ -57,7 +57,20 @@ export const reportService = {
       throw new Error('Erro ao buscar histórico de relatórios');
     }
 
-    return data || [];
+    // Transform the data to match our interface, ensuring kpis_included is a string array
+    const transformedData: ReportHistory[] = (data || []).map(item => ({
+      id: item.id,
+      report_name: item.report_name,
+      period_start: item.period_start,
+      period_end: item.period_end,
+      kpis_included: Array.isArray(item.kpis_included) ? item.kpis_included as string[] : [],
+      file_url: item.file_url,
+      status: item.status as 'pending' | 'generating' | 'completed' | 'failed',
+      created_at: item.created_at,
+      completed_at: item.completed_at
+    }));
+
+    return transformedData;
   },
 
   async downloadReport(fileUrl: string, fileName: string) {
