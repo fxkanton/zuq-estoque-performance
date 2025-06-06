@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -7,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { isMemberOrManager } from '@/utils/permissions';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -22,7 +22,7 @@ const Login = () => {
   // Redirect logged in users
   useEffect(() => {
     if (user && profile) {
-      if (profile.role === 'membro') {
+      if (isMemberOrManager(profile.role)) {
         navigate('/dashboard', { replace: true });
       } else {
         navigate('/intruso', { replace: true });
