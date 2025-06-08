@@ -1,8 +1,9 @@
+
 import { useEffect, useState, useCallback, useRef } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { ArrowDown, ArrowUp, AlertTriangle, Activity, PackageCheck, Calendar } from "lucide-react";
+import { ArrowDown, ArrowUp, AlertTriangle, Activity, PackageCheck, Calendar, TrendingUp, TrendingDown, Users, Package, Clock, BarChart3 } from "lucide-react";
 import { getEquipmentWithStock } from "@/services/equipmentService";
 import { getMonthlyMovements, getRecentMovements } from "@/services/movementService";
 import { getPendingOrders } from "@/services/orderService";
@@ -360,7 +361,9 @@ const Dashboard = () => {
   return (
     <MainLayout title="Dashboard">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-zuq-darkblue">Dashboard</h1>
+        <h1 className="text-2xl font-bold text-zuq-darkblue bg-gradient-to-r from-zuq-darkblue to-zuq-blue bg-clip-text text-transparent">
+          Dashboard
+        </h1>
         <ReportButton />
       </div>
       
@@ -370,45 +373,70 @@ const Dashboard = () => {
         onChange={handleDateRangeChange}
       />
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <StatsCard 
-          title="Saldo de Equipamentos" 
-          value={equipmentBalance.toString()} 
-          trend={{ value: `No período selecionado`, positive: equipmentBalance >= 0 }}
-          icon={<PackageCheck className="h-8 w-8 text-zuq-blue" />}
-        />
-        <StatsCard 
-          title="Entradas no Período" 
-          value={monthlyMovements.entries.toString()} 
-          trend={{ value: `${monthlyMovements.entriesCount} inserções`, positive: monthlyMovements.entriesChange >= 0 }}
-          icon={<ArrowDown className="h-8 w-8 text-green-500" />}
-        />
-        <StatsCard 
-          title="Saídas no Período" 
-          value={monthlyMovements.exits.toString()} 
-          trend={{ value: `${monthlyMovements.exitsCount} inserções`, positive: monthlyMovements.exitsChange < 0 }}
-          icon={<ArrowUp className="h-8 w-8 text-amber-500" />}
-        />
+      {/* New layout: Equipment balance on left, entries and exits stacked on right */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
+        <div className="lg:col-span-1">
+          <StatsCard 
+            title="Saldo de Equipamentos" 
+            value={equipmentBalance.toString()} 
+            trend={{ value: `No período selecionado`, positive: equipmentBalance >= 0 }}
+            icon={<PackageCheck className="h-8 w-8 text-blue-600" />}
+            gradientFrom="from-blue-50"
+            gradientTo="to-indigo-50"
+            borderColor="border-blue-100"
+            iconBg="bg-blue-100"
+          />
+        </div>
+        <div className="lg:col-span-1 space-y-4">
+          <StatsCard 
+            title="Entradas no Período" 
+            value={monthlyMovements.entries.toString()} 
+            trend={{ value: `${monthlyMovements.entriesCount} inserções`, positive: monthlyMovements.entriesChange >= 0 }}
+            icon={<ArrowDown className="h-8 w-8 text-green-600" />}
+            gradientFrom="from-green-50"
+            gradientTo="to-emerald-50"
+            borderColor="border-green-100"
+            iconBg="bg-green-100"
+          />
+          <StatsCard 
+            title="Saídas no Período" 
+            value={monthlyMovements.exits.toString()} 
+            trend={{ value: `${monthlyMovements.exitsCount} inserções`, positive: monthlyMovements.exitsChange < 0 }}
+            icon={<ArrowUp className="h-8 w-8 text-orange-600" />}
+            gradientFrom="from-orange-50"
+            gradientTo="to-amber-50"
+            borderColor="border-orange-100"
+            iconBg="bg-orange-100"
+          />
+        </div>
+        <div className="lg:col-span-2">
+          <TaskReminders />
+        </div>
       </div>
 
-      {/* New section with donut chart and task reminders */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      {/* Donut chart in full width */}
+      <div className="mb-8">
         <MovementsDonutChart 
           entries={monthlyMovements.entries} 
           exits={monthlyMovements.exits} 
         />
-        <TaskReminders />
       </div>
 
       {/* Equipment inventory component with increased height */}
       <EquipmentInventory startDate={startDate.toISOString().split('T')[0]} endDate={endDate.toISOString().split('T')[0]} />
       
+      {/* Daily movements chart */}
       <div className="grid grid-cols-1 mb-8">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-medium text-zuq-darkblue">Movimentações Diárias</CardTitle>
+        <Card className="bg-gradient-to-br from-white to-purple-50/30 border-purple-100 shadow-lg hover:shadow-xl transition-all duration-300">
+          <CardHeader className="bg-gradient-to-r from-purple-50 to-violet-50 border-b border-purple-100">
+            <CardTitle className="text-lg font-semibold text-zuq-darkblue flex items-center gap-3">
+              <div className="p-2 bg-purple-100 rounded-full">
+                <BarChart3 className="h-5 w-5 text-purple-600" />
+              </div>
+              Movimentações Diárias
+            </CardTitle>
           </CardHeader>
-          <CardContent className="h-96">
+          <CardContent className="h-96 p-6">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={dailyMovements}
@@ -419,14 +447,14 @@ const Dashboard = () => {
                   bottom: 5,
                 }}
               >
-                <CartesianGrid strokeDasharray="3 3" />
+                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                 <XAxis 
                   dataKey="date" 
-                  tick={{ fontSize: 12 }}
+                  tick={{ fontSize: 12, fill: '#64748b' }}
                   interval={0}
                   angle={0}
                 />
-                <YAxis />
+                <YAxis tick={{ fill: '#64748b' }} />
                 <Tooltip 
                   labelFormatter={(label, payload) => {
                     if (payload && payload.length > 0 && payload[0]?.payload?.originalDate) {
@@ -434,10 +462,17 @@ const Dashboard = () => {
                     }
                     return label;
                   }}
+                  contentStyle={{
+                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                    backdropFilter: 'blur(10px)',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '12px',
+                    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)'
+                  }}
                 />
                 <Legend />
-                <Bar dataKey="entries" name="Entradas" fill="#4ade80" />
-                <Bar dataKey="exits" name="Saídas" fill="#f59e0b" />
+                <Bar dataKey="entries" name="Entradas" fill="#4ade80" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="exits" name="Saídas" fill="#f59e0b" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
@@ -445,57 +480,77 @@ const Dashboard = () => {
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg font-medium text-zuq-darkblue">Distribuição de Leitoras</CardTitle>
+        <Card className="bg-gradient-to-br from-white to-cyan-50/30 border-cyan-100 shadow-lg hover:shadow-xl transition-all duration-300">
+          <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-cyan-50 to-teal-50 border-b border-cyan-100">
+            <CardTitle className="text-lg font-semibold text-zuq-darkblue flex items-center gap-3">
+              <div className="p-2 bg-cyan-100 rounded-full">
+                <Users className="h-5 w-5 text-cyan-600" />
+              </div>
+              Distribuição de Leitoras
+            </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-6">
             <div className="space-y-6">
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-sm font-medium">Disponíveis</span>
-                  <span className="text-sm font-medium text-green-600">{readerStats['Disponível']}</span>
+                  <span className="text-sm font-medium text-gray-700">Disponíveis</span>
+                  <span className="text-sm font-semibold text-green-600 bg-green-50 px-2 py-1 rounded-full">
+                    {readerStats['Disponível']}
+                  </span>
                 </div>
                 <Progress 
                   value={(readerStats['Disponível'] / Math.max(1, Object.values(readerStats).reduce((a, b) => a + b, 0))) * 100} 
-                  className="h-2 bg-gray-100" 
+                  className="h-3 bg-gray-100 shadow-inner" 
                 />
               </div>
               
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-sm font-medium">Em Uso</span>
-                  <span className="text-sm font-medium text-blue-600">{readerStats['Em Uso']}</span>
+                  <span className="text-sm font-medium text-gray-700">Em Uso</span>
+                  <span className="text-sm font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded-full">
+                    {readerStats['Em Uso']}
+                  </span>
                 </div>
                 <Progress 
                   value={(readerStats['Em Uso'] / Math.max(1, Object.values(readerStats).reduce((a, b) => a + b, 0))) * 100} 
-                  className="h-2 bg-gray-100" 
+                  className="h-3 bg-gray-100 shadow-inner" 
                 />
               </div>
               
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-sm font-medium">Em Manutenção</span>
-                  <span className="text-sm font-medium text-red-600">{readerStats['Em Manutenção']}</span>
+                  <span className="text-sm font-medium text-gray-700">Em Manutenção</span>
+                  <span className="text-sm font-semibold text-red-600 bg-red-50 px-2 py-1 rounded-full">
+                    {readerStats['Em Manutenção']}
+                  </span>
                 </div>
                 <Progress 
                   value={(readerStats['Em Manutenção'] / Math.max(1, Object.values(readerStats).reduce((a, b) => a + b, 0))) * 100} 
-                  className="h-2 bg-gray-100" 
+                  className="h-3 bg-gray-100 shadow-inner" 
                 />
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg font-medium text-zuq-darkblue">Pedidos Pendentes</CardTitle>
+        <Card className="bg-gradient-to-br from-white to-yellow-50/30 border-yellow-100 shadow-lg hover:shadow-xl transition-all duration-300">
+          <CardHeader className="flex flex-row items-center justify-between bg-gradient-to-r from-yellow-50 to-orange-50 border-b border-yellow-100">
+            <CardTitle className="text-lg font-semibold text-zuq-darkblue flex items-center gap-3">
+              <div className="p-2 bg-yellow-100 rounded-full">
+                <Package className="h-5 w-5 text-yellow-600" />
+              </div>
+              Pedidos Pendentes
+            </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-6">
             <div className="space-y-4">
               {pendingOrders.length === 0 ? (
-                <div className="text-center py-6 text-muted-foreground">
-                  Não há pedidos pendentes
+                <div className="text-center py-8 text-muted-foreground">
+                  <div className="p-4 bg-gray-50 rounded-full w-16 h-16 mx-auto mb-3 flex items-center justify-center">
+                    <Package className="h-8 w-8 text-gray-300" />
+                  </div>
+                  <p className="text-sm font-medium">Não há pedidos pendentes</p>
+                  <p className="text-xs text-gray-400 mt-1">Tudo em dia! 📦</p>
                 </div>
               ) : (
                 <>
@@ -517,15 +572,24 @@ const Dashboard = () => {
       </div>
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg font-medium text-zuq-darkblue">Alertas de Estoque</CardTitle>
+        <Card className="bg-gradient-to-br from-white to-red-50/30 border-red-100 shadow-lg hover:shadow-xl transition-all duration-300">
+          <CardHeader className="bg-gradient-to-r from-red-50 to-pink-50 border-b border-red-100">
+            <CardTitle className="text-lg font-semibold text-zuq-darkblue flex items-center gap-3">
+              <div className="p-2 bg-red-100 rounded-full">
+                <AlertTriangle className="h-5 w-5 text-red-600" />
+              </div>
+              Alertas de Estoque
+            </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-6">
             <div className="space-y-4">
               {lowStockItems.length === 0 ? (
-                <div className="text-center py-6 text-muted-foreground">
-                  Não há alertas de estoque
+                <div className="text-center py-8 text-muted-foreground">
+                  <div className="p-4 bg-gray-50 rounded-full w-16 h-16 mx-auto mb-3 flex items-center justify-center">
+                    <AlertTriangle className="h-8 w-8 text-gray-300" />
+                  </div>
+                  <p className="text-sm font-medium">Não há alertas de estoque</p>
+                  <p className="text-xs text-gray-400 mt-1">Tudo sob controle! ✅</p>
                 </div>
               ) : (
                 <>
@@ -555,22 +619,26 @@ type StatsCardProps = {
     positive: boolean;
   };
   icon: React.ReactNode;
+  gradientFrom?: string;
+  gradientTo?: string;
+  borderColor?: string;
+  iconBg?: string;
 };
 
-const StatsCard = ({ title, value, trend, icon }: StatsCardProps) => {
+const StatsCard = ({ title, value, trend, icon, gradientFrom = "from-white", gradientTo = "to-gray-50/30", borderColor = "border-gray-100", iconBg = "bg-gray-100" }: StatsCardProps) => {
   return (
-    <Card>
+    <Card className={`bg-gradient-to-br ${gradientFrom} ${gradientTo} ${borderColor} shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1`}>
       <CardContent className="p-6">
         <div className="flex justify-between items-start">
-          <div>
-            <p className="text-sm text-muted-foreground">{title}</p>
-            <p className="text-2xl font-bold mt-1 text-zuq-darkblue">{value}</p>
-            <p className={`text-xs mt-2 flex items-center ${trend.positive ? 'text-green-600' : 'text-red-600'}`}>
-              {trend.positive ? <ArrowUp className="h-3 w-3 mr-1" /> : <ArrowDown className="h-3 w-3 mr-1" />}
-              {trend.value}
-            </p>
+          <div className="flex-1">
+            <p className="text-sm text-gray-600 font-medium mb-2">{title}</p>
+            <p className="text-3xl font-bold text-zuq-darkblue mb-3">{value}</p>
+            <div className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-full ${trend.positive ? 'text-green-700 bg-green-50 border border-green-200' : 'text-red-700 bg-red-50 border border-red-200'}`}>
+              {trend.positive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+              <span className="font-medium">{trend.value}</span>
+            </div>
           </div>
-          <div className="bg-zuq-gray/30 p-3 rounded-full">
+          <div className={`${iconBg} p-3 rounded-full shadow-sm`}>
             {icon}
           </div>
         </div>
@@ -589,15 +657,19 @@ const AlertItem = ({ name, currentStock, minLevel }: AlertItemProps) => {
   const percentage = Math.min(100, (currentStock / minLevel) * 100);
   
   return (
-    <div className="space-y-2">
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <AlertTriangle className="h-4 w-4 text-amber-500" />
-          <span className="text-sm font-medium">{name}</span>
+    <div className="bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200">
+      <div className="space-y-3">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-red-500" />
+            <span className="text-sm font-medium text-gray-900">{name}</span>
+          </div>
+          <span className="text-sm font-semibold text-red-600 bg-red-100 px-2 py-1 rounded-full">
+            {currentStock}/{minLevel}
+          </span>
         </div>
-        <span className="text-sm font-medium">{currentStock}/{minLevel}</span>
+        <Progress value={percentage} className="h-2 bg-red-100" />
       </div>
-      <Progress value={percentage} className="h-2" />
     </div>
   );
 };
@@ -614,18 +686,25 @@ const PendingOrderItem = ({ supplier, product, quantity, received, date }: Pendi
   const percentage = (received / quantity) * 100;
   
   return (
-    <div className="space-y-2">
-      <div className="flex justify-between">
-        <div>
-          <h4 className="text-sm font-medium">{product}</h4>
-          <p className="text-xs text-muted-foreground">{supplier}</p>
+    <div className="bg-gradient-to-r from-yellow-50 to-orange-50 border border-yellow-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200">
+      <div className="space-y-3">
+        <div className="flex justify-between">
+          <div>
+            <h4 className="text-sm font-semibold text-gray-900">{product}</h4>
+            <p className="text-xs text-gray-600 font-medium">{supplier}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-sm font-semibold text-yellow-700">
+              {received} de {quantity} recebidos
+            </p>
+            <p className="text-xs text-gray-600 flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              Previsão: {date}
+            </p>
+          </div>
         </div>
-        <div className="text-right">
-          <p className="text-sm font-medium">{received} de {quantity} recebidos</p>
-          <p className="text-xs text-muted-foreground">Previsão: {date}</p>
-        </div>
+        <Progress value={percentage} className="h-2 bg-yellow-100" />
       </div>
-      <Progress value={percentage} className="h-2" />
     </div>
   );
 };
