@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useCallback, useRef } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -372,9 +373,9 @@ const Dashboard = () => {
         onChange={handleDateRangeChange}
       />
       
-      {/* Updated layout: Left column with stats, right column with task reminders */}
+      {/* New layout: Equipment balance on left, entries and exits stacked on right */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
-        <div className="lg:col-span-1 space-y-4">
+        <div className="lg:col-span-1">
           <StatsCard 
             title="Saldo de Equipamentos" 
             value={equipmentBalance.toString()} 
@@ -385,6 +386,8 @@ const Dashboard = () => {
             borderColor="border-blue-100"
             iconBg="bg-blue-100"
           />
+        </div>
+        <div className="lg:col-span-1 space-y-4">
           <StatsCard 
             title="Entradas no Período" 
             value={monthlyMovements.entries.toString()} 
@@ -406,22 +409,17 @@ const Dashboard = () => {
             iconBg="bg-orange-100"
           />
         </div>
-        <div className="lg:col-span-3">
+        <div className="lg:col-span-2">
           <TaskReminders />
         </div>
       </div>
 
-      {/* Donut chart and task reminders side by side */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <div>
-          <MovementsDonutChart 
-            entries={monthlyMovements.entries} 
-            exits={monthlyMovements.exits} 
-          />
-        </div>
-        <div>
-          {/* Empty space for future content or can be removed */}
-        </div>
+      {/* Donut chart in full width */}
+      <div className="mb-8">
+        <MovementsDonutChart 
+          entries={monthlyMovements.entries} 
+          exits={monthlyMovements.exits} 
+        />
       </div>
 
       {/* Equipment inventory component with increased height */}
