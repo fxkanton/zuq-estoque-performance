@@ -41,6 +41,8 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
     const loadInventory = async () => {
       const data = await getEquipmentWithStock();
       
+      console.log('Equipment data loaded:', data);
+      
       setInventory(data);
       setFilteredInventory(data);
       
@@ -50,6 +52,7 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
       
       // Filter out empty, null, or undefined categories and ensure no empty strings
       const categories = [...new Set(data.map(item => item.category).filter(cat => cat && cat.trim() !== ''))];
+      console.log('Unique categories after filtering:', categories);
       setUniqueCategories(categories);
     };
     
@@ -90,6 +93,7 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
   }, [filters, inventory]);
   
   const handleFilterChange = (field: string, value: string) => {
+    console.log(`Filter change: ${field} = ${value}`);
     setFilters(prev => ({
       ...prev,
       [field]: value
@@ -159,9 +163,17 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas as marcas</SelectItem>
-                {uniqueBrands.map(brand => (
-                  <SelectItem key={brand} value={brand}>{brand}</SelectItem>
-                ))}
+                {uniqueBrands.map(brand => {
+                  console.log('Rendering brand SelectItem:', brand);
+                  // Ensure brand is not empty string
+                  if (!brand || brand.trim() === '') {
+                    console.warn('Skipping empty brand:', brand);
+                    return null;
+                  }
+                  return (
+                    <SelectItem key={brand} value={brand}>{brand}</SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>
@@ -177,9 +189,17 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas as categorias</SelectItem>
-                {uniqueCategories.map(category => (
-                  <SelectItem key={category} value={category}>{category}</SelectItem>
-                ))}
+                {uniqueCategories.map(category => {
+                  console.log('Rendering category SelectItem:', category);
+                  // Double check category is not empty
+                  if (!category || category.trim() === '') {
+                    console.warn('Skipping empty category:', category);
+                    return null;
+                  }
+                  return (
+                    <SelectItem key={category} value={category}>{category}</SelectItem>
+                  );
+                })}
                 <SelectItem value="unknown">Não especificado</SelectItem>
               </SelectContent>
             </Select>
