@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -135,67 +134,71 @@ const Equipamentos = () => {
 
   return (
     <MainLayout title="Cadastro de Equipamentos">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 md:mb-6 gap-4">
-        <h1 className="text-xl md:text-2xl font-bold text-zuq-darkblue">Equipamentos</h1>
-        
-        <Button 
-          className="bg-zuq-blue hover:bg-zuq-blue/80 w-full sm:w-auto"
-          onClick={handleOpenAddDialog}
-        >
-          <Plus className="h-4 w-4 mr-2" /> Novo Equipamento
-        </Button>
+      <div className="space-y-4 md:space-y-6">
+        <div className="space-y-4">
+          <h1 className="text-xl md:text-2xl font-bold text-zuq-darkblue">Equipamentos</h1>
+          
+          <div className="flex justify-start">
+            <Button 
+              className="bg-zuq-blue hover:bg-zuq-blue/80 w-full sm:w-auto"
+              onClick={handleOpenAddDialog}
+            >
+              <Plus className="h-4 w-4 mr-2" /> Novo Equipamento
+            </Button>
+          </div>
+        </div>
+
+        <EquipmentFilters
+          searchTerm={searchTerm}
+          setSearchTerm={setSearchTerm}
+          categoryFilter={categoryFilter}
+          setCategoryFilter={setCategoryFilter}
+          qualityFilter={qualityFilter}
+          setQualityFilter={setQualityFilter}
+          supplierFilter={supplierFilter}
+          setSupplierFilter={setSupplierFilter}
+          categories={categories}
+          suppliers={suppliers}
+          onClearFilters={handleClearFilters}
+        />
+
+        <EquipmentTable
+          equipamentos={filteredEquipamentos}
+          onView={handleOpenViewDialog}
+          onEdit={handleOpenEditDialog}
+          onDelete={handleOpenDeleteDialog}
+          onAdopt={handleAdoptEquipment}
+        />
+
+        <EquipmentFormDialog
+          open={isAddDialogOpen || isEditDialogOpen}
+          onOpenChange={(open) => {
+            if (!open) {
+              setIsAddDialogOpen(false);
+              setIsEditDialogOpen(false);
+              setCurrentEquipment(null);
+            }
+          }}
+          equipment={currentEquipment}
+          suppliers={suppliers}
+          onSuccess={loadData}
+        />
+
+        <EquipmentViewDialog
+          open={isViewDialogOpen}
+          onOpenChange={setIsViewDialogOpen}
+          equipment={currentEquipment as Equipment & { stock?: number; creatorName?: string }}
+          onEdit={handleOpenEditDialog}
+          onAdopt={handleAdoptEquipment}
+        />
+
+        <EquipmentDeleteDialog
+          open={isDeleteDialogOpen}
+          onOpenChange={setIsDeleteDialogOpen}
+          equipment={currentEquipment}
+          onSuccess={loadData}
+        />
       </div>
-
-      <EquipmentFilters
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        categoryFilter={categoryFilter}
-        setCategoryFilter={setCategoryFilter}
-        qualityFilter={qualityFilter}
-        setQualityFilter={setQualityFilter}
-        supplierFilter={supplierFilter}
-        setSupplierFilter={setSupplierFilter}
-        categories={categories}
-        suppliers={suppliers}
-        onClearFilters={handleClearFilters}
-      />
-
-      <EquipmentTable
-        equipamentos={filteredEquipamentos}
-        onView={handleOpenViewDialog}
-        onEdit={handleOpenEditDialog}
-        onDelete={handleOpenDeleteDialog}
-        onAdopt={handleAdoptEquipment}
-      />
-
-      <EquipmentFormDialog
-        open={isAddDialogOpen || isEditDialogOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            setIsAddDialogOpen(false);
-            setIsEditDialogOpen(false);
-            setCurrentEquipment(null);
-          }
-        }}
-        equipment={currentEquipment}
-        suppliers={suppliers}
-        onSuccess={loadData}
-      />
-
-      <EquipmentViewDialog
-        open={isViewDialogOpen}
-        onOpenChange={setIsViewDialogOpen}
-        equipment={currentEquipment as Equipment & { stock?: number; creatorName?: string }}
-        onEdit={handleOpenEditDialog}
-        onAdopt={handleAdoptEquipment}
-      />
-
-      <EquipmentDeleteDialog
-        open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-        equipment={currentEquipment}
-        onSuccess={loadData}
-      />
     </MainLayout>
   );
 };

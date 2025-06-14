@@ -295,127 +295,131 @@ const Movimentacoes = () => {
 
   return (
     <MainLayout title="Movimentações">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-zuq-darkblue">Controle de Movimentações</h1>
-        
-        <Button className="bg-zuq-blue hover:bg-zuq-blue/80" onClick={handleOpenAddDialog}>
-          <Plus className="h-4 w-4 mr-2" /> Nova Movimentação
-        </Button>
-      </div>
-
-      <Card className="mb-6">
-        <CardHeader className="pb-3">
-          <CardTitle>Filtrar Movimentações</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="mb-4 md:mb-0">
-              <SearchInput
-                placeholder="Pesquisar por equipamento..."
-                className="w-full"
-                icon={<Search className="h-4 w-4" />}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-
-            <div className="mb-4 md:mb-0">
-              <Label htmlFor="equipment" className="block text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                Equipamento
-              </Label>
-              <Select onValueChange={setSelectedEquipmentId}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Selecione um equipamento" />
-                </SelectTrigger>
-                <SelectContent>
-                  {equipmentList.map((equipment) => (
-                    <SelectItem key={equipment.id} value={equipment.id}>{equipment.brand}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                className="flex-1"
-                onClick={() => {
-                  setSearchTerm('');
-                  setSelectedEquipmentId('');
-                  setStartDate(new Date());
-                  setEndDate(new Date());
-                  loadMovements();
-                }}
-              >
-                Limpar
-              </Button>
-              <Button 
-                className="bg-zuq-blue hover:bg-zuq-blue/80 flex-1"
-                onClick={() => {}}
-              >
-                Aplicar
-              </Button>
-            </div>
+      <div className="space-y-4 md:space-y-6">
+        <div className="space-y-4">
+          <h1 className="text-xl md:text-2xl font-bold text-zuq-darkblue">Controle de Movimentações</h1>
+          
+          <div className="flex justify-start">
+            <Button className="bg-zuq-blue hover:bg-zuq-blue/80 w-full sm:w-auto" onClick={handleOpenAddDialog}>
+              <Plus className="h-4 w-4 mr-2" /> Nova Movimentação
+            </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      <DateRangeFilter 
-        startDate={startDate}
-        endDate={endDate}
-        onChange={handleDateRangeChange}
-      />
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle>Filtrar Movimentações</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="mb-4 md:mb-0">
+                <SearchInput
+                  placeholder="Pesquisar por equipamento..."
+                  className="w-full"
+                  icon={<Search className="h-4 w-4" />}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
 
-      <Card>
-        <CardContent className="p-0 overflow-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Equipamento</TableHead>
-                <TableHead>Tipo</TableHead>
-                <TableHead>Quantidade</TableHead>
-                <TableHead>Data</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredMovements.length === 0 ? (
+              <div className="mb-4 md:mb-0">
+                <Label htmlFor="equipment" className="block text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  Equipamento
+                </Label>
+                <Select onValueChange={setSelectedEquipmentId}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Selecione um equipamento" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {equipmentList.map((equipment) => (
+                      <SelectItem key={equipment.id} value={equipment.id}>{equipment.brand}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => {
+                    setSearchTerm('');
+                    setSelectedEquipmentId('');
+                    setStartDate(new Date());
+                    setEndDate(new Date());
+                    loadMovements();
+                  }}
+                >
+                  Limpar
+                </Button>
+                <Button 
+                  className="bg-zuq-blue hover:bg-zuq-blue/80 flex-1"
+                  onClick={() => {}}
+                >
+                  Aplicar
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <DateRangeFilter 
+          startDate={startDate}
+          endDate={endDate}
+          onChange={handleDateRangeChange}
+        />
+
+        <Card>
+          <CardContent className="p-0 overflow-auto">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
-                    Nenhuma movimentação encontrada
-                  </TableCell>
+                  <TableHead>Equipamento</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Quantidade</TableHead>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Ações</TableHead>
                 </TableRow>
-              ) : (
-                filteredMovements.map((item) => {
-                  const equipment = equipmentList.find(eq => eq.id === item.equipment_id);
-                  return (
-                    <TableRow key={item.id}>
-                      <TableCell>
-                        {equipment ? `${equipment.brand} ${equipment.model}` : 'N/A'}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {item.movement_type === 'Entrada' ? (
-                            <ArrowDown className="h-4 w-4 text-green-500" />
-                          ) : (
-                            <ArrowUp className="h-4 w-4 text-red-500" />
-                          )}
-                          {item.movement_type}
-                        </div>
-                      </TableCell>
-                      <TableCell>{item.quantity}</TableCell>
-                      <TableCell>{new Date(item.movement_date).toLocaleDateString('pt-BR')}</TableCell>
-                      <TableCell>
-                        <EditDeleteButtons item={item} />
-                      </TableCell>
-                    </TableRow>
-                  );
-                })
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+              </TableHeader>
+              <TableBody>
+                {filteredMovements.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
+                      Nenhuma movimentação encontrada
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredMovements.map((item) => {
+                    const equipment = equipmentList.find(eq => eq.id === item.equipment_id);
+                    return (
+                      <TableRow key={item.id}>
+                        <TableCell>
+                          {equipment ? `${equipment.brand} ${equipment.model}` : 'N/A'}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {item.movement_type === 'Entrada' ? (
+                              <ArrowDown className="h-4 w-4 text-green-500" />
+                            ) : (
+                              <ArrowUp className="h-4 w-4 text-red-500" />
+                            )}
+                            {item.movement_type}
+                          </div>
+                        </TableCell>
+                        <TableCell>{item.quantity}</TableCell>
+                        <TableCell>{new Date(item.movement_date).toLocaleDateString('pt-BR')}</TableCell>
+                        <TableCell>
+                          <EditDeleteButtons item={item} />
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Add Movement Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>

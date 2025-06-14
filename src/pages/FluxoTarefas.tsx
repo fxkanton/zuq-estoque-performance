@@ -162,78 +162,83 @@ const FluxoTarefas = () => {
   return (
     <MainLayout title="Fluxo de Tarefas">
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-zuq-darkblue">Fluxo de Tarefas</h1>
-          <Button 
-            onClick={handleCreateTask}
-            className="bg-zuq-blue hover:bg-zuq-blue/90 text-white flex items-center gap-2"
-          >
-            <Plus className="h-4 w-4" />
-            Nova Tarefa
-          </Button>
+        <div className="space-y-4 md:space-y-6">
+          <div className="space-y-4">
+            <h1 className="text-xl md:text-2xl font-bold text-zuq-darkblue">Fluxo de Tarefas</h1>
+            
+            <div className="flex justify-start">
+              <Button 
+                onClick={handleCreateTask}
+                className="bg-zuq-blue hover:bg-zuq-blue/90 text-white flex items-center gap-2 w-full sm:w-auto"
+              >
+                <Plus className="h-4 w-4" />
+                Nova Tarefa
+              </Button>
+            </div>
+          </div>
+
+          <TaskFilters
+            searchTerm={searchTerm}
+            onSearchChange={setSearchTerm}
+            selectedCategory={selectedCategory}
+            onCategoryChange={setSelectedCategory}
+            selectedPriority={selectedPriority}
+            onPriorityChange={setSelectedPriority}
+            selectedAssignee={selectedAssignee}
+            onAssigneeChange={setSelectedAssignee}
+            onClearFilters={clearFilters}
+          />
+
+          <Card className="shadow-sm">
+            <CardContent className="p-6">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-3 mb-6">
+                  <TabsTrigger value="kanban" className="flex items-center gap-2">
+                    <LayoutGrid className="h-4 w-4" />
+                    Kanban
+                  </TabsTrigger>
+                  <TabsTrigger value="list" className="flex items-center gap-2">
+                    <List className="h-4 w-4" />
+                    Lista
+                  </TabsTrigger>
+                  <TabsTrigger value="calendar" className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4" />
+                    Calendário
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="kanban" className="space-y-4">
+                  <KanbanView 
+                    tasks={filteredTasks}
+                    onTaskEdit={handleEditTask}
+                    onMoveTask={handleMoveTask}
+                  />
+                </TabsContent>
+
+                <TabsContent value="list" className="space-y-4">
+                  <ListView 
+                    tasks={filteredTasks}
+                    onTaskEdit={handleEditTask}
+                  />
+                </TabsContent>
+
+                <TabsContent value="calendar" className="space-y-4">
+                  <CalendarView 
+                    tasks={filteredTasks}
+                    onTaskEdit={handleEditTask}
+                  />
+                </TabsContent>
+              </Tabs>
+            </CardContent>
+          </Card>
+
+          <TaskModal
+            isOpen={isModalOpen}
+            onClose={() => setIsModalOpen(false)}
+            task={selectedTask}
+            onSave={handleSaveTask}
+          />
         </div>
-
-        <TaskFilters
-          searchTerm={searchTerm}
-          onSearchChange={setSearchTerm}
-          selectedCategory={selectedCategory}
-          onCategoryChange={setSelectedCategory}
-          selectedPriority={selectedPriority}
-          onPriorityChange={setSelectedPriority}
-          selectedAssignee={selectedAssignee}
-          onAssigneeChange={setSelectedAssignee}
-          onClearFilters={clearFilters}
-        />
-
-        <Card className="shadow-sm">
-          <CardContent className="p-6">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-3 mb-6">
-                <TabsTrigger value="kanban" className="flex items-center gap-2">
-                  <LayoutGrid className="h-4 w-4" />
-                  Kanban
-                </TabsTrigger>
-                <TabsTrigger value="list" className="flex items-center gap-2">
-                  <List className="h-4 w-4" />
-                  Lista
-                </TabsTrigger>
-                <TabsTrigger value="calendar" className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  Calendário
-                </TabsTrigger>
-              </TabsList>
-
-              <TabsContent value="kanban" className="space-y-4">
-                <KanbanView 
-                  tasks={filteredTasks}
-                  onTaskEdit={handleEditTask}
-                  onMoveTask={handleMoveTask}
-                />
-              </TabsContent>
-
-              <TabsContent value="list" className="space-y-4">
-                <ListView 
-                  tasks={filteredTasks}
-                  onTaskEdit={handleEditTask}
-                />
-              </TabsContent>
-
-              <TabsContent value="calendar" className="space-y-4">
-                <CalendarView 
-                  tasks={filteredTasks}
-                  onTaskEdit={handleEditTask}
-                />
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-
-        <TaskModal
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          task={selectedTask}
-          onSave={handleSaveTask}
-        />
       </div>
     </MainLayout>
   );
