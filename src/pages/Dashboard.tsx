@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useCallback, useRef } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -391,17 +392,16 @@ const Dashboard = () => {
         />
       </div>
       
-      {/* New layout: Left side with stacked cards, right side with task reminders */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Left column - Reorganized cards */}
-        <div className="space-y-6 relative">
+      {/* Fixed layout: Equipment balance first, then movements chart and task reminders side by side */}
+      <div className="space-y-6 mb-8">
+        {/* Equipment Balance - Full width at top */}
+        <div className="relative">
           {loadingState === 'loading' && (
             <div className="absolute inset-0 bg-white/70 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg transition-opacity duration-300">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-zuq-blue"></div>
             </div>
           )}
           
-          {/* Equipment Balance */}
           <StatsCard 
             title="Saldo de Equipamentos" 
             value={equipmentBalance.toString()} 
@@ -412,19 +412,27 @@ const Dashboard = () => {
             borderColor="border-blue-100"
             iconBg="bg-blue-100"
           />
-          
-          {/* Movements Chart - responsive sizing */}
-          <div className="h-[400px] md:h-[600px]">
+        </div>
+        
+        {/* Movements Chart and Task Reminders side by side */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Left column - Movements Chart */}
+          <div className="h-[400px] md:h-[600px] relative">
+            {loadingState === 'loading' && (
+              <div className="absolute inset-0 bg-white/70 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg transition-opacity duration-300">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-zuq-blue"></div>
+              </div>
+            )}
             <MovementsDonutChart 
               entries={monthlyMovements.entries} 
               exits={monthlyMovements.exits} 
             />
           </div>
-        </div>
-        
-        {/* Right column - Task Reminders */}
-        <div className="h-full">
-          <TaskReminders />
+          
+          {/* Right column - Task Reminders */}
+          <div className="h-full">
+            <TaskReminders />
+          </div>
         </div>
       </div>
 
