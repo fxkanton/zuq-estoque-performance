@@ -98,7 +98,7 @@ export const TaskReminders = () => {
   };
 
   return (
-    <Card className="h-[300px] overflow-hidden bg-gradient-to-br from-white to-blue-50/30 border-blue-100 shadow-lg">
+    <Card className="h-full flex flex-col bg-gradient-to-br from-white to-blue-50/30 border-blue-100 shadow-lg">
       <CardHeader className="pb-3 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg font-semibold text-zuq-darkblue flex items-center gap-3">
@@ -116,76 +116,78 @@ export const TaskReminders = () => {
           </div>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4 h-[200px] overflow-y-auto p-4">
-        {/* Overdue Tasks */}
-        {overdueTasks.length > 0 && (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-red-100 rounded-full">
-                <AlertTriangle className="h-4 w-4 text-red-600" />
+      <CardContent className="flex-1 flex flex-col space-y-4 p-4 overflow-hidden">
+        <div className="flex-1 overflow-y-auto space-y-4">
+          {/* Overdue Tasks */}
+          {overdueTasks.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-red-100 rounded-full">
+                  <AlertTriangle className="h-4 w-4 text-red-600" />
+                </div>
+                <span className="text-sm font-semibold text-red-700 bg-red-50 px-3 py-1 rounded-full border border-red-200">
+                  {overdueTasks.length} tarefa{overdueTasks.length > 1 ? 's' : ''} vencida{overdueTasks.length > 1 ? 's' : ''}
+                </span>
               </div>
-              <span className="text-sm font-semibold text-red-700 bg-red-50 px-3 py-1 rounded-full border border-red-200">
-                {overdueTasks.length} tarefa{overdueTasks.length > 1 ? 's' : ''} vencida{overdueTasks.length > 1 ? 's' : ''}
-              </span>
-            </div>
-            {overdueTasks.slice(0, 2).map(task => (
-              <div key={task.id} className="bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-xl p-3 shadow-sm hover:shadow-md transition-all duration-200">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {task.title}
-                    </p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <Badge className={`${getPriorityColor(task.priority)} text-white text-xs px-2 py-1 rounded-full shadow-sm`}>
-                        {task.priority}
-                      </Badge>
+              {overdueTasks.slice(0, 2).map(task => (
+                <div key={task.id} className="bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-xl p-3 shadow-sm hover:shadow-md transition-all duration-200">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {task.title}
+                      </p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Badge className={`${getPriorityColor(task.priority)} text-white text-xs px-2 py-1 rounded-full shadow-sm`}>
+                          {task.priority}
+                        </Badge>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Today's Tasks */}
-        {todayTasks.length > 0 && (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 bg-blue-100 rounded-full">
-                <Clock className="h-4 w-4 text-blue-600" />
-              </div>
-              <span className="text-sm font-semibold text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
-                {todayTasks.length} tarefa{todayTasks.length > 1 ? 's' : ''} vence{todayTasks.length > 1 ? 'm' : ''} hoje
-              </span>
+              ))}
             </div>
-            {todayTasks.slice(0, 2).map(task => (
-              <div key={task.id} className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-xl p-3 shadow-sm hover:shadow-md transition-all duration-200">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {task.title}
-                    </p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <Badge className={`${getPriorityColor(task.priority)} text-white text-xs px-2 py-1 rounded-full shadow-sm`}>
-                        {task.priority}
-                      </Badge>
+          )}
+
+          {/* Today's Tasks */}
+          {todayTasks.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 bg-blue-100 rounded-full">
+                  <Clock className="h-4 w-4 text-blue-600" />
+                </div>
+                <span className="text-sm font-semibold text-blue-700 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
+                  {todayTasks.length} tarefa{todayTasks.length > 1 ? 's' : ''} vence{todayTasks.length > 1 ? 'm' : ''} hoje
+                </span>
+              </div>
+              {todayTasks.slice(0, 2).map(task => (
+                <div key={task.id} className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-xl p-3 shadow-sm hover:shadow-md transition-all duration-200">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900 truncate">
+                        {task.title}
+                      </p>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Badge className={`${getPriorityColor(task.priority)} text-white text-xs px-2 py-1 rounded-full shadow-sm`}>
+                          {task.priority}
+                        </Badge>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {overdueTasks.length === 0 && todayTasks.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            <div className="p-4 bg-gray-50 rounded-full w-16 h-16 mx-auto mb-3 flex items-center justify-center">
-              <Calendar className="h-8 w-8 text-gray-300" />
+              ))}
             </div>
-            <p className="text-sm font-medium">Não há tarefas urgentes no momento</p>
-            <p className="text-xs text-gray-400 mt-1">Você está em dia! 🎉</p>
-          </div>
-        )}
+          )}
+
+          {overdueTasks.length === 0 && todayTasks.length === 0 && (
+            <div className="text-center py-8 text-gray-500">
+              <div className="p-4 bg-gray-50 rounded-full w-16 h-16 mx-auto mb-3 flex items-center justify-center">
+                <Calendar className="h-8 w-8 text-gray-300" />
+              </div>
+              <p className="text-sm font-medium">Não há tarefas urgentes no momento</p>
+              <p className="text-xs text-gray-400 mt-1">Você está em dia! 🎉</p>
+            </div>
+          )}
+        </div>
 
         <div className="pt-3 border-t border-gray-100">
           <Button 
