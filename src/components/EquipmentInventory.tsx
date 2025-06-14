@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getEquipmentWithStock } from '@/services/equipmentService';
@@ -7,7 +6,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { Package, AlertTriangle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Package, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 
 interface Equipment {
   id: string;
@@ -26,6 +26,7 @@ interface EquipmentInventoryProps {
 const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => {
   const [inventory, setInventory] = useState<Equipment[]>([]);
   const [filteredInventory, setFilteredInventory] = useState<Equipment[]>([]);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [filters, setFilters] = useState({
     search: '',
     brand: '',
@@ -116,6 +117,10 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
   
   const totalStock = filteredInventory.reduce((sum, item) => sum + item.stock, 0);
   
+  // Get items to display based on expansion state
+  const displayedItems = isExpanded ? filteredInventory : filteredInventory.slice(0, 10);
+  const hasMoreItems = filteredInventory.length > 10;
+  
   return (
     <Card className="mb-8">
       <CardHeader>
@@ -180,57 +185,76 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
             <p>Nenhum equipamento encontrado para os filtros selecionados</p>
           </div>
         ) : (
-          <div className="modern-card overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-gray-50/50">
-                  <TableHead className="font-semibold">Equipamento</TableHead>
-                  <TableHead className="font-semibold">Categoria</TableHead>
-                  <TableHead className="font-semibold text-center">Estoque</TableHead>
-                  <TableHead className="font-semibold text-center">Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredInventory.map((item) => {
-                  const stockStatus = getStockStatus(item);
-                  return (
-                    <TableRow 
-                      key={item.id} 
-                      className="table-row-hover"
-                    >
-                      <TableCell>
-                        <div>
-                          <div className="font-medium text-gray-900">{item.brand}</div>
-                          <div className="text-sm text-gray-500">{item.model}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge className={`text-xs ${getCategoryColor(item.category)}`}>
-                          {item.category || "Não especificado"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-2">
+          <>
+            <div className="modern-card overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-gray-50/50">
+                    <TableHead className="font-semibold">Equipamento</TableHead>
+                    <TableHead className="font-semibold">Categoria</TableHead>
+                    <TableHead className="font-semibold text-center">Estoque</TableHead>
+                    <TableHead className="font-semibold text-center">Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {displayedItems.map((item) => {
+                    const stockStatus = getStockStatus(item);
+                    return (
+                      <TableRow 
+                        key={item.id} 
+                        className="table-row-hover"
+                      >
+                        <TableCell>
+                          <div>
+                            <div className="font-medium text-gray-900">{item.brand}</div>
+                            <div className="text-sm text-gray-500">{item.model}</div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={`text-xs ${getCategoryColor(item.category)}`}>
+                            {item.category || "Não especificado"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-center">
                           <span className="text-lg font-semibold text-gray-900">{item.stock}</span>
-                          {item.min_stock && (
-                            <span className="text-xs text-gray-500">min: {item.min_stock}</span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <div className="flex items-center justify-center gap-2">
-                          {stockStatus.icon}
-                          <span className={`text-sm font-medium ${stockStatus.color}`}>
-                            {stockStatus.label}
-                          </span>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <div className="flex items-center justify-center gap-2">
+                            {stockStatus.icon}
+                            <span className={`text-sm font-medium ${stockStatus.color}`}>
+                              {stockStatus.label}
+                            </span>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+            
+            {hasMoreItems && (
+              <div className="mt-4 text-center">
+                <Button
+                  variant="outline"
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className="flex items-center gap-2"
+                >
+                  {isExpanded ? (
+                    <>
+                      <ChevronUp className="h-4 w-4" />
+                      Mostrar menos
+                    </>
+                  ) : (
+                    <>
+                      <ChevronDown className="h-4 w-4" />
+                      Expandir ({filteredInventory.length - 10} itens restantes)
+                    </>
+                  )}
+                </Button>
+              </div>
+            )}
+          </>
         )}
       </CardContent>
     </Card>
