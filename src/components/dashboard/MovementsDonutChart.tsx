@@ -1,7 +1,6 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
-import { ArrowDown, ArrowUp, TrendingUp } from "lucide-react";
+import { ArrowDown, ArrowUp, RefreshCw } from "lucide-react";
 
 interface MovementsDonutChartProps {
   entries: number;
@@ -111,7 +110,7 @@ export const MovementsDonutChart = ({ entries, exits }: MovementsDonutChartProps
       <CardHeader className="pb-3 bg-gradient-to-r from-blue-50/50 to-purple-50/30 border-b border-gray-100/50">
         <CardTitle className="text-base md:text-lg font-bold text-slate-800 flex items-center gap-3">
           <div className="p-2.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl shadow-lg">
-            <TrendingUp className="h-4 w-4 md:h-5 md:w-5 text-white" />
+            <RefreshCw className="h-4 w-4 md:h-5 md:w-5 text-white" />
           </div>
           <div>
             <div className="text-slate-800">Movimentações do Período</div>

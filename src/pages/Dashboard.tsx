@@ -400,34 +400,8 @@ const Dashboard = () => {
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-zuq-blue"></div>
             </div>
           )}
-          {/* Entries and Exits side by side */}
-          <div className="grid grid-cols-2 gap-2 md:gap-4">
-            {/* Entries */}
-            <StatsCard 
-              title="Entradas no Período" 
-              value={monthlyMovements.entries.toString()} 
-              trend={{ value: `${monthlyMovements.entriesCount} inserções`, positive: monthlyMovements.entriesChange >= 0 }}
-              icon={<ArrowDown className="h-6 w-6 md:h-8 md:w-8 text-green-600" />}
-              gradientFrom="from-green-50"
-              gradientTo="to-emerald-50"
-              borderColor="border-green-100"
-              iconBg="bg-green-100"
-            />
-            
-            {/* Exits */}
-            <StatsCard 
-              title="Saídas no Período" 
-              value={monthlyMovements.exits.toString()} 
-              trend={{ value: `${monthlyMovements.exitsCount} inserções`, positive: monthlyMovements.exitsChange < 0 }}
-              icon={<ArrowUp className="h-6 w-6 md:h-8 md:w-8 text-orange-600" />}
-              gradientFrom="from-orange-50"
-              gradientTo="to-amber-50"
-              borderColor="border-orange-100"
-              iconBg="bg-orange-100"
-            />
-          </div>
           
-          {/* Equipment Balance below */}
+          {/* Equipment Balance */}
           <StatsCard 
             title="Saldo de Equipamentos" 
             value={equipmentBalance.toString()} 
