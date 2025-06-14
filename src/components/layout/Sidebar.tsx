@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, useLocation } from "react-router-dom";
 import { 
   Package2, 
   Users, 
@@ -26,11 +26,12 @@ import {
 } from "@/components/ui/sidebar";
 
 export function AppSidebar() {
-  const { state } = useSidebar();
+  const { state, isMobile, setOpenMobile } = useSidebar(); // novo
   const isCollapsed = state === "collapsed";
   const logoFullRef = useRef<HTMLImageElement>(null);
   const logoSmallRef = useRef<HTMLImageElement>(null);
-  
+  const location = useLocation();
+
   useEffect(() => {
     // Preload images to prevent flashing
     const logoFullImg = new Image();
@@ -40,13 +41,24 @@ export function AppSidebar() {
     logoSmallImg.src = "/lovable-uploads/b063f862-dfa6-4ec2-bf1e-f6ba630f97b6.png";
   }, []);
 
+  // Sempre que a rota mudar, fecha o menu no mobile
+  useEffect(() => {
+    if (isMobile) setOpenMobile(false);
+  }, [location, isMobile, setOpenMobile]);
+
+  // Handler para navegação nos itens do menu - fecha sidebar no mobile
+  const handleNavClick = () => {
+    if (isMobile) setOpenMobile(false);
+  };
+
   return (
     <Sidebar
       className={`transition-all duration-300 ease-in-out ${isCollapsed ? "w-14" : "w-60"} bg-sidebar border-sidebar-border`}
       collapsible="icon"
     >
       <SidebarContent className="bg-sidebar">
-        <div className={`flex justify-center items-center my-6 ${isCollapsed ? "px-2" : "px-6"}`}>
+        {/* Trigger também dentro do sidebar (visível só no mobile/mini) */}
+        <div className="flex items-center justify-between my-6 px-2 md:px-6">
           {isCollapsed ? (
             <img 
               ref={logoSmallRef}
@@ -64,6 +76,8 @@ export function AppSidebar() {
               loading="eager"
             />
           )}
+          {/* SidebarTrigger sempre visível em mobile/mini para expandir/recolher */}
+          <SidebarTrigger className="ml-auto md:hidden" />
         </div>
 
         <SidebarGroup>
@@ -78,48 +92,56 @@ export function AppSidebar() {
                 icon={<BarChart3 className="h-5 w-5" />}
                 label="Dashboard"
                 isCollapsed={isCollapsed}
+                onClick={handleNavClick}
               />
               <NavItem
                 to="/equipamentos"
                 icon={<Package2 className="h-5 w-5" />}
                 label="Equipamentos"
                 isCollapsed={isCollapsed}
+                onClick={handleNavClick}
               />
               <NavItem
                 to="/fornecedores"
                 icon={<Users className="h-5 w-5" />}
                 label="Fornecedores"
                 isCollapsed={isCollapsed}
+                onClick={handleNavClick}
               />
               <NavItem
                 to="/movimentacoes"
                 icon={<ArrowDownUp className="h-5 w-5" />}
                 label="Entradas e Saídas"
                 isCollapsed={isCollapsed}
+                onClick={handleNavClick}
               />
               <NavItem
                 to="/leitoras"
                 icon={<Database className="h-5 w-5" />}
                 label="Leitoras"
                 isCollapsed={isCollapsed}
+                onClick={handleNavClick}
               />
               <NavItem
                 to="/pedidos"
                 icon={<ClipboardCheck className="h-5 w-5" />}
                 label="Pedidos"
                 isCollapsed={isCollapsed}
+                onClick={handleNavClick}
               />
               <NavItem
                 to="/fluxo-tarefas"
                 icon={<Kanban className="h-5 w-5" />}
                 label="Fluxo de Tarefas"
                 isCollapsed={isCollapsed}
+                onClick={handleNavClick}
               />
               <NavItem
                 to="/manutencao"
                 icon={<Settings className="h-5 w-5" />}
                 label="Manutenção"
                 isCollapsed={isCollapsed}
+                onClick={handleNavClick}
               />
             </SidebarMenu>
           </SidebarGroupContent>
@@ -134,9 +156,10 @@ type NavItemProps = {
   icon: React.ReactNode;
   label: string;
   isCollapsed: boolean;
+  onClick?: () => void; // novo
 };
 
-const NavItem = ({ to, icon, label, isCollapsed }: NavItemProps) => {
+const NavItem = ({ to, icon, label, isCollapsed, onClick }: NavItemProps) => {
   return (
     <SidebarMenuItem>
       <SidebarMenuButton asChild>
@@ -150,6 +173,7 @@ const NavItem = ({ to, icon, label, isCollapsed }: NavItemProps) => {
             }`
           }
           end
+          onClick={onClick}
         >
           <div className="flex items-center">
             {icon}
