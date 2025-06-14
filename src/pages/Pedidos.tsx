@@ -333,13 +333,13 @@ const Pedidos = () => {
 
   return (
     <MainLayout title="Pedidos de Equipamentos">
-      <div className="space-y-4 md:space-y-6">
+      <div className="space-y-4 md:space-y-6 p-4 md:p-0">
         <div className="space-y-4">
-          <h1 className="text-xl md:text-2xl font-bold text-zuq-darkblue">Controle de Pedidos</h1>
+          <h1 className="text-lg md:text-2xl font-bold text-zuq-darkblue">Controle de Pedidos</h1>
           
           <div className="flex justify-start">
             <Button 
-              className="bg-zuq-blue hover:bg-zuq-blue/90 text-white flex items-center gap-2 w-full sm:w-auto"
+              className="bg-zuq-blue hover:bg-zuq-blue/90 text-white flex items-center gap-2 w-full sm:w-auto text-sm"
               onClick={() => setIsCreateDialogOpen(true)}
             >
               <Plus className="h-4 w-4" />
@@ -349,11 +349,11 @@ const Pedidos = () => {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="todos">Todos</TabsTrigger>
-            <TabsTrigger value="pendente">Pendentes</TabsTrigger>
-            <TabsTrigger value="em-trânsito">Em Trânsito</TabsTrigger>
-            <TabsTrigger value="entregue">Entregues</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4 h-auto">
+            <TabsTrigger value="todos" className="text-xs md:text-sm px-2 py-2">Todos</TabsTrigger>
+            <TabsTrigger value="pendente" className="text-xs md:text-sm px-2 py-2">Pendentes</TabsTrigger>
+            <TabsTrigger value="em-trânsito" className="text-xs md:text-sm px-2 py-2">Em Trânsito</TabsTrigger>
+            <TabsTrigger value="entregue" className="text-xs md:text-sm px-2 py-2">Entregues</TabsTrigger>
           </TabsList>
 
           <TabsContent value={activeTab} className="space-y-4">
@@ -361,7 +361,7 @@ const Pedidos = () => {
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-10">
                   <Package className="h-12 w-12 text-muted-foreground mb-4 animate-pulse" />
-                  <p className="text-muted-foreground text-center">
+                  <p className="text-muted-foreground text-center text-sm">
                     Carregando pedidos...
                   </p>
                 </CardContent>
@@ -370,7 +370,7 @@ const Pedidos = () => {
               <Card>
                 <CardContent className="flex flex-col items-center justify-center py-10">
                   <Package className="h-12 w-12 text-muted-foreground mb-4" />
-                  <p className="text-muted-foreground text-center">
+                  <p className="text-muted-foreground text-center text-sm">
                     Nenhum pedido encontrado para esta categoria
                   </p>
                 </CardContent>
@@ -388,19 +388,20 @@ const Pedidos = () => {
                       onClick={() => handleCardClick(order)}
                     >
                       <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <CardTitle className="text-lg">
+                        <div className="flex flex-col space-y-3 md:space-y-0 md:flex-row md:items-center md:justify-between">
+                          <div className="flex flex-col space-y-2 md:space-y-0 md:flex-row md:items-center md:gap-3">
+                            <CardTitle className="text-base md:text-lg leading-tight">
                               {getEquipmentLabel(order)}
                             </CardTitle>
-                            {getStatusBadge(order.status)}
+                            <div className="flex-shrink-0">
+                              {getStatusBadge(order.status)}
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            {/* Dropdown Menu positioned above Registrar Recebimento button */}
+                          <div className="flex items-center gap-2 md:gap-3 justify-end">
                             <div onClick={handleDropdownAction}>
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="sm">
+                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                                     <MoreHorizontal className="h-4 w-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
@@ -431,30 +432,31 @@ const Pedidos = () => {
                                 size="sm"
                                 variant="outline"
                                 onClick={(e) => handleRegisterReceipt(order, e)}
-                                className="flex items-center gap-1"
+                                className="flex items-center gap-1 text-xs md:text-sm px-2 md:px-3"
                               >
                                 <Receipt className="h-3 w-3" />
-                                Registrar Recebimento
+                                <span className="hidden sm:inline">Registrar</span>
+                                <span className="sm:hidden">Reg.</span>
                               </Button>
                             )}
                           </div>
                         </div>
                       </CardHeader>
                       <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 mb-4">
                           <div>
-                            <p className="text-sm text-muted-foreground">Fornecedor</p>
-                            <p className="font-medium">{order.supplier.name}</p>
+                            <p className="text-xs md:text-sm text-muted-foreground">Fornecedor</p>
+                            <p className="font-medium text-sm md:text-base leading-tight">{order.supplier.name}</p>
                           </div>
                           <div>
-                            <p className="text-sm text-muted-foreground">Data do Pedido</p>
-                            <p className="font-medium">
+                            <p className="text-xs md:text-sm text-muted-foreground">Data do Pedido</p>
+                            <p className="font-medium text-sm md:text-base">
                               {order.created_at ? new Date(order.created_at).toLocaleDateString('pt-BR') : 'N/A'}
                             </p>
                           </div>
                           <div>
-                            <p className="text-sm text-muted-foreground">Entrega Prevista</p>
-                            <p className="font-medium">
+                            <p className="text-xs md:text-sm text-muted-foreground">Entrega Prevista</p>
+                            <p className="font-medium text-sm md:text-base">
                               {order.expected_arrival_date ? new Date(order.expected_arrival_date).toLocaleDateString('pt-BR') : 'Não definida'}
                             </p>
                           </div>
@@ -462,17 +464,14 @@ const Pedidos = () => {
                         
                         <div className="space-y-3 pt-4 border-t">
                           <div className="flex justify-between items-center">
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-xs md:text-sm text-muted-foreground">
                               Progresso: <span className="font-semibold text-zuq-blue">{totalReceived} de {order.quantity}</span>
                             </p>
-                            <p className="text-sm font-semibold text-zuq-blue">{progressPercentage}%</p>
+                            <p className="text-xs md:text-sm font-semibold text-zuq-blue">{progressPercentage}%</p>
                           </div>
                           <Progress value={progressPercentage} className="h-2" />
                         </div>
                       </CardContent>
-                      
-                      {/* Remove the old dropdown menu from bottom right */}
-                      
                     </Card>
                   );
                 })}
@@ -483,7 +482,7 @@ const Pedidos = () => {
 
         {/* Create Order Dialog */}
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Novo Pedido</DialogTitle>
               <DialogDescription>
@@ -524,7 +523,7 @@ const Pedidos = () => {
                 </Select>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="quantity">Quantidade *</Label>
                   <Input
@@ -575,7 +574,7 @@ const Pedidos = () => {
 
         {/* Edit Order Dialog */}
         <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="sm:max-w-[500px]">
+          <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Editar Pedido</DialogTitle>
               <DialogDescription>
@@ -622,7 +621,7 @@ const Pedidos = () => {
                 </Select>
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="flex flex-col gap-2">
                   <Label htmlFor="edit_quantity">Quantidade *</Label>
                   <Input
