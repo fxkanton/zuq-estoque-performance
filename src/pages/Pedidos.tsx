@@ -4,8 +4,9 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Package, Truck, CheckCircle } from "lucide-react";
+import { Plus, Package, Truck, CheckCircle, Receipt } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { 
   Dialog, 
   DialogContent, 
@@ -22,11 +23,16 @@ import {
   fetchOrders, 
   createOrder, 
   OrderWithDetails,
-  OrderStatus 
+  OrderStatus,
+  fetchOrderBatches,
+  getOrderTotalReceived,
+  OrderBatch
 } from "@/services/orderService";
 import { fetchEquipment } from "@/services/equipmentService";
 import { fetchSuppliers } from "@/services/supplierService";
 import { supabase } from "@/integrations/supabase/client";
+import OrderBatchForm from "@/components/OrderBatchForm";
+import OrderBatchDetails from "@/components/OrderBatchDetails";
 
 interface Equipment {
   id: string;
@@ -47,7 +53,12 @@ const Pedidos = () => {
   const [orders, setOrders] = useState<OrderWithDetails[]>([]);
   const [equipment, setEquipment] = useState<Equipment[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [orderBatches, setOrderBatches] = useState<{[key: string]: OrderBatch[]}>({});
+  const [orderProgress, setOrderProgress] = useState<{[key: string]: number}>({});
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isBatchFormOpen, setIsBatchFormOpen] = useState(false);
+  const [isBatchDetailsOpen, setIsBatchDetailsOpen] = useState(false);
+  const [selectedOrderForBatch, setSelectedOrderForBatch] = useState<OrderWithDetails | null>(null);
   const [loading, setLoading] = useState(true);
   
   // Form state
@@ -58,6 +69,16 @@ const Pedidos = () => {
     expected_arrival_date: '',
     notes: ''
   });
+
+  const loadOrderProgress = async (orderId: string) => {
+    const totalReceived = await getOrderTotalReceived(orderId);
+    return totalReceived;
+  };
+
+  const loadOrderBatches = async (orderId: string) => {
+    const batches = await fetchOrderBatches(orderId);
+    return batches;
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -71,6 +92,28 @@ const Pedidos = () => {
       setOrders(ordersData);
       setEquipment(equipmentData);
       setSuppliers(suppliersData);
+
+      // Load progress and batches for each order
+      const progressPromises = ordersData.map(async (order) => {
+        const [totalReceived, batches] = await Promise.all([
+          loadOrderProgress(order.id),
+          loadOrderBatches(order.id)
+        ]);
+        return { orderId: order.id, totalReceived, batches };
+      });
+
+      const progressResults = await Promise.all(progressPromises);
+      
+      const newOrderProgress: {[key: string]: number} = {};
+      const newOrderBatches: {[key: string]: OrderBatch[]} = {};
+      
+      progressResults.forEach(({ orderId, totalReceived, batches }) => {
+        newOrderProgress[orderId] = totalReceived;
+        newOrderBatches[orderId] = batches;
+      });
+
+      setOrderProgress(newOrderProgress);
+      setOrderBatches(newOrderBatches);
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
@@ -93,8 +136,20 @@ const Pedidos = () => {
       })
       .subscribe();
 
+    const batchesChannel = supabase
+      .channel('public:order_batches')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'order_batches'
+      }, () => {
+        loadData();
+      })
+      .subscribe();
+
     return () => {
       supabase.removeChannel(ordersChannel);
+      supabase.removeChannel(batchesChannel);
     };
   }, []);
 
@@ -125,6 +180,11 @@ const Pedidos = () => {
         <span className="ml-1">{status}</span>
       </Badge>
     );
+  };
+
+  const getProgressPercentage = (order: OrderWithDetails) => {
+    const totalReceived = orderProgress[order.id] || 0;
+    return Math.round((totalReceived / order.quantity) * 100);
   };
 
   const filteredOrders = activeTab === "todos" 
@@ -180,6 +240,28 @@ const Pedidos = () => {
     }
   };
 
+  const handleRegisterReceipt = (order: OrderWithDetails) => {
+    setSelectedOrderForBatch(order);
+    setIsBatchFormOpen(true);
+  };
+
+  const handleBatchSave = () => {
+    setIsBatchFormOpen(false);
+    setSelectedOrderForBatch(null);
+    loadData();
+  };
+
+  const handleViewDetails = (order: OrderWithDetails) => {
+    setSelectedOrder(order);
+    setIsBatchDetailsOpen(true);
+  };
+
+  const handleRefreshBatches = async () => {
+    if (selectedOrder) {
+      await loadData();
+    }
+  };
+
   const getEquipmentLabel = (order: OrderWithDetails) => {
     return `${order.equipment.brand} ${order.equipment.model}`;
   };
@@ -230,44 +312,66 @@ const Pedidos = () => {
               </Card>
             ) : (
               <div className="grid gap-4">
-                {filteredOrders.map((order) => (
-                  <Card key={order.id} className="cursor-pointer hover:shadow-md transition-shadow"
-                        onClick={() => setSelectedOrder(order)}>
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg">{getEquipmentLabel(order)}</CardTitle>
-                        {getStatusBadge(order.status)}
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div>
-                          <p className="text-sm text-muted-foreground">Fornecedor</p>
-                          <p className="font-medium">{order.supplier.name}</p>
+                {filteredOrders.map((order) => {
+                  const progressPercentage = getProgressPercentage(order);
+                  const totalReceived = orderProgress[order.id] || 0;
+                  
+                  return (
+                    <Card key={order.id} className="hover:shadow-md transition-shadow">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-lg cursor-pointer" onClick={() => handleViewDetails(order)}>
+                            {getEquipmentLabel(order)}
+                          </CardTitle>
+                          <div className="flex items-center gap-2">
+                            {order.status !== "Recebido" && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => handleRegisterReceipt(order)}
+                                className="flex items-center gap-1"
+                              >
+                                <Receipt className="h-3 w-3" />
+                                Registrar Recebimento
+                              </Button>
+                            )}
+                            {getStatusBadge(order.status)}
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Data do Pedido</p>
-                          <p className="font-medium">
-                            {order.created_at ? new Date(order.created_at).toLocaleDateString('pt-BR') : 'N/A'}
-                          </p>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                          <div>
+                            <p className="text-sm text-muted-foreground">Fornecedor</p>
+                            <p className="font-medium">{order.supplier.name}</p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">Data do Pedido</p>
+                            <p className="font-medium">
+                              {order.created_at ? new Date(order.created_at).toLocaleDateString('pt-BR') : 'N/A'}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">Entrega Prevista</p>
+                            <p className="font-medium">
+                              {order.expected_arrival_date ? new Date(order.expected_arrival_date).toLocaleDateString('pt-BR') : 'Não definida'}
+                            </p>
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">Entrega Prevista</p>
-                          <p className="font-medium">
-                            {order.expected_arrival_date ? new Date(order.expected_arrival_date).toLocaleDateString('pt-BR') : 'Não definida'}
-                          </p>
+                        
+                        <div className="space-y-3 pt-4 border-t">
+                          <div className="flex justify-between items-center">
+                            <p className="text-sm text-muted-foreground">
+                              Progresso: <span className="font-semibold text-zuq-blue">{totalReceived} de {order.quantity}</span>
+                            </p>
+                            <p className="text-sm font-semibold text-zuq-blue">{progressPercentage}%</p>
+                          </div>
+                          <Progress value={progressPercentage} className="h-2" />
                         </div>
-                      </div>
-                      <div className="mt-4 pt-4 border-t">
-                        <div className="flex justify-between items-center">
-                          <p className="text-sm text-muted-foreground">
-                            Quantidade: <span className="font-semibold text-zuq-blue ml-1">{order.quantity}</span>
-                          </p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
               </div>
             )}
           </TabsContent>
@@ -365,58 +469,31 @@ const Pedidos = () => {
           </DialogContent>
         </Dialog>
 
-        {/* Order Details Modal */}
+        {/* Batch Form for registering receipts */}
+        {selectedOrderForBatch && (
+          <OrderBatchForm
+            order={selectedOrderForBatch}
+            isOpen={isBatchFormOpen}
+            onClose={() => {
+              setIsBatchFormOpen(false);
+              setSelectedOrderForBatch(null);
+            }}
+            onSave={handleBatchSave}
+          />
+        )}
+
+        {/* Batch Details for viewing receipt history */}
         {selectedOrder && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold">Detalhes do Pedido</h2>
-                <Button variant="outline" onClick={() => setSelectedOrder(null)}>
-                  Fechar
-                </Button>
-              </div>
-              
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Equipamento</p>
-                    <p className="font-medium">{getEquipmentLabel(selectedOrder)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Status</p>
-                    {getStatusBadge(selectedOrder.status)}
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Fornecedor</p>
-                    <p className="font-medium">{selectedOrder.supplier.name}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Quantidade</p>
-                    <p className="font-medium">{selectedOrder.quantity}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Data do Pedido</p>
-                    <p className="font-medium">
-                      {selectedOrder.created_at ? new Date(selectedOrder.created_at).toLocaleDateString('pt-BR') : 'N/A'}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Entrega Prevista</p>
-                    <p className="font-medium">
-                      {selectedOrder.expected_arrival_date ? new Date(selectedOrder.expected_arrival_date).toLocaleDateString('pt-BR') : 'Não definida'}
-                    </p>
-                  </div>
-                </div>
-                
-                {selectedOrder.notes && (
-                  <div>
-                    <p className="text-sm text-muted-foreground">Observações</p>
-                    <p className="text-sm">{selectedOrder.notes}</p>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+          <OrderBatchDetails
+            order={selectedOrder}
+            batches={orderBatches[selectedOrder.id] || []}
+            isOpen={isBatchDetailsOpen}
+            onClose={() => {
+              setIsBatchDetailsOpen(false);
+              setSelectedOrder(null);
+            }}
+            onRefresh={handleRefreshBatches}
+          />
         )}
       </div>
     </MainLayout>
