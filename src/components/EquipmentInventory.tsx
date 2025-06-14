@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getEquipmentWithStock } from '@/services/equipmentService';
@@ -5,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Package, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
@@ -122,16 +124,16 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
   const hasMoreItems = filteredInventory.length > 10;
   
   return (
-    <Card className="mb-8">
-      <CardHeader>
-        <CardTitle className="text-lg font-medium text-zuq-darkblue flex justify-between items-center">
+    <Card className="mb-6 md:mb-8">
+      <CardHeader className="px-4 md:px-6">
+        <CardTitle className="text-base md:text-lg font-medium text-zuq-darkblue flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
           <span>Inventário de Equipamentos</span>
           <span className="text-sm font-normal">Total: <strong>{totalStock}</strong> unidades</span>
         </CardTitle>
       </CardHeader>
       
-      <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <CardContent className="px-4 md:px-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 mb-4 md:mb-6">
           <div>
             <Label htmlFor="search" className="mb-2 block text-sm">Pesquisar</Label>
             <Input
@@ -152,7 +154,7 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
                 <SelectValue placeholder="Todas as marcas" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="todas">Todas as marcas</SelectItem>
+                <SelectItem value="">Todas as marcas</SelectItem>
                 {uniqueBrands.map(brand => (
                   <SelectItem key={brand} value={brand}>{brand}</SelectItem>
                 ))}
@@ -160,7 +162,7 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
             </Select>
           </div>
           
-          <div>
+          <div className="sm:col-span-2 lg:col-span-1">
             <Label htmlFor="category" className="mb-2 block text-sm">Categoria</Label>
             <Select 
               value={filters.category} 
@@ -170,7 +172,7 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
                 <SelectValue placeholder="Todas as categorias" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="todas">Todas as categorias</SelectItem>
+                <SelectItem value="">Todas as categorias</SelectItem>
                 {uniqueCategories.map(category => (
                   <SelectItem key={category || "unknown"} value={category || "unknown"}>{category || "Não especificado"}</SelectItem>
                 ))}
@@ -182,55 +184,58 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
         {filteredInventory.length === 0 ? (
           <div className="text-center py-10 text-muted-foreground">
             <Package className="h-12 w-12 mx-auto mb-4 text-gray-300" />
-            <p>Nenhum equipamento encontrado para os filtros selecionados</p>
+            <p className="text-sm md:text-base">Nenhum equipamento encontrado para os filtros selecionados</p>
           </div>
         ) : (
           <>
             <div className="modern-card overflow-hidden">
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-gray-50/50">
-                    <TableHead className="font-semibold">Equipamento</TableHead>
-                    <TableHead className="font-semibold">Categoria</TableHead>
-                    <TableHead className="font-semibold text-center">Estoque</TableHead>
-                    <TableHead className="font-semibold text-center">Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {displayedItems.map((item) => {
-                    const stockStatus = getStockStatus(item);
-                    return (
-                      <TableRow 
-                        key={item.id} 
-                        className="table-row-hover"
-                      >
-                        <TableCell>
-                          <div>
-                            <div className="font-medium text-gray-900">{item.brand}</div>
-                            <div className="text-sm text-gray-500">{item.model}</div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={`text-xs ${getCategoryColor(item.category)}`}>
-                            {item.category || "Não especificado"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <span className="text-lg font-semibold text-gray-900">{item.stock}</span>
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <div className="flex items-center justify-center gap-2">
-                            {stockStatus.icon}
-                            <span className={`text-sm font-medium ${stockStatus.color}`}>
-                              {stockStatus.label}
-                            </span>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+              <ScrollArea className="w-full">
+                <Table className="min-w-[600px]">
+                  <TableHeader>
+                    <TableRow className="bg-gray-50/50">
+                      <TableHead className="font-semibold min-w-[200px]">Equipamento</TableHead>
+                      <TableHead className="font-semibold min-w-[120px]">Categoria</TableHead>
+                      <TableHead className="font-semibold text-center min-w-[100px]">Estoque</TableHead>
+                      <TableHead className="font-semibold text-center min-w-[100px]">Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {displayedItems.map((item) => {
+                      const stockStatus = getStockStatus(item);
+                      return (
+                        <TableRow 
+                          key={item.id} 
+                          className="table-row-hover"
+                        >
+                          <TableCell className="min-w-[200px]">
+                            <div>
+                              <div className="font-medium text-gray-900 text-sm md:text-base">{item.brand}</div>
+                              <div className="text-xs md:text-sm text-gray-500">{item.model}</div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="min-w-[120px]">
+                            <Badge className={`text-xs ${getCategoryColor(item.category)}`}>
+                              {item.category || "Não especificado"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-center min-w-[100px]">
+                            <span className="text-lg font-semibold text-gray-900">{item.stock}</span>
+                          </TableCell>
+                          <TableCell className="text-center min-w-[100px]">
+                            <div className="flex items-center justify-center gap-2">
+                              {stockStatus.icon}
+                              <span className={`text-xs md:text-sm font-medium ${stockStatus.color}`}>
+                                {stockStatus.label}
+                              </span>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+                <ScrollBar orientation="horizontal" />
+              </ScrollArea>
             </div>
             
             {hasMoreItems && (

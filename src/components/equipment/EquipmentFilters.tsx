@@ -1,3 +1,4 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SearchInput } from "@/components/ui/search-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -33,13 +34,13 @@ export const EquipmentFilters = ({
   onClearFilters
 }: EquipmentFiltersProps) => {
   return (
-    <Card className="mb-6">
-      <CardHeader className="pb-3">
-        <CardTitle>Filtrar Equipamentos</CardTitle>
+    <Card className="mb-4 md:mb-6">
+      <CardHeader className="pb-3 px-4 md:px-6">
+        <CardTitle className="text-base md:text-lg">Filtrar Equipamentos</CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <div>
+      <CardContent className="px-4 md:px-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 md:gap-4">
+          <div className="sm:col-span-2 lg:col-span-1">
             <SearchInput
               placeholder="Pesquisar..."
               className="w-full"
@@ -86,13 +87,13 @@ export const EquipmentFilters = ({
               </SelectContent>
             </Select>
           </div>
-          <div className="flex gap-2">
+          <div className="sm:col-span-2 lg:col-span-1">
             <Button 
               variant="outline" 
-              className="flex-1"
+              className="w-full"
               onClick={onClearFilters}
             >
-              Limpar
+              Limpar Filtros
             </Button>
           </div>
         </div>

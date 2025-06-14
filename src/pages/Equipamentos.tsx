@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -116,7 +117,7 @@ const Equipamentos = () => {
     return (
       <MainLayout title="Cadastro de Equipamentos">
         <div className="flex items-center justify-center h-64">
-          <p className="text-muted-foreground">Acesso restrito a membros e gerentes.</p>
+          <p className="text-muted-foreground text-sm md:text-base">Acesso restrito a membros e gerentes.</p>
         </div>
       </MainLayout>
     );
@@ -126,7 +127,7 @@ const Equipamentos = () => {
     return (
       <MainLayout title="Cadastro de Equipamentos">
         <div className="flex items-center justify-center h-64">
-          <p className="text-muted-foreground">Carregando equipamentos...</p>
+          <p className="text-muted-foreground text-sm md:text-base">Carregando equipamentos...</p>
         </div>
       </MainLayout>
     );
@@ -134,11 +135,11 @@ const Equipamentos = () => {
 
   return (
     <MainLayout title="Cadastro de Equipamentos">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-zuq-darkblue">Equipamentos</h1>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 md:mb-6 gap-4">
+        <h1 className="text-xl md:text-2xl font-bold text-zuq-darkblue">Equipamentos</h1>
         
         <Button 
-          className="bg-zuq-blue hover:bg-zuq-blue/80"
+          className="bg-zuq-blue hover:bg-zuq-blue/80 w-full sm:w-auto"
           onClick={handleOpenAddDialog}
         >
           <Plus className="h-4 w-4 mr-2" /> Novo Equipamento
