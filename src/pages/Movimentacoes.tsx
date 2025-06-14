@@ -42,7 +42,7 @@ const Movimentacoes = () => {
   const [formData, setFormData] = useState({
     equipment_id: '',
     movement_type: 'Entrada' as 'Entrada' | 'Saída',
-    quantity: 0,
+    quantity: '',
     movement_date: new Date().toISOString().split('T')[0],
     notes: ''
   });
@@ -121,10 +121,12 @@ const Movimentacoes = () => {
     const { id, value } = e.target;
     
     if (id === 'quantity') {
-      setFormData(prev => ({
-        ...prev,
-        [id]: value === '' ? 0 : parseInt(value)
-      }));
+      const numericValue = value.replace(/[^0-9]/g, '');
+      if (numericValue === '') {
+        setFormData(prev => ({ ...prev, quantity: '' }));
+      } else {
+        setFormData(prev => ({ ...prev, quantity: parseInt(numericValue, 10).toString() }));
+      }
     } else {
       setFormData(prev => ({
         ...prev,
@@ -137,7 +139,7 @@ const Movimentacoes = () => {
     setFormData({
       equipment_id: '',
       movement_type: 'Entrada',
-      quantity: 0,
+      quantity: '',
       movement_date: new Date().toISOString().split('T')[0],
       notes: ''
     });
@@ -161,7 +163,7 @@ const Movimentacoes = () => {
     setFormData({
       equipment_id: item.equipment_id,
       movement_type: item.movement_type as 'Entrada' | 'Saída',
-      quantity: item.quantity,
+      quantity: item.quantity.toString(),
       movement_date: item.movement_date,
       notes: item.notes || ''
     });
@@ -183,7 +185,8 @@ const Movimentacoes = () => {
       
       await createMovement({
         ...formData,
-        equipment_id: equipmentId
+        equipment_id: equipmentId,
+        quantity: parseInt(formData.quantity, 10) || 0
       });
       setIsAddDialogOpen(false);
       resetForm();
@@ -204,7 +207,8 @@ const Movimentacoes = () => {
       
       await updateMovement(currentMovement.id, {
         ...formData,
-        equipment_id: equipmentId
+        equipment_id: equipmentId,
+        quantity: parseInt(formData.quantity, 10) || 0,
       });
       setIsEditDialogOpen(false);
       resetForm();
@@ -491,9 +495,9 @@ const Movimentacoes = () => {
                 <Label htmlFor="quantity" className="text-sm font-medium">Quantidade *</Label>
                 <Input 
                   id="quantity" 
-                  type="number" 
+                  type="text" 
+                  inputMode="numeric"
                   placeholder="Digite a quantidade"
-                  min="1"
                   value={formData.quantity}
                   onChange={handleInputChange}
                   className="text-center"
@@ -529,7 +533,7 @@ const Movimentacoes = () => {
             <Button 
               className="bg-zuq-blue hover:bg-zuq-blue/80" 
               onClick={handleSaveMovement}
-              disabled={!selectedBrand || !selectedModel || !formData.movement_type || formData.quantity <= 0}
+              disabled={!selectedBrand || !selectedModel || !formData.movement_type || !formData.quantity || parseInt(formData.quantity) <= 0}
             >
               Salvar Movimentação
             </Button>
@@ -618,9 +622,9 @@ const Movimentacoes = () => {
                 <Label htmlFor="quantity" className="text-sm font-medium">Quantidade *</Label>
                 <Input 
                   id="quantity" 
-                  type="number" 
+                  type="text" 
+                  inputMode="numeric"
                   placeholder="Digite a quantidade"
-                  min="1"
                   value={formData.quantity}
                   onChange={handleInputChange}
                   className="text-center"
@@ -656,7 +660,7 @@ const Movimentacoes = () => {
             <Button 
               className="bg-zuq-blue hover:bg-zuq-blue/80" 
               onClick={handleUpdateMovement}
-              disabled={!selectedBrand || !selectedModel || !formData.movement_type || formData.quantity <= 0}
+              disabled={!selectedBrand || !selectedModel || !formData.movement_type || !formData.quantity || parseInt(formData.quantity) <= 0}
             >
               Atualizar Movimentação
             </Button>
