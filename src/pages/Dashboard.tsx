@@ -372,14 +372,12 @@ const Dashboard = () => {
       </div>
       
       {/* Adjust date filter container for mobile */}
-      <div className="mb-6 overflow-x-auto">
-        <div className="min-w-[600px] md:min-w-0">
-          <DateRangeFilter 
-            startDate={startDate}
-            endDate={endDate}
-            onChange={handleDateRangeChange}
-          />
-        </div>
+      <div className="mb-6">
+        <DateRangeFilter 
+          startDate={startDate}
+          endDate={endDate}
+          onChange={handleDateRangeChange}
+        />
       </div>
       
       {/* New layout: Left side with stacked cards, right side with task reminders */}
