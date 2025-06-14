@@ -374,9 +374,36 @@ const Dashboard = () => {
       
       {/* New layout: Left side with stacked cards, right side with task reminders */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Left column - Stacked cards */}
+        {/* Left column - Reorganized cards */}
         <div className="space-y-6">
-          {/* Equipment Balance */}
+          {/* Entries and Exits side by side */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* Entries */}
+            <StatsCard 
+              title="Entradas no Período" 
+              value={monthlyMovements.entries.toString()} 
+              trend={{ value: `${monthlyMovements.entriesCount} inserções`, positive: monthlyMovements.entriesChange >= 0 }}
+              icon={<ArrowDown className="h-8 w-8 text-green-600" />}
+              gradientFrom="from-green-50"
+              gradientTo="to-emerald-50"
+              borderColor="border-green-100"
+              iconBg="bg-green-100"
+            />
+            
+            {/* Exits */}
+            <StatsCard 
+              title="Saídas no Período" 
+              value={monthlyMovements.exits.toString()} 
+              trend={{ value: `${monthlyMovements.exitsCount} inserções`, positive: monthlyMovements.exitsChange < 0 }}
+              icon={<ArrowUp className="h-8 w-8 text-orange-600" />}
+              gradientFrom="from-orange-50"
+              gradientTo="to-amber-50"
+              borderColor="border-orange-100"
+              iconBg="bg-orange-100"
+            />
+          </div>
+          
+          {/* Equipment Balance below */}
           <StatsCard 
             title="Saldo de Equipamentos" 
             value={equipmentBalance.toString()} 
@@ -388,31 +415,7 @@ const Dashboard = () => {
             iconBg="bg-blue-100"
           />
           
-          {/* Entries */}
-          <StatsCard 
-            title="Entradas no Período" 
-            value={monthlyMovements.entries.toString()} 
-            trend={{ value: `${monthlyMovements.entriesCount} inserções`, positive: monthlyMovements.entriesChange >= 0 }}
-            icon={<ArrowDown className="h-8 w-8 text-green-600" />}
-            gradientFrom="from-green-50"
-            gradientTo="to-emerald-50"
-            borderColor="border-green-100"
-            iconBg="bg-green-100"
-          />
-          
-          {/* Exits */}
-          <StatsCard 
-            title="Saídas no Período" 
-            value={monthlyMovements.exits.toString()} 
-            trend={{ value: `${monthlyMovements.exitsCount} inserções`, positive: monthlyMovements.exitsChange < 0 }}
-            icon={<ArrowUp className="h-8 w-8 text-orange-600" />}
-            gradientFrom="from-orange-50"
-            gradientTo="to-amber-50"
-            borderColor="border-orange-100"
-            iconBg="bg-orange-100"
-          />
-          
-          {/* Movements Chart */}
+          {/* Movements Chart - doubled in size */}
           <MovementsDonutChart 
             entries={monthlyMovements.entries} 
             exits={monthlyMovements.exits} 
