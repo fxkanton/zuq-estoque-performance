@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getEquipmentWithStock } from '@/services/equipmentService';
@@ -31,8 +30,8 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
   const [isExpanded, setIsExpanded] = useState(false);
   const [filters, setFilters] = useState({
     search: '',
-    brand: '',
-    category: ''
+    brand: 'all',
+    category: 'all'
   });
   
   const [uniqueBrands, setUniqueBrands] = useState<string[]>([]);
@@ -69,13 +68,13 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
       );
     }
     
-    // Apply brand filter - only if not empty string and not "all"
-    if (filters.brand && filters.brand !== "all" && filters.brand !== "todas") {
+    // Apply brand filter - only if not "all"
+    if (filters.brand && filters.brand !== "all") {
       filtered = filtered.filter(item => item.brand === filters.brand);
     }
     
-    // Apply category filter - only if not empty string and not "all"
-    if (filters.category && filters.category !== "all" && filters.category !== "todas") {
+    // Apply category filter - only if not "all"
+    if (filters.category && filters.category !== "all") {
       filtered = filtered.filter(item => item.category === filters.category);
     }
     
@@ -95,8 +94,8 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
   const resetFilters = () => {
     setFilters({
       search: '',
-      brand: '',
-      category: ''
+      brand: 'all',
+      category: 'all'
     });
   };
   
@@ -154,7 +153,7 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
                 <SelectValue placeholder="Todas as marcas" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas as marcas</SelectItem>
+                <SelectItem value="all">Todas as marcas</SelectItem>
                 {uniqueBrands.map(brand => (
                   <SelectItem key={brand} value={brand}>{brand}</SelectItem>
                 ))}
@@ -172,7 +171,7 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
                 <SelectValue placeholder="Todas as categorias" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas as categorias</SelectItem>
+                <SelectItem value="all">Todas as categorias</SelectItem>
                 {uniqueCategories.map(category => (
                   <SelectItem key={category || "unknown"} value={category || "unknown"}>{category || "Não especificado"}</SelectItem>
                 ))}
