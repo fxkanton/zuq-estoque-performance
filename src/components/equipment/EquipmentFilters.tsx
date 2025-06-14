@@ -50,11 +50,12 @@ export const EquipmentFilters = ({
             />
           </div>
           <div>
-            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <Select value={categoryFilter || "all"} onValueChange={setCategoryFilter}>
               <SelectTrigger>
                 <SelectValue placeholder="Categoria" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="all">Todas as categorias</SelectItem>
                 {categories.map(cat => (
                   <SelectItem key={cat} value={cat.toLowerCase()}>{cat}</SelectItem>
                 ))}
@@ -62,11 +63,12 @@ export const EquipmentFilters = ({
             </Select>
           </div>
           <div>
-            <Select value={qualityFilter} onValueChange={setQualityFilter}>
+            <Select value={qualityFilter || "all"} onValueChange={setQualityFilter}>
               <SelectTrigger>
                 <SelectValue placeholder="Status Qualidade" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="all">Todos os status</SelectItem>
                 <SelectItem value="Aprovado">Aprovado</SelectItem>
                 <SelectItem value="Reprovado">Reprovado</SelectItem>
                 <SelectItem value="Em Teste">Em Teste</SelectItem>
@@ -74,11 +76,12 @@ export const EquipmentFilters = ({
             </Select>
           </div>
           <div>
-            <Select value={supplierFilter} onValueChange={setSupplierFilter}>
+            <Select value={supplierFilter || "all"} onValueChange={setSupplierFilter}>
               <SelectTrigger>
                 <SelectValue placeholder="Fornecedor" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="all">Todos os fornecedores</SelectItem>
                 {suppliers.map(supplier => (
                   <SelectItem key={supplier.id} value={supplier.id}>
                     {supplier.name}

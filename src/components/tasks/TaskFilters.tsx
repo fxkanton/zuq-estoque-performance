@@ -54,7 +54,7 @@ const TaskFilters = ({
 
         <div>
           <Label className="text-sm font-medium mb-2 block">Categoria</Label>
-          <Select value={selectedCategory} onValueChange={onCategoryChange}>
+          <Select value={selectedCategory || "todas"} onValueChange={onCategoryChange}>
             <SelectTrigger>
               <SelectValue placeholder="Todas as categorias" />
             </SelectTrigger>
@@ -71,7 +71,7 @@ const TaskFilters = ({
 
         <div>
           <Label className="text-sm font-medium mb-2 block">Prioridade</Label>
-          <Select value={selectedPriority} onValueChange={onPriorityChange}>
+          <Select value={selectedPriority || "todas"} onValueChange={onPriorityChange}>
             <SelectTrigger>
               <SelectValue placeholder="Todas as prioridades" />
             </SelectTrigger>
@@ -88,7 +88,7 @@ const TaskFilters = ({
 
         <div>
           <Label className="text-sm font-medium mb-2 block">Responsável</Label>
-          <Select value={selectedAssignee} onValueChange={onAssigneeChange}>
+          <Select value={selectedAssignee || "todos"} onValueChange={onAssigneeChange}>
             <SelectTrigger>
               <SelectValue placeholder="Todos os responsáveis" />
             </SelectTrigger>
