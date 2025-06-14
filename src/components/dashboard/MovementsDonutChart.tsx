@@ -1,6 +1,7 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
-import { ArrowDown, ArrowUp, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 
 interface MovementsDonutChartProps {
   entries: number;
@@ -88,16 +89,23 @@ export const MovementsDonutChart = ({ entries, exits }: MovementsDonutChartProps
 
   const CustomLegend = ({ payload }: any) => {
     return (
-      <div className="flex justify-center gap-6 mt-4">
+      <div className="flex justify-center gap-8 mt-6 px-4">
         {payload.map((entry: any, index: number) => (
-          <div key={index} className="flex items-center gap-2 bg-gray-50/80 rounded-lg px-3 py-2 backdrop-blur-sm">
-            <div 
-              className="w-3 h-3 rounded-full shadow-sm"
-              style={{ backgroundColor: entry.color }}
-            />
-            <div className="flex flex-col">
-              <span className="text-xs font-medium text-gray-700">{entry.value}</span>
-              <span className="text-xs text-gray-500">{data[index]?.percentage}%</span>
+          <div key={index} className="flex flex-col items-center bg-white/80 rounded-xl px-4 py-3 shadow-sm border border-gray-100/50 min-w-[120px]">
+            <div className="flex items-center gap-2 mb-2">
+              <div 
+                className="w-4 h-4 rounded-full shadow-sm"
+                style={{ backgroundColor: entry.color }}
+              />
+              <span className="text-sm font-semibold text-gray-800">{entry.value}</span>
+            </div>
+            <div className="text-center space-y-1">
+              <div className="text-2xl font-bold text-gray-800">
+                {data[index]?.value.toLocaleString()}
+              </div>
+              <div className="text-xs font-medium text-gray-500">
+                {data[index]?.percentage}% do total
+              </div>
             </div>
           </div>
         ))}
@@ -109,7 +117,7 @@ export const MovementsDonutChart = ({ entries, exits }: MovementsDonutChartProps
     <Card className="h-full bg-gradient-to-br from-white via-blue-50/30 to-purple-50/20 border-0 shadow-xl">
       <CardHeader className="pb-3 bg-gradient-to-r from-blue-50/50 to-purple-50/30 border-b border-gray-100/50">
         <CardTitle className="text-base md:text-lg font-bold text-slate-800 flex items-center gap-3">
-          <div className="p-2.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl shadow-lg">
+          <div className="p-2.5 bg-gradient-to-r from-[#00B3DA] to-[#0099BB] rounded-xl shadow-lg">
             <RefreshCw className="h-4 w-4 md:h-5 md:w-5 text-white" />
           </div>
           <div>
@@ -140,7 +148,7 @@ export const MovementsDonutChart = ({ entries, exits }: MovementsDonutChartProps
               cy="50%"
               labelLine={false}
               label={renderCustomizedLabel}
-              outerRadius="75%"
+              outerRadius="70%"
               innerRadius="45%"
               fill="#8884d8"
               dataKey="value"
@@ -159,31 +167,6 @@ export const MovementsDonutChart = ({ entries, exits }: MovementsDonutChartProps
             <Legend content={<CustomLegend />} />
           </PieChart>
         </ResponsiveContainer>
-        
-        {/* Statistics Cards */}
-        <div className="grid grid-cols-2 gap-3 mt-6">
-          <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-100/50 rounded-lg p-3 backdrop-blur-sm">
-            <div className="flex items-center gap-2 mb-1">
-              <ArrowDown className="h-4 w-4 text-green-600" />
-              <span className="text-xs font-medium text-green-700">Entradas</span>
-            </div>
-            <div className="text-xl font-bold text-green-800">{entries.toLocaleString()}</div>
-            <div className="text-xs text-green-600 font-medium">
-              {data[0]?.percentage}% do total
-            </div>
-          </div>
-          
-          <div className="bg-gradient-to-r from-orange-50 to-amber-50 border border-orange-100/50 rounded-lg p-3 backdrop-blur-sm">
-            <div className="flex items-center gap-2 mb-1">
-              <ArrowUp className="h-4 w-4 text-orange-600" />
-              <span className="text-xs font-medium text-orange-700">Saídas</span>
-            </div>
-            <div className="text-xl font-bold text-orange-800">{exits.toLocaleString()}</div>
-            <div className="text-xs text-orange-600 font-medium">
-              {data[1]?.percentage}% do total
-            </div>
-          </div>
-        </div>
       </CardContent>
     </Card>
   );
