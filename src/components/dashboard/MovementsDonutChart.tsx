@@ -24,7 +24,7 @@ export const MovementsDonutChart = ({ entries, exits }: MovementsDonutChartProps
         fill="#374151" 
         textAnchor={cx > 200 ? 'start' : 'end'} 
         dominantBaseline="central"
-        className="text-3xl font-bold"
+        className="text-2xl md:text-3xl font-bold"
       >
         {total}
       </text>
@@ -32,14 +32,14 @@ export const MovementsDonutChart = ({ entries, exits }: MovementsDonutChartProps
   };
 
   return (
-    <Card className="h-[600px]">
+    <Card className="h-full">
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg font-medium text-zuq-darkblue flex items-center gap-2">
-          <ArrowDown className="h-5 w-5 text-green-500" />
+        <CardTitle className="text-base md:text-lg font-medium text-zuq-darkblue flex items-center gap-2">
+          <ArrowDown className="h-4 w-4 md:h-5 md:w-5 text-green-500" />
           Movimentações do Período
         </CardTitle>
       </CardHeader>
-      <CardContent className="h-[540px] p-4">
+      <CardContent className="h-[calc(100%-80px)] p-2 md:p-4">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Pie
@@ -48,8 +48,8 @@ export const MovementsDonutChart = ({ entries, exits }: MovementsDonutChartProps
               cy="50%"
               labelLine={false}
               label={renderCustomizedLabel}
-              outerRadius={160}
-              innerRadius={80}
+              outerRadius="70%"
+              innerRadius="40%"
               fill="#8884d8"
               dataKey="value"
             >
@@ -66,7 +66,7 @@ export const MovementsDonutChart = ({ entries, exits }: MovementsDonutChartProps
               height={36}
               iconType="circle"
               formatter={(value) => (
-                <span className="text-sm font-medium">{value}</span>
+                <span className="text-xs md:text-sm font-medium">{value}</span>
               )}
             />
           </PieChart>

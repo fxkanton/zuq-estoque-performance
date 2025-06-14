@@ -28,6 +28,7 @@ import { Edit, Trash2 } from 'lucide-react';
 import { MovementsDonutChart } from "@/components/dashboard/MovementsDonutChart";
 import { TaskReminders } from "@/components/dashboard/TaskReminders";
 import { ReportButton } from "@/components/reports/ReportButton";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 const Dashboard = () => {
   // Date range state 
@@ -359,31 +360,40 @@ const Dashboard = () => {
 
   return (
     <MainLayout title="Dashboard">
-      <div className="flex justify-between items-center mb-6">
+      {/* Mobile: Stack title and button vertically */}
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
         <h1 className="text-2xl font-bold text-zuq-darkblue bg-gradient-to-r from-zuq-darkblue to-zuq-blue bg-clip-text text-transparent">
           Dashboard
         </h1>
-        <ReportButton />
+        {/* Button below title on mobile */}
+        <div className="md:self-start">
+          <ReportButton />
+        </div>
       </div>
       
-      <DateRangeFilter 
-        startDate={startDate}
-        endDate={endDate}
-        onChange={handleDateRangeChange}
-      />
+      {/* Adjust date filter container for mobile */}
+      <div className="mb-6 overflow-x-auto">
+        <div className="min-w-[600px] md:min-w-0">
+          <DateRangeFilter 
+            startDate={startDate}
+            endDate={endDate}
+            onChange={handleDateRangeChange}
+          />
+        </div>
+      </div>
       
       {/* New layout: Left side with stacked cards, right side with task reminders */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Left column - Reorganized cards */}
         <div className="space-y-6">
           {/* Entries and Exits side by side */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-2 md:gap-4">
             {/* Entries */}
             <StatsCard 
               title="Entradas no Período" 
               value={monthlyMovements.entries.toString()} 
               trend={{ value: `${monthlyMovements.entriesCount} inserções`, positive: monthlyMovements.entriesChange >= 0 }}
-              icon={<ArrowDown className="h-8 w-8 text-green-600" />}
+              icon={<ArrowDown className="h-6 w-6 md:h-8 md:w-8 text-green-600" />}
               gradientFrom="from-green-50"
               gradientTo="to-emerald-50"
               borderColor="border-green-100"
@@ -395,7 +405,7 @@ const Dashboard = () => {
               title="Saídas no Período" 
               value={monthlyMovements.exits.toString()} 
               trend={{ value: `${monthlyMovements.exitsCount} inserções`, positive: monthlyMovements.exitsChange < 0 }}
-              icon={<ArrowUp className="h-8 w-8 text-orange-600" />}
+              icon={<ArrowUp className="h-6 w-6 md:h-8 md:w-8 text-orange-600" />}
               gradientFrom="from-orange-50"
               gradientTo="to-amber-50"
               borderColor="border-orange-100"
@@ -408,18 +418,20 @@ const Dashboard = () => {
             title="Saldo de Equipamentos" 
             value={equipmentBalance.toString()} 
             trend={{ value: `No período selecionado`, positive: equipmentBalance >= 0 }}
-            icon={<PackageCheck className="h-8 w-8 text-blue-600" />}
+            icon={<PackageCheck className="h-6 w-6 md:h-8 md:w-8 text-blue-600" />}
             gradientFrom="from-blue-50"
             gradientTo="to-indigo-50"
             borderColor="border-blue-100"
             iconBg="bg-blue-100"
           />
           
-          {/* Movements Chart - doubled in size */}
-          <MovementsDonutChart 
-            entries={monthlyMovements.entries} 
-            exits={monthlyMovements.exits} 
-          />
+          {/* Movements Chart - responsive sizing */}
+          <div className="h-[400px] md:h-[600px]">
+            <MovementsDonutChart 
+              entries={monthlyMovements.entries} 
+              exits={monthlyMovements.exits} 
+            />
+          </div>
         </div>
         
         {/* Right column - Task Reminders */}
@@ -431,7 +443,7 @@ const Dashboard = () => {
       {/* Equipment inventory component */}
       <EquipmentInventory startDate={startDate.toISOString().split('T')[0]} endDate={endDate.toISOString().split('T')[0]} />
       
-      {/* Daily movements chart */}
+      {/* Daily movements chart with horizontal scroll on mobile */}
       <div className="grid grid-cols-1 mb-8">
         <Card className="bg-gradient-to-br from-white to-purple-50/30 border-purple-100 shadow-lg hover:shadow-xl transition-all duration-300">
           <CardHeader className="bg-gradient-to-r from-purple-50 to-violet-50 border-b border-purple-100">
@@ -443,44 +455,94 @@ const Dashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="h-96 p-6">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart
-                data={dailyMovements}
-                margin={{
-                  top: 5,
-                  right: 30,
-                  left: 20,
-                  bottom: 5,
-                }}
-              >
-                <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-                <XAxis 
-                  dataKey="date" 
-                  tick={{ fontSize: 12, fill: '#64748b' }}
-                  interval={0}
-                  angle={0}
-                />
-                <YAxis tick={{ fill: '#64748b' }} />
-                <Tooltip 
-                  labelFormatter={(label, payload) => {
-                    if (payload && payload.length > 0 && payload[0]?.payload?.originalDate) {
-                      return formatDateForTooltip(payload[0].payload.originalDate);
-                    }
-                    return label;
+            {/* Add horizontal scroll for mobile */}
+            <div className="md:hidden">
+              <ScrollArea className="w-full h-full">
+                <div className="min-w-[600px] h-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart
+                      data={dailyMovements}
+                      margin={{
+                        top: 5,
+                        right: 30,
+                        left: 20,
+                        bottom: 5,
+                      }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                      <XAxis 
+                        dataKey="date" 
+                        tick={{ fontSize: 12, fill: '#64748b' }}
+                        interval={0}
+                        angle={0}
+                      />
+                      <YAxis tick={{ fill: '#64748b' }} />
+                      <Tooltip 
+                        labelFormatter={(label, payload) => {
+                          if (payload && payload.length > 0 && payload[0]?.payload?.originalDate) {
+                            return formatDateForTooltip(payload[0].payload.originalDate);
+                          }
+                          return label;
+                        }}
+                        contentStyle={{
+                          backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                          backdropFilter: 'blur(10px)',
+                          border: '1px solid #e2e8f0',
+                          borderRadius: '12px',
+                          boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)'
+                        }}
+                      />
+                      <Legend />
+                      <Bar dataKey="entries" name="Entradas" fill="#4ade80" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="exits" name="Saídas" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                <ScrollBar orientation="horizontal" />
+              </ScrollArea>
+            </div>
+            
+            {/* Desktop version without scroll */}
+            <div className="hidden md:block h-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={dailyMovements}
+                  margin={{
+                    top: 5,
+                    right: 30,
+                    left: 20,
+                    bottom: 5,
                   }}
-                  contentStyle={{
-                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                    backdropFilter: 'blur(10px)',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '12px',
-                    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)'
-                  }}
-                />
-                <Legend />
-                <Bar dataKey="entries" name="Entradas" fill="#4ade80" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="exits" name="Saídas" fill="#f59e0b" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+                >
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                  <XAxis 
+                    dataKey="date" 
+                    tick={{ fontSize: 12, fill: '#64748b' }}
+                    interval={0}
+                    angle={0}
+                  />
+                  <YAxis tick={{ fill: '#64748b' }} />
+                  <Tooltip 
+                    labelFormatter={(label, payload) => {
+                      if (payload && payload.length > 0 && payload[0]?.payload?.originalDate) {
+                        return formatDateForTooltip(payload[0].payload.originalDate);
+                      }
+                      return label;
+                    }}
+                    contentStyle={{
+                      backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                      backdropFilter: 'blur(10px)',
+                      border: '1px solid #e2e8f0',
+                      borderRadius: '12px',
+                      boxShadow: '0 10px 25px rgba(0, 0, 0, 0.1)'
+                    }}
+                  />
+                  <Legend />
+                  <Bar dataKey="entries" name="Entradas" fill="#4ade80" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="exits" name="Saídas" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -634,17 +696,17 @@ type StatsCardProps = {
 const StatsCard = ({ title, value, trend, icon, gradientFrom = "from-white", gradientTo = "to-gray-50/30", borderColor = "border-gray-100", iconBg = "bg-gray-100" }: StatsCardProps) => {
   return (
     <Card className={`bg-gradient-to-br ${gradientFrom} ${gradientTo} ${borderColor} shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1`}>
-      <CardContent className="p-6">
+      <CardContent className="p-3 md:p-6">
         <div className="flex justify-between items-start">
-          <div className="flex-1">
-            <p className="text-sm text-gray-600 font-medium mb-2">{title}</p>
-            <p className="text-3xl font-bold text-zuq-darkblue mb-3">{value}</p>
-            <div className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-full ${trend.positive ? 'text-green-700 bg-green-50 border border-green-200' : 'text-red-700 bg-red-50 border border-red-200'}`}>
-              {trend.positive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-              <span className="font-medium">{trend.value}</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs md:text-sm text-gray-600 font-medium mb-1 md:mb-2 line-clamp-2">{title}</p>
+            <p className="text-xl md:text-3xl font-bold text-zuq-darkblue mb-2 md:mb-3">{value}</p>
+            <div className={`flex items-center gap-1 md:gap-2 text-xs px-2 md:px-3 py-1 md:py-1.5 rounded-full ${trend.positive ? 'text-green-700 bg-green-50 border border-green-200' : 'text-red-700 bg-red-50 border border-red-200'}`}>
+              {trend.positive ? <TrendingUp className="h-2 w-2 md:h-3 md:w-3 flex-shrink-0" /> : <TrendingDown className="h-2 w-2 md:h-3 md:w-3 flex-shrink-0" />}
+              <span className="font-medium text-xs truncate">{trend.value}</span>
             </div>
           </div>
-          <div className={`${iconBg} p-3 rounded-full shadow-sm`}>
+          <div className={`${iconBg} p-2 md:p-3 rounded-full shadow-sm flex-shrink-0 ml-2`}>
             {icon}
           </div>
         </div>
@@ -665,14 +727,16 @@ const AlertItem = ({ name, currentStock, minLevel }: AlertItemProps) => {
   return (
     <div className="bg-gradient-to-r from-red-50 to-pink-50 border border-red-200 rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200">
       <div className="space-y-3">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-red-500" />
-            <span className="text-sm font-medium text-gray-900">{name}</span>
+        <div className="flex justify-between">
+          <div>
+            <h4 className="text-sm font-semibold text-gray-900">{name}</h4>
+            <p className="text-xs text-gray-600 font-medium">Estoque atual: {currentStock}</p>
           </div>
-          <span className="text-sm font-semibold text-red-600 bg-red-100 px-2 py-1 rounded-full">
-            {currentStock}/{minLevel}
-          </span>
+          <div className="text-right">
+            <p className="text-sm font-semibold text-red-700">
+              {currentStock}/{minLevel}
+            </p>
+          </div>
         </div>
         <Progress value={percentage} className="h-2 bg-red-100" />
       </div>

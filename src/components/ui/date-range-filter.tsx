@@ -74,15 +74,17 @@ export default function DateRangeFilter({
 
   return (
     <div className="flex flex-col sm:flex-row gap-2 mb-6">
-      <div className="flex items-center space-x-2">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
         <Popover open={isStartCalendarOpen} onOpenChange={setIsStartCalendarOpen}>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
-              className="w-full sm:w-[200px] justify-start text-left font-normal"
+              className="w-full sm:w-[160px] md:w-[200px] justify-start text-left font-normal text-xs md:text-sm"
             >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {format(startDate, "dd 'de' MMMM, yyyy", { locale: ptBR })}
+              <CalendarIcon className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
+              <span className="truncate">
+                {format(startDate, "dd/MM/yyyy", { locale: ptBR })}
+              </span>
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
@@ -101,16 +103,18 @@ export default function DateRangeFilter({
           </PopoverContent>
         </Popover>
         
-        <span>até</span>
+        <span className="text-sm text-gray-500 self-center">até</span>
         
         <Popover open={isEndCalendarOpen} onOpenChange={setIsEndCalendarOpen}>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
-              className="w-full sm:w-[200px] justify-start text-left font-normal"
+              className="w-full sm:w-[160px] md:w-[200px] justify-start text-left font-normal text-xs md:text-sm"
             >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {format(endDate, "dd 'de' MMMM, yyyy", { locale: ptBR })}
+              <CalendarIcon className="mr-1 md:mr-2 h-3 w-3 md:h-4 md:w-4" />
+              <span className="truncate">
+                {format(endDate, "dd/MM/yyyy", { locale: ptBR })}
+              </span>
             </Button>
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0" align="start">
@@ -132,7 +136,7 @@ export default function DateRangeFilter({
       </div>
       
       <Select onValueChange={handlePresetChange}>
-        <SelectTrigger className="w-full sm:w-[200px]">
+        <SelectTrigger className="w-full sm:w-[160px] md:w-[200px] text-xs md:text-sm">
           <SelectValue placeholder="Selecionar período" />
         </SelectTrigger>
         <SelectContent>
