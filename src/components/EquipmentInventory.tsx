@@ -5,7 +5,9 @@ import { getEquipmentWithStock } from '@/services/equipmentService';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Package, AlertTriangle } from 'lucide-react';
 
 interface Equipment {
   id: string;
@@ -13,6 +15,7 @@ interface Equipment {
   model: string;
   stock: number;
   category?: string;
+  min_stock?: number;
 }
 
 interface EquipmentInventoryProps {
@@ -94,12 +97,22 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
     });
   };
   
-  // Data for VERTICAL bar chart
-  const chartData = filteredInventory.slice(0, 10).map(item => ({
-    name: (item.brand + " " + item.model).substring(0, 15) + (item.brand.length + item.model.length > 15 ? '...' : ''),
-    estoque: item.stock,
-    fullName: `${item.brand} ${item.model}`
-  }));
+  const getCategoryColor = (category?: string) => {
+    switch (category) {
+      case 'Leitora': return 'bg-blue-100 text-blue-700';
+      case 'Sensor': return 'bg-green-100 text-green-700';
+      case 'Rastreador': return 'bg-purple-100 text-purple-700';
+      case 'Acessório': return 'bg-orange-100 text-orange-700';
+      default: return 'bg-gray-100 text-gray-700';
+    }
+  };
+  
+  const getStockStatus = (item: Equipment) => {
+    if (item.min_stock && item.stock < item.min_stock) {
+      return { color: 'text-red-600', icon: <AlertTriangle className="h-4 w-4 text-red-500" />, label: 'Baixo' };
+    }
+    return { color: 'text-green-600', icon: <Package className="h-4 w-4 text-green-500" />, label: 'Normal' };
+  };
   
   const totalStock = filteredInventory.reduce((sum, item) => sum + item.stock, 0);
   
@@ -163,40 +176,60 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
         
         {filteredInventory.length === 0 ? (
           <div className="text-center py-10 text-muted-foreground">
-            Nenhum equipamento encontrado para os filtros selecionados
+            <Package className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+            <p>Nenhum equipamento encontrado para os filtros selecionados</p>
           </div>
         ) : (
-          <div className="h-[576px]">
-            <ResponsiveContainer width="100%" height="100%">
-              {/* Vertical bar chart with 50% increased height */}
-              <BarChart
-                data={chartData}
-                layout="vertical"
-                margin={{ top: 5, right: 30, left: 70, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis type="number" />
-                <YAxis 
-                  dataKey="name" 
-                  type="category" 
-                  width={70} 
-                  tick={{ fontSize: 12 }}
-                />
-                <Tooltip 
-                  formatter={(value, name) => [value, 'Quantidade']}
-                  labelFormatter={(label, props) => {
-                    // Safe check before accessing payload properties
-                    if (props && props.length > 0 && props[0]?.payload) {
-                      return props[0].payload.fullName;
-                    }
-                    // Fallback to the label if payload is not available
-                    return label;
-                  }}
-                />
-                <Legend />
-                <Bar dataKey="estoque" name="Quantidade em Estoque" fill="#3b82f6" />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="modern-card overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gray-50/50">
+                  <TableHead className="font-semibold">Equipamento</TableHead>
+                  <TableHead className="font-semibold">Categoria</TableHead>
+                  <TableHead className="font-semibold text-center">Estoque</TableHead>
+                  <TableHead className="font-semibold text-center">Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredInventory.map((item) => {
+                  const stockStatus = getStockStatus(item);
+                  return (
+                    <TableRow 
+                      key={item.id} 
+                      className="table-row-hover"
+                    >
+                      <TableCell>
+                        <div>
+                          <div className="font-medium text-gray-900">{item.brand}</div>
+                          <div className="text-sm text-gray-500">{item.model}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={`text-xs ${getCategoryColor(item.category)}`}>
+                          {item.category || "Não especificado"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <span className="text-lg font-semibold text-gray-900">{item.stock}</span>
+                          {item.min_stock && (
+                            <span className="text-xs text-gray-500">min: {item.min_stock}</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          {stockStatus.icon}
+                          <span className={`text-sm font-medium ${stockStatus.color}`}>
+                            {stockStatus.label}
+                          </span>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
           </div>
         )}
       </CardContent>
