@@ -38,7 +38,7 @@ const Dashboard = () => {
   
   const [startDate, setStartDate] = useState(firstDayOfMonth);
   const [endDate, setEndDate] = useState(lastDayOfMonth);
-  const [loading, setLoading] = useState(true);
+  const [loadingState, setLoadingState] = useState<'initial' | 'loading' | 'idle'>('initial');
   
   const [equipmentBalance, setEquipmentBalance] = useState(0);
   const [monthlyMovements, setMonthlyMovements] = useState({ entries: 0, exits: 0, entriesChange: 0, exitsChange: 0, entriesCount: 0, exitsCount: 0 });
@@ -136,8 +136,8 @@ const Dashboard = () => {
   };
 
   const loadDashboardData = useCallback(async () => {
+    setLoadingState(s => (s === 'initial' ? 'initial' : 'loading'));
     try {
-      setLoading(true);
       const startDateStr = startDate.toISOString().split('T')[0];
       const endDateStr = endDate.toISOString().split('T')[0];
 
@@ -257,7 +257,7 @@ const Dashboard = () => {
     } catch (error) {
       console.error("Error loading dashboard data:", error);
     } finally {
-      setLoading(false);
+      setLoadingState('idle');
     }
   }, [startDate, endDate]);
 
@@ -345,7 +345,7 @@ const Dashboard = () => {
     };
   }, [loadDashboardData]);
 
-  if (loading) {
+  if (loadingState === 'initial') {
     return (
       <MainLayout title="Dashboard">
         <div className="flex items-center justify-center min-h-[400px]">
@@ -383,7 +383,12 @@ const Dashboard = () => {
       {/* New layout: Left side with stacked cards, right side with task reminders */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
         {/* Left column - Reorganized cards */}
-        <div className="space-y-6">
+        <div className="space-y-6 relative">
+          {loadingState === 'loading' && (
+            <div className="absolute inset-0 bg-white/70 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg transition-opacity duration-300">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-zuq-blue"></div>
+            </div>
+          )}
           {/* Entries and Exits side by side */}
           <div className="grid grid-cols-2 gap-2 md:gap-4">
             {/* Entries */}
@@ -443,7 +448,12 @@ const Dashboard = () => {
       
       {/* Daily movements chart with horizontal scroll on mobile */}
       <div className="grid grid-cols-1 mb-8">
-        <Card className="bg-gradient-to-br from-white to-purple-50/30 border-purple-100 shadow-lg hover:shadow-xl transition-all duration-300">
+        <Card className="bg-gradient-to-br from-white to-purple-50/30 border-purple-100 shadow-lg hover:shadow-xl transition-all duration-300 relative">
+          {loadingState === 'loading' && (
+            <div className="absolute inset-0 bg-white/70 backdrop-blur-sm z-10 flex items-center justify-center rounded-lg transition-opacity duration-300">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-zuq-blue"></div>
+            </div>
+          )}
           <CardHeader className="bg-gradient-to-r from-purple-50 to-violet-50 border-b border-purple-100">
             <CardTitle className="text-lg font-semibold text-zuq-darkblue flex items-center gap-3">
               <div className="p-2 bg-purple-100 rounded-full">
