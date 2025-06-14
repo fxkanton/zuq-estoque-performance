@@ -48,7 +48,8 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
       const brands = [...new Set(data.map(item => item.brand))];
       setUniqueBrands(brands);
       
-      const categories = [...new Set(data.map(item => item.category))];
+      // Filter out empty, null, or undefined categories and ensure no empty strings
+      const categories = [...new Set(data.map(item => item.category).filter(cat => cat && cat.trim() !== ''))];
       setUniqueCategories(categories);
     };
     
@@ -75,7 +76,11 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
     
     // Apply category filter - only if not "all"
     if (filters.category && filters.category !== "all") {
-      filtered = filtered.filter(item => item.category === filters.category);
+      if (filters.category === "unknown") {
+        filtered = filtered.filter(item => !item.category || item.category.trim() === '');
+      } else {
+        filtered = filtered.filter(item => item.category === filters.category);
+      }
     }
     
     // Sort by stock (highest first)
@@ -173,8 +178,9 @@ const EquipmentInventory = ({ startDate, endDate }: EquipmentInventoryProps) => 
               <SelectContent>
                 <SelectItem value="all">Todas as categorias</SelectItem>
                 {uniqueCategories.map(category => (
-                  <SelectItem key={category || "unknown"} value={category || "unknown"}>{category || "Não especificado"}</SelectItem>
+                  <SelectItem key={category} value={category}>{category}</SelectItem>
                 ))}
+                <SelectItem value="unknown">Não especificado</SelectItem>
               </SelectContent>
             </Select>
           </div>
