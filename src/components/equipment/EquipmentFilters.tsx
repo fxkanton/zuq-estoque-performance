@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SearchInput } from "@/components/ui/search-input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -55,7 +54,6 @@ export const EquipmentFilters = ({
                 <SelectValue placeholder="Categoria" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todas as categorias</SelectItem>
                 {categories.map(cat => (
                   <SelectItem key={cat} value={cat.toLowerCase()}>{cat}</SelectItem>
                 ))}
@@ -68,7 +66,6 @@ export const EquipmentFilters = ({
                 <SelectValue placeholder="Status Qualidade" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos os status</SelectItem>
                 <SelectItem value="Aprovado">Aprovado</SelectItem>
                 <SelectItem value="Reprovado">Reprovado</SelectItem>
                 <SelectItem value="Em Teste">Em Teste</SelectItem>
@@ -81,7 +78,6 @@ export const EquipmentFilters = ({
                 <SelectValue placeholder="Fornecedor" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Todos os fornecedores</SelectItem>
                 {suppliers.map(supplier => (
                   <SelectItem key={supplier.id} value={supplier.id}>
                     {supplier.name}
