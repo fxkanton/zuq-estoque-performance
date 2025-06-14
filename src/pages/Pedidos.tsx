@@ -396,6 +396,36 @@ const Pedidos = () => {
                             {getStatusBadge(order.status)}
                           </div>
                           <div className="flex items-center gap-2">
+                            {/* Dropdown Menu positioned above Registrar Recebimento button */}
+                            <div onClick={handleDropdownAction}>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm">
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => handleViewDetails(order)}>
+                                    <Eye className="h-4 w-4 mr-2" />
+                                    Visualizar
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleEditOrder(order)}>
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Editar
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    onClick={() => {
+                                      setOrderToDelete(order);
+                                      setIsDeleteDialogOpen(true);
+                                    }}
+                                    className="text-red-600"
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Excluir
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
                             {order.status !== "Recebido" && (
                               <Button
                                 size="sm"
@@ -441,36 +471,8 @@ const Pedidos = () => {
                         </div>
                       </CardContent>
                       
-                      {/* Dropdown Menu positioned in bottom right */}
-                      <div className="absolute bottom-4 right-4" onClick={handleDropdownAction}>
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => handleViewDetails(order)}>
-                              <Eye className="h-4 w-4 mr-2" />
-                              Visualizar
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleEditOrder(order)}>
-                              <Edit className="h-4 w-4 mr-2" />
-                              Editar
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => {
-                                setOrderToDelete(order);
-                                setIsDeleteDialogOpen(true);
-                              }}
-                              className="text-red-600"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Excluir
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
+                      {/* Remove the old dropdown menu from bottom right */}
+                      
                     </Card>
                   );
                 })}

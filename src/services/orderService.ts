@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
 
@@ -212,6 +211,40 @@ export const createOrderBatch = async (batchData: Omit<OrderBatch, 'id' | 'creat
 
   toast.success('Lote de recebimento criado com sucesso!');
   return data;
+};
+
+export const updateOrderBatch = async (id: string, batchData: Partial<OrderBatch>): Promise<OrderBatch | null> => {
+  const { data, error } = await supabase
+    .from('order_batches')
+    .update(batchData)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error updating order batch:', error);
+    toast.error('Erro ao atualizar recebimento');
+    return null;
+  }
+
+  toast.success('Recebimento atualizado com sucesso!');
+  return data;
+};
+
+export const deleteOrderBatch = async (id: string): Promise<boolean> => {
+  const { error } = await supabase
+    .from('order_batches')
+    .delete()
+    .eq('id', id);
+
+  if (error) {
+    console.error('Error deleting order batch:', error);
+    toast.error('Erro ao excluir recebimento');
+    return false;
+  }
+
+  toast.success('Recebimento excluído com sucesso!');
+  return true;
 };
 
 // Dashboard helper functions
