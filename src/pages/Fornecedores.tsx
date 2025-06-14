@@ -184,339 +184,344 @@ const Fornecedores = () => {
 
   return (
     <MainLayout title="Fornecedores">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold text-zuq-darkblue">Gerenciar Fornecedores</h1>
-        <Button 
-          className="bg-zuq-blue hover:bg-zuq-blue/80"
-          onClick={handleOpenAddDialog}
-        >
-          <Plus className="h-4 w-4 mr-2" /> Novo Fornecedor
-        </Button>
-      </div>
-      
-      <Card className="mb-6">
-        <CardHeader className="pb-3">
-          <CardTitle>Buscar Fornecedores</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-4">
-            <SearchInput
-              placeholder="Pesquisar por nome, CNPJ ou contato..."
-              className="flex-1"
-              icon={<Search className="h-4 w-4" />}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
+      <div className="space-y-4 md:space-y-6">
+        <div className="space-y-4">
+          <h1 className="text-xl md:text-2xl font-bold text-zuq-darkblue">Gerenciar Fornecedores</h1>
+          
+          <div className="flex justify-start">
             <Button 
-              variant="outline"
-              onClick={() => setSearchTerm('')}
+              className="bg-zuq-blue hover:bg-zuq-blue/80 w-full sm:w-auto"
+              onClick={handleOpenAddDialog}
             >
-              Limpar
+              <Plus className="h-4 w-4 mr-2" /> Novo Fornecedor
             </Button>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+        
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle>Buscar Fornecedores</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex gap-4">
+              <SearchInput
+                placeholder="Pesquisar por nome, CNPJ ou contato..."
+                className="flex-1"
+                icon={<Search className="h-4 w-4" />}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <Button 
+                variant="outline"
+                onClick={() => setSearchTerm('')}
+              >
+                Limpar
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
-      <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Fornecedor</TableHead>
-                <TableHead>CNPJ</TableHead>
-                <TableHead>Contato</TableHead>
-                <TableHead>Prazo Médio</TableHead>
-                <TableHead>Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredSuppliers.length === 0 ? (
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
-                    Nenhum fornecedor encontrado
-                  </TableCell>
+                  <TableHead>Fornecedor</TableHead>
+                  <TableHead>CNPJ</TableHead>
+                  <TableHead>Contato</TableHead>
+                  <TableHead>Prazo Médio</TableHead>
+                  <TableHead>Ações</TableHead>
                 </TableRow>
-              ) : (
-                filteredSuppliers.map((supplier) => (
-                  <TableRow key={supplier.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="bg-zuq-gray/30 p-2 rounded-md">
-                          <Building2 className="h-4 w-4 text-zuq-blue" />
-                        </div>
-                        <div>
-                          <div className="font-medium">{supplier.name}</div>
-                          {supplier.contact_name && (
-                            <div className="text-sm text-muted-foreground">
-                              {supplier.contact_name}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="font-mono">{supplier.cnpj}</TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        {supplier.phone && <div>{supplier.phone}</div>}
-                        {supplier.email && <div className="text-muted-foreground">{supplier.email}</div>}
-                      </div>
-                    </TableCell>
-                    <TableCell>{supplier.average_delivery_days || 0} dias</TableCell>
-                    <TableCell>
-                      <div className="flex gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleOpenEditDialog(supplier)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="text-red-500"
-                          onClick={() => handleOpenDeleteDialog(supplier)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                        <AdoptButton
-                          isOrphaned={isOrphaned(supplier)}
-                          onAdopt={() => handleAdoptSupplier(supplier.id)}
-                          size="icon"
-                        />
-                      </div>
+              </TableHeader>
+              <TableBody>
+                {filteredSuppliers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center py-10 text-muted-foreground">
+                      Nenhum fornecedor encontrado
                     </TableCell>
                   </TableRow>
-                ))
+                ) : (
+                  filteredSuppliers.map((supplier) => (
+                    <TableRow key={supplier.id}>
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div className="bg-zuq-gray/30 p-2 rounded-md">
+                            <Building2 className="h-4 w-4 text-zuq-blue" />
+                          </div>
+                          <div>
+                            <div className="font-medium">{supplier.name}</div>
+                            {supplier.contact_name && (
+                              <div className="text-sm text-muted-foreground">
+                                {supplier.contact_name}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-mono">{supplier.cnpj}</TableCell>
+                      <TableCell>
+                        <div className="text-sm">
+                          {supplier.phone && <div>{supplier.phone}</div>}
+                          {supplier.email && <div className="text-muted-foreground">{supplier.email}</div>}
+                        </div>
+                      </TableCell>
+                      <TableCell>{supplier.average_delivery_days || 0} dias</TableCell>
+                      <TableCell>
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleOpenEditDialog(supplier)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-red-500"
+                            onClick={() => handleOpenDeleteDialog(supplier)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                          <AdoptButton
+                            isOrphaned={isOrphaned(supplier)}
+                            onAdopt={() => handleAdoptSupplier(supplier.id)}
+                            size="icon"
+                          />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+
+        {/* Add Supplier Dialog */}
+        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+          <DialogContent className="sm:max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle>Novo Fornecedor</DialogTitle>
+              <DialogDescription>
+                Cadastre um novo fornecedor no sistema
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="name">Nome da Empresa *</Label>
+                  <Input 
+                    id="name" 
+                    placeholder="Nome do fornecedor" 
+                    value={formData.name}
+                    onChange={handleInputChange}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="cnpj">CNPJ *</Label>
+                  <Input 
+                    id="cnpj" 
+                    placeholder="00.000.000/0000-00" 
+                    value={formData.cnpj}
+                    onChange={handleInputChange}
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="contact_name">Nome do Contato</Label>
+                  <Input 
+                    id="contact_name" 
+                    placeholder="Nome da pessoa de contato" 
+                    value={formData.contact_name}
+                    onChange={handleInputChange}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="average_delivery_days">Prazo Médio (dias)</Label>
+                  <Input 
+                    id="average_delivery_days" 
+                    type="number"
+                    placeholder="0" 
+                    value={formData.average_delivery_days}
+                    onChange={handleInputChange}
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="phone">Telefone</Label>
+                  <Input 
+                    id="phone" 
+                    placeholder="(00) 00000-0000" 
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="email">E-mail</Label>
+                  <Input 
+                    id="email" 
+                    type="email"
+                    placeholder="contato@empresa.com" 
+                    value={formData.email}
+                    onChange={handleInputChange}
+                  />
+                </div>
+              </div>
+              
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="address">Endereço</Label>
+                <Textarea 
+                  id="address" 
+                  placeholder="Endereço completo do fornecedor" 
+                  value={formData.address}
+                  onChange={handleInputChange}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancelar</Button>
+              <Button className="bg-zuq-blue hover:bg-zuq-blue/80" onClick={handleSaveSupplier}>Salvar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Supplier Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="sm:max-w-[600px]">
+            <DialogHeader>
+              <DialogTitle>Editar Fornecedor</DialogTitle>
+              <DialogDescription>
+                Atualize as informações do fornecedor
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="name">Nome da Empresa *</Label>
+                  <Input 
+                    id="name" 
+                    placeholder="Nome do fornecedor" 
+                    value={formData.name}
+                    onChange={handleInputChange}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="cnpj">CNPJ *</Label>
+                  <Input 
+                    id="cnpj" 
+                    placeholder="00.000.000/0000-00" 
+                    value={formData.cnpj}
+                    onChange={handleInputChange}
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="contact_name">Nome do Contato</Label>
+                  <Input 
+                    id="contact_name" 
+                    placeholder="Nome da pessoa de contato" 
+                    value={formData.contact_name}
+                    onChange={handleInputChange}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="average_delivery_days">Prazo Médio (dias)</Label>
+                  <Input 
+                    id="average_delivery_days" 
+                    type="number"
+                    placeholder="0" 
+                    value={formData.average_delivery_days}
+                    onChange={handleInputChange}
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="phone">Telefone</Label>
+                  <Input 
+                    id="phone" 
+                    placeholder="(00) 00000-0000" 
+                    value={formData.phone}
+                    onChange={handleInputChange}
+                  />
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="email">E-mail</Label>
+                  <Input 
+                    id="email" 
+                    type="email"
+                    placeholder="contato@empresa.com" 
+                    value={formData.email}
+                    onChange={handleInputChange}
+                  />
+                </div>
+              </div>
+              
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="address">Endereço</Label>
+                <Textarea 
+                  id="address" 
+                  placeholder="Endereço completo do fornecedor" 
+                  value={formData.address}
+                  onChange={handleInputChange}
+                />
+              </div>
+
+              {currentSupplier && (
+                <>
+                  <AdoptButton
+                    isOrphaned={isOrphaned(currentSupplier)}
+                    onAdopt={() => handleAdoptSupplier(currentSupplier.id)}
+                    className="self-start"
+                  />
+                  <CreatorInfo
+                    createdBy={currentSupplier.created_by}
+                    createdAt={currentSupplier.created_at}
+                    creatorName={creatorInfo.creatorName}
+                  />
+                </>
               )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancelar</Button>
+              <Button className="bg-zuq-blue hover:bg-zuq-blue/80" onClick={handleUpdateSupplier}>Salvar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
-      {/* Add Supplier Dialog */}
-      <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Novo Fornecedor</DialogTitle>
-            <DialogDescription>
-              Cadastre um novo fornecedor no sistema
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="name">Nome da Empresa *</Label>
-                <Input 
-                  id="name" 
-                  placeholder="Nome do fornecedor" 
-                  value={formData.name}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="cnpj">CNPJ *</Label>
-                <Input 
-                  id="cnpj" 
-                  placeholder="00.000.000/0000-00" 
-                  value={formData.cnpj}
-                  onChange={handleInputChange}
-                />
-              </div>
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Confirmar Exclusão</DialogTitle>
+              <DialogDescription>
+                Tem certeza que deseja excluir este fornecedor? Esta ação não pode ser desfeita.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              {currentSupplier && (
+                <div className="border-l-4 border-red-500 pl-4">
+                  <p className="font-medium">{currentSupplier.name}</p>
+                  <p className="text-sm text-muted-foreground">CNPJ: {currentSupplier.cnpj}</p>
+                </div>
+              )}
             </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="contact_name">Nome do Contato</Label>
-                <Input 
-                  id="contact_name" 
-                  placeholder="Nome da pessoa de contato" 
-                  value={formData.contact_name}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="average_delivery_days">Prazo Médio (dias)</Label>
-                <Input 
-                  id="average_delivery_days" 
-                  type="number"
-                  placeholder="0" 
-                  value={formData.average_delivery_days}
-                  onChange={handleInputChange}
-                />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="phone">Telefone</Label>
-                <Input 
-                  id="phone" 
-                  placeholder="(00) 00000-0000" 
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="email">E-mail</Label>
-                <Input 
-                  id="email" 
-                  type="email"
-                  placeholder="contato@empresa.com" 
-                  value={formData.email}
-                  onChange={handleInputChange}
-                />
-              </div>
-            </div>
-            
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="address">Endereço</Label>
-              <Textarea 
-                id="address" 
-                placeholder="Endereço completo do fornecedor" 
-                value={formData.address}
-                onChange={handleInputChange}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancelar</Button>
-            <Button className="bg-zuq-blue hover:bg-zuq-blue/80" onClick={handleSaveSupplier}>Salvar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Edit Supplier Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Editar Fornecedor</DialogTitle>
-            <DialogDescription>
-              Atualize as informações do fornecedor
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="name">Nome da Empresa *</Label>
-                <Input 
-                  id="name" 
-                  placeholder="Nome do fornecedor" 
-                  value={formData.name}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="cnpj">CNPJ *</Label>
-                <Input 
-                  id="cnpj" 
-                  placeholder="00.000.000/0000-00" 
-                  value={formData.cnpj}
-                  onChange={handleInputChange}
-                />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="contact_name">Nome do Contato</Label>
-                <Input 
-                  id="contact_name" 
-                  placeholder="Nome da pessoa de contato" 
-                  value={formData.contact_name}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="average_delivery_days">Prazo Médio (dias)</Label>
-                <Input 
-                  id="average_delivery_days" 
-                  type="number"
-                  placeholder="0" 
-                  value={formData.average_delivery_days}
-                  onChange={handleInputChange}
-                />
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="phone">Telefone</Label>
-                <Input 
-                  id="phone" 
-                  placeholder="(00) 00000-0000" 
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                />
-              </div>
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="email">E-mail</Label>
-                <Input 
-                  id="email" 
-                  type="email"
-                  placeholder="contato@empresa.com" 
-                  value={formData.email}
-                  onChange={handleInputChange}
-                />
-              </div>
-            </div>
-            
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="address">Endereço</Label>
-              <Textarea 
-                id="address" 
-                placeholder="Endereço completo do fornecedor" 
-                value={formData.address}
-                onChange={handleInputChange}
-              />
-            </div>
-
-            {currentSupplier && (
-              <>
-                <AdoptButton
-                  isOrphaned={isOrphaned(currentSupplier)}
-                  onAdopt={() => handleAdoptSupplier(currentSupplier.id)}
-                  className="self-start"
-                />
-                <CreatorInfo
-                  createdBy={currentSupplier.created_by}
-                  createdAt={currentSupplier.created_at}
-                  creatorName={creatorInfo.creatorName}
-                />
-              </>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancelar</Button>
-            <Button className="bg-zuq-blue hover:bg-zuq-blue/80" onClick={handleUpdateSupplier}>Salvar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Confirmar Exclusão</DialogTitle>
-            <DialogDescription>
-              Tem certeza que deseja excluir este fornecedor? Esta ação não pode ser desfeita.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="py-4">
-            {currentSupplier && (
-              <div className="border-l-4 border-red-500 pl-4">
-                <p className="font-medium">{currentSupplier.name}</p>
-                <p className="text-sm text-muted-foreground">CNPJ: {currentSupplier.cnpj}</p>
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>Cancelar</Button>
-            <Button variant="destructive" onClick={handleDeleteSupplier}>Excluir</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>Cancelar</Button>
+              <Button variant="destructive" onClick={handleDeleteSupplier}>Excluir</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
     </MainLayout>
   );
 };
