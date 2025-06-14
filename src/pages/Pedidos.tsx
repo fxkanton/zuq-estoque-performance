@@ -1,10 +1,9 @@
-
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Package, Truck, CheckCircle, Receipt } from "lucide-react";
+import { Plus, Package, Truck, CheckCircle, Receipt, Eye, Edit, Trash2, MoreHorizontal } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { 
@@ -15,6 +14,12 @@ import {
   DialogDescription,
   DialogFooter 
 } from "@/components/ui/dialog";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,6 +27,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { 
   fetchOrders, 
   createOrder, 
+  updateOrder,
+  deleteOrder,
   OrderWithDetails,
   OrderStatus,
   fetchOrderBatches,
@@ -60,7 +67,11 @@ const Pedidos = () => {
   const [isBatchDetailsOpen, setIsBatchDetailsOpen] = useState(false);
   const [selectedOrderForBatch, setSelectedOrderForBatch] = useState<OrderWithDetails | null>(null);
   const [loading, setLoading] = useState(true);
-  
+  const [editingOrder, setEditingOrder] = useState<OrderWithDetails | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [orderToDelete, setOrderToDelete] = useState<OrderWithDetails | null>(null);
+
   // Form state
   const [formData, setFormData] = useState({
     equipment_id: '',
@@ -203,10 +214,17 @@ const Pedidos = () => {
       });
 
   const handleInputChange = (field: string, value: string | number) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
+    if (editingOrder) {
+      setEditingOrder(prev => prev ? ({
+        ...prev,
+        [field]: value
+      }) : null);
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [field]: value
+      }));
+    }
   };
 
   const resetForm = () => {
@@ -236,6 +254,44 @@ const Pedidos = () => {
     if (result) {
       setIsCreateDialogOpen(false);
       resetForm();
+      loadData();
+    }
+  };
+
+  const handleEditOrder = (order: OrderWithDetails) => {
+    setEditingOrder({
+      ...order,
+      expected_arrival_date: order.expected_arrival_date || ''
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleUpdateOrder = async () => {
+    if (!editingOrder) return;
+
+    const result = await updateOrder(editingOrder.id, {
+      equipment_id: editingOrder.equipment_id,
+      supplier_id: editingOrder.supplier_id,
+      quantity: editingOrder.quantity,
+      expected_arrival_date: editingOrder.expected_arrival_date || undefined,
+      notes: editingOrder.notes || undefined
+    });
+
+    if (result) {
+      setIsEditDialogOpen(false);
+      setEditingOrder(null);
+      loadData();
+    }
+  };
+
+  const handleDeleteOrder = async () => {
+    if (!orderToDelete) return;
+
+    const result = await deleteOrder(orderToDelete.id);
+    
+    if (result) {
+      setIsDeleteDialogOpen(false);
+      setOrderToDelete(null);
       loadData();
     }
   };
@@ -335,6 +391,33 @@ const Pedidos = () => {
                                 Registrar Recebimento
                               </Button>
                             )}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleViewDetails(order)}>
+                                  <Eye className="h-4 w-4 mr-2" />
+                                  Visualizar
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleEditOrder(order)}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Editar
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => {
+                                    setOrderToDelete(order);
+                                    setIsDeleteDialogOpen(true);
+                                  }}
+                                  className="text-red-600"
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Excluir
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                             {getStatusBadge(order.status)}
                           </div>
                         </div>
@@ -464,6 +547,142 @@ const Pedidos = () => {
                 disabled={!formData.equipment_id || !formData.supplier_id || formData.quantity < 1}
               >
                 Criar Pedido
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Order Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Editar Pedido</DialogTitle>
+              <DialogDescription>
+                Edite as informações do pedido
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="grid gap-4 py-4">
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="edit_equipment_id">Equipamento *</Label>
+                <Select 
+                  value={editingOrder?.equipment_id || ''} 
+                  onValueChange={(value) => handleInputChange('equipment_id', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um equipamento" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {equipment.map((item) => (
+                      <SelectItem key={item.id} value={item.id}>
+                        {item.brand} {item.model} ({item.category})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="edit_supplier_id">Fornecedor *</Label>
+                <Select 
+                  value={editingOrder?.supplier_id || ''} 
+                  onValueChange={(value) => handleInputChange('supplier_id', value)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um fornecedor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {suppliers.map((supplier) => (
+                      <SelectItem key={supplier.id} value={supplier.id}>
+                        {supplier.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="edit_quantity">Quantidade *</Label>
+                  <Input
+                    id="edit_quantity"
+                    type="number"
+                    min="1"
+                    value={editingOrder?.quantity || 1}
+                    onChange={(e) => handleInputChange('quantity', parseInt(e.target.value) || 1)}
+                  />
+                </div>
+                
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="edit_expected_arrival_date">Entrega Prevista</Label>
+                  <Input
+                    id="edit_expected_arrival_date"
+                    type="date"
+                    value={editingOrder?.expected_arrival_date || ''}
+                    onChange={(e) => handleInputChange('expected_arrival_date', e.target.value)}
+                  />
+                </div>
+              </div>
+              
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="edit_notes">Observações</Label>
+                <Textarea
+                  id="edit_notes"
+                  placeholder="Observações sobre o pedido..."
+                  value={editingOrder?.notes || ''}
+                  onChange={(e) => handleInputChange('notes', e.target.value)}
+                />
+              </div>
+            </div>
+            
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button 
+                className="bg-zuq-blue hover:bg-zuq-blue/80"
+                onClick={handleUpdateOrder}
+                disabled={!editingOrder?.equipment_id || !editingOrder?.supplier_id || (editingOrder?.quantity || 0) < 1}
+              >
+                Salvar Alterações
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <DialogContent className="sm:max-w-[400px]">
+            <DialogHeader>
+              <DialogTitle>Confirmar Exclusão</DialogTitle>
+              <DialogDescription>
+                Tem certeza que deseja excluir este pedido? Esta ação não pode ser desfeita.
+              </DialogDescription>
+            </DialogHeader>
+            
+            {orderToDelete && (
+              <div className="py-4">
+                <p className="text-sm text-muted-foreground">
+                  <strong>Pedido:</strong> {getEquipmentLabel(orderToDelete)}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  <strong>Fornecedor:</strong> {orderToDelete.supplier.name}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  <strong>Quantidade:</strong> {orderToDelete.quantity}
+                </p>
+              </div>
+            )}
+            
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button 
+                variant="destructive"
+                onClick={handleDeleteOrder}
+              >
+                Excluir Pedido
               </Button>
             </DialogFooter>
           </DialogContent>
