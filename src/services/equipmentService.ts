@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 
@@ -11,12 +10,13 @@ export interface Equipment {
   category: EquipmentCategory;
   average_price?: number;
   min_stock?: number;
+  initial_stock?: number;
   supplier_id?: string;
   image_url?: string;
   quality_status?: string;
   created_at?: string;
   updated_at?: string;
-  created_by?: string; // Added this field
+  created_by?: string;
 }
 
 export const fetchEquipment = async (): Promise<Equipment[]> => {
@@ -154,7 +154,8 @@ export const getEquipmentWithStock = async (): Promise<Array<Equipment & { stock
   
   return equipment.map(item => ({
     ...item,
-    stock: stockMap[item.id] || 0
+    // Calculate stock as: initial_stock + movements
+    stock: (item.initial_stock || 0) + (stockMap[item.id] || 0)
   }));
 };
 

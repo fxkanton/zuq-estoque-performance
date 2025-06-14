@@ -18,6 +18,7 @@ export type Database = {
           created_by: string | null
           id: string
           image_url: string | null
+          initial_stock: number | null
           min_stock: number | null
           model: string
           quality_status: string | null
@@ -32,6 +33,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           image_url?: string | null
+          initial_stock?: number | null
           min_stock?: number | null
           model: string
           quality_status?: string | null
@@ -46,6 +48,7 @@ export type Database = {
           created_by?: string | null
           id?: string
           image_url?: string | null
+          initial_stock?: number | null
           min_stock?: number | null
           model?: string
           quality_status?: string | null

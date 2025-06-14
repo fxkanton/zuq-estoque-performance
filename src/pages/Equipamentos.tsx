@@ -67,8 +67,9 @@ const Equipamentos = () => {
     brand: '',
     model: '',
     category: 'Leitora' as EquipmentCategory,
-    average_price: 0,
-    min_stock: 0,
+    average_price: '',
+    min_stock: '',
+    initial_stock: '',
     supplier_id: '',
     image_url: '',
     quality_status: 'Em Teste'
@@ -173,18 +174,10 @@ const Equipamentos = () => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     
-    // Convert numeric values
-    if (id === 'average_price' || id === 'min_stock') {
-      setFormData(prev => ({
-        ...prev,
-        [id]: value === '' ? 0 : parseFloat(value)
-      }));
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        [id]: value
-      }));
-    }
+    setFormData(prev => ({
+      ...prev,
+      [id]: value
+    }));
   };
 
   const handleSelectChange = (field: string, value: string) => {
@@ -227,8 +220,9 @@ const Equipamentos = () => {
       brand: '',
       model: '',
       category: 'Leitora',
-      average_price: 0,
-      min_stock: 0,
+      average_price: '',
+      min_stock: '',
+      initial_stock: '',
       supplier_id: '',
       image_url: '',
       quality_status: 'Em Teste'
@@ -256,8 +250,9 @@ const Equipamentos = () => {
       brand: equipment.brand,
       model: equipment.model,
       category: equipment.category,
-      average_price: equipment.average_price || 0,
-      min_stock: equipment.min_stock || 0,
+      average_price: equipment.average_price?.toString() || '',
+      min_stock: equipment.min_stock?.toString() || '',
+      initial_stock: equipment.initial_stock?.toString() || '',
       supplier_id: equipment.supplier_id || '',
       image_url: equipment.image_url || '',
       quality_status: equipment.quality_status || 'Em Teste'
@@ -296,9 +291,12 @@ const Equipamentos = () => {
         }
       }
       
-      // Then save equipment data with the image URL and created_by
+      // Convert string values to numbers, handling empty strings
       const dataToSave = {
         ...formData,
+        average_price: formData.average_price ? parseFloat(formData.average_price) : 0,
+        min_stock: formData.min_stock ? parseInt(formData.min_stock) : 0,
+        initial_stock: formData.initial_stock ? parseInt(formData.initial_stock) : 0,
         image_url: imageUrl,
         created_by: profile?.id
       };
@@ -331,9 +329,12 @@ const Equipamentos = () => {
         }
       }
       
-      // Then update equipment data with the image URL
+      // Convert string values to numbers, handling empty strings
       const dataToUpdate = {
         ...formData,
+        average_price: formData.average_price ? parseFloat(formData.average_price) : 0,
+        min_stock: formData.min_stock ? parseInt(formData.min_stock) : 0,
+        initial_stock: formData.initial_stock ? parseInt(formData.initial_stock) : 0,
         image_url: imageUrl
       };
       
@@ -701,7 +702,7 @@ const Equipamentos = () => {
               </div>
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="flex flex-col gap-2">
                 <Label htmlFor="category">Categoria</Label>
                 {showNewCategoryInput ? (
@@ -747,6 +748,16 @@ const Equipamentos = () => {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="initial_stock">Saldo Inicial</Label>
+                <Input 
+                  id="initial_stock" 
+                  type="number" 
+                  placeholder="0" 
+                  value={formData.initial_stock}
+                  onChange={handleInputChange}
+                />
+              </div>
             </div>
             
             <div className="grid grid-cols-2 gap-4">
@@ -755,6 +766,7 @@ const Equipamentos = () => {
                 <Input 
                   id="average_price" 
                   type="number"
+                  step="0.01"
                   placeholder="R$ 0,00" 
                   value={formData.average_price}
                   onChange={handleInputChange}
@@ -930,7 +942,7 @@ const Equipamentos = () => {
                     </div>
                   </div>
                   
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-3 gap-4">
                     <div className="flex flex-col gap-2">
                       <Label htmlFor="category">Categoria</Label>
                       <Select 
@@ -963,6 +975,16 @@ const Equipamentos = () => {
                         </SelectContent>
                       </Select>
                     </div>
+                    <div className="flex flex-col gap-2">
+                      <Label htmlFor="initial_stock">Saldo Inicial</Label>
+                      <Input 
+                        id="initial_stock" 
+                        type="number" 
+                        placeholder="0" 
+                        value={formData.initial_stock}
+                        onChange={handleInputChange}
+                      />
+                    </div>
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
@@ -971,7 +993,8 @@ const Equipamentos = () => {
                       <Input 
                         id="average_price" 
                         type="number"
-                        placeholder="R$ 0,00" 
+                        step="0.01"
+                        placeholder="0,00" 
                         value={formData.average_price}
                         onChange={handleInputChange}
                       />
