@@ -51,6 +51,7 @@ const Dashboard = () => {
     'Em Manutenção': 0
   });
   const [dailyMovements, setDailyMovements] = useState<any[]>([]);
+  const [xAxisInterval, setXAxisInterval] = useState<number | 'preserveStartEnd'>(0);
 
   // Refs to store channel references for cleanup
   const channelsRef = useRef<any[]>([]);
@@ -140,6 +141,16 @@ const Dashboard = () => {
     try {
       const startDateStr = startDate.toISOString().split('T')[0];
       const endDateStr = endDate.toISOString().split('T')[0];
+
+      // Set interval for chart's X-axis based on date range duration
+      const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1; // +1 to approx number of days
+      
+      if (diffDays > 15) {
+        setXAxisInterval(Math.floor(diffDays / 7)); // Aim for ~7 ticks
+      } else {
+        setXAxisInterval(0); // Show all ticks for shorter ranges
+      }
 
       // Parallelize all data fetching
       const [
@@ -481,7 +492,7 @@ const Dashboard = () => {
                       <XAxis 
                         dataKey="date" 
                         tick={{ fontSize: 12, fill: '#64748b' }}
-                        interval={0}
+                        interval={xAxisInterval}
                         angle={0}
                       />
                       <YAxis tick={{ fill: '#64748b' }} />
@@ -526,7 +537,7 @@ const Dashboard = () => {
                   <XAxis 
                     dataKey="date" 
                     tick={{ fontSize: 12, fill: '#64748b' }}
-                    interval={0}
+                    interval={xAxisInterval}
                     angle={0}
                   />
                   <YAxis tick={{ fill: '#64748b' }} />
