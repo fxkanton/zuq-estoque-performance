@@ -70,32 +70,33 @@ const Equipamentos = () => {
 
   const applyFilters = () => {
     let filtered = equipamentos;
-    
+
     if (searchTerm) {
-      filtered = filtered.filter(item => 
+      filtered = filtered.filter(item =>
         item.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.brand.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-    
-    if (categoryFilter && categoryFilter !== '') {
-      filtered = filtered.filter(item => 
+
+    // Corrige: só filtra se o valor for não vazio
+    if (categoryFilter) {
+      filtered = filtered.filter(item =>
         item.category.toLowerCase() === categoryFilter.toLowerCase()
       );
     }
-    
-    if (qualityFilter && qualityFilter !== '') {
-      filtered = filtered.filter(item => 
+
+    if (qualityFilter) {
+      filtered = filtered.filter(item =>
         item.quality_status === qualityFilter
       );
     }
-    
-    if (supplierFilter && supplierFilter !== '') {
-      filtered = filtered.filter(item => 
+
+    if (supplierFilter) {
+      filtered = filtered.filter(item =>
         item.supplier_id === supplierFilter
       );
     }
-    
+
     setFilteredEquipamentos(filtered);
   };
 
