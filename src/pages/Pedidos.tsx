@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -5,16 +6,31 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Package, Truck, CheckCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import OrderBatchForm from "@/components/OrderBatchForm";
-import OrderBatchDetails from "@/components/OrderBatchDetails";
+
+// Simple order interface for mock data
+interface MockOrder {
+  id: string;
+  batchNumber: string;
+  supplier: string;
+  status: "Pendente" | "Em Trânsito" | "Entregue";
+  orderDate: string;
+  expectedDelivery: string;
+  items: Array<{
+    equipment: string;
+    quantity: number;
+    unitPrice: number;
+  }>;
+  totalValue: number;
+  notes: string;
+}
 
 // Mock data for orders
-const mockOrders = [
+const mockOrders: MockOrder[] = [
   {
     id: "1",
     batchNumber: "LOTE-001",
     supplier: "TechnoRFID Ltda",
-    status: "Pendente" as const,
+    status: "Pendente",
     orderDate: "2024-12-15",
     expectedDelivery: "2024-12-30",
     items: [
@@ -28,7 +44,7 @@ const mockOrders = [
     id: "2", 
     batchNumber: "LOTE-002",
     supplier: "ElectroComponents S.A.",
-    status: "Em Trânsito" as const,
+    status: "Em Trânsito",
     orderDate: "2024-12-10",
     expectedDelivery: "2024-12-25",
     items: [
@@ -42,7 +58,7 @@ const mockOrders = [
     id: "3",
     batchNumber: "LOTE-003", 
     supplier: "Global Tech Solutions",
-    status: "Entregue" as const,
+    status: "Entregue",
     orderDate: "2024-12-05",
     expectedDelivery: "2024-12-20",
     items: [
@@ -56,8 +72,7 @@ const mockOrders = [
 
 const Pedidos = () => {
   const [activeTab, setActiveTab] = useState("todos");
-  const [isFormOpen, setIsFormOpen] = useState(false);
-  const [selectedOrder, setSelectedOrder] = useState<typeof mockOrders[0] | null>(null);
+  const [selectedOrder, setSelectedOrder] = useState<MockOrder | null>(null);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -99,7 +114,6 @@ const Pedidos = () => {
           
           <div className="flex justify-start">
             <Button 
-              onClick={() => setIsFormOpen(true)}
               className="bg-zuq-blue hover:bg-zuq-blue/90 text-white flex items-center gap-2 w-full sm:w-auto"
             >
               <Plus className="h-4 w-4" />
@@ -170,19 +184,69 @@ const Pedidos = () => {
           </TabsContent>
         </Tabs>
 
-        {isFormOpen && (
-          <OrderBatchForm 
-            isOpen={isFormOpen}
-            onClose={() => setIsFormOpen(false)}
-          />
-        )}
-
         {selectedOrder && (
-          <OrderBatchDetails
-            order={selectedOrder}
-            isOpen={!!selectedOrder}
-            onClose={() => setSelectedOrder(null)}
-          />
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-lg p-6 max-w-2xl w-full max-h-[80vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold">Detalhes do Pedido - {selectedOrder.batchNumber}</h2>
+                <Button variant="outline" onClick={() => setSelectedOrder(null)}>
+                  Fechar
+                </Button>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Fornecedor</p>
+                    <p className="font-medium">{selectedOrder.supplier}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Status</p>
+                    {getStatusBadge(selectedOrder.status)}
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Data do Pedido</p>
+                    <p className="font-medium">{new Date(selectedOrder.orderDate).toLocaleDateString('pt-BR')}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Entrega Prevista</p>
+                    <p className="font-medium">{new Date(selectedOrder.expectedDelivery).toLocaleDateString('pt-BR')}</p>
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 className="font-medium mb-2">Itens do Pedido</h3>
+                  <div className="space-y-2">
+                    {selectedOrder.items.map((item, index) => (
+                      <div key={index} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                        <span>{item.equipment}</span>
+                        <div className="text-right">
+                          <p className="text-sm">Qtd: {item.quantity}</p>
+                          <p className="text-sm font-medium">R$ {item.unitPrice.toFixed(2)}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                <div className="pt-4 border-t">
+                  <div className="flex justify-between items-center">
+                    <span className="font-bold">Total do Pedido:</span>
+                    <span className="font-bold text-lg text-zuq-blue">
+                      R$ {selectedOrder.totalValue.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </div>
+                
+                {selectedOrder.notes && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Observações</p>
+                    <p className="text-sm">{selectedOrder.notes}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </MainLayout>
