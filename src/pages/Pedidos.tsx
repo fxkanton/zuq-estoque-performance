@@ -296,7 +296,8 @@ const Pedidos = () => {
     }
   };
 
-  const handleRegisterReceipt = (order: OrderWithDetails) => {
+  const handleRegisterReceipt = (order: OrderWithDetails, e: React.MouseEvent) => {
+    e.stopPropagation();
     setSelectedOrderForBatch(order);
     setIsBatchFormOpen(true);
   };
@@ -320,6 +321,14 @@ const Pedidos = () => {
 
   const getEquipmentLabel = (order: OrderWithDetails) => {
     return `${order.equipment.brand} ${order.equipment.model}`;
+  };
+
+  const handleCardClick = (order: OrderWithDetails) => {
+    handleViewDetails(order);
+  };
+
+  const handleDropdownAction = (e: React.MouseEvent) => {
+    e.stopPropagation();
   };
 
   return (
@@ -373,52 +382,31 @@ const Pedidos = () => {
                   const totalReceived = orderProgress[order.id] || 0;
                   
                   return (
-                    <Card key={order.id} className="hover:shadow-md transition-shadow">
+                    <Card 
+                      key={order.id} 
+                      className="hover:shadow-md transition-shadow cursor-pointer relative"
+                      onClick={() => handleCardClick(order)}
+                    >
                       <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
-                          <CardTitle className="text-lg cursor-pointer" onClick={() => handleViewDetails(order)}>
-                            {getEquipmentLabel(order)}
-                          </CardTitle>
+                          <div className="flex items-center gap-2">
+                            <CardTitle className="text-lg">
+                              {getEquipmentLabel(order)}
+                            </CardTitle>
+                            {getStatusBadge(order.status)}
+                          </div>
                           <div className="flex items-center gap-2">
                             {order.status !== "Recebido" && (
                               <Button
                                 size="sm"
                                 variant="outline"
-                                onClick={() => handleRegisterReceipt(order)}
+                                onClick={(e) => handleRegisterReceipt(order, e)}
                                 className="flex items-center gap-1"
                               >
                                 <Receipt className="h-3 w-3" />
                                 Registrar Recebimento
                               </Button>
                             )}
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => handleViewDetails(order)}>
-                                  <Eye className="h-4 w-4 mr-2" />
-                                  Visualizar
-                                </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleEditOrder(order)}>
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Editar
-                                </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                  onClick={() => {
-                                    setOrderToDelete(order);
-                                    setIsDeleteDialogOpen(true);
-                                  }}
-                                  className="text-red-600"
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Excluir
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                            {getStatusBadge(order.status)}
                           </div>
                         </div>
                       </CardHeader>
@@ -452,6 +440,37 @@ const Pedidos = () => {
                           <Progress value={progressPercentage} className="h-2" />
                         </div>
                       </CardContent>
+                      
+                      {/* Dropdown Menu positioned in bottom right */}
+                      <div className="absolute bottom-4 right-4" onClick={handleDropdownAction}>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => handleViewDetails(order)}>
+                              <Eye className="h-4 w-4 mr-2" />
+                              Visualizar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEditOrder(order)}>
+                              <Edit className="h-4 w-4 mr-2" />
+                              Editar
+                            </DropdownMenuItem>
+                            <DropdownMenuItem 
+                              onClick={() => {
+                                setOrderToDelete(order);
+                                setIsDeleteDialogOpen(true);
+                              }}
+                              className="text-red-600"
+                            >
+                              <Trash2 className="h-4 w-4 mr-2" />
+                              Excluir
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </Card>
                   );
                 })}
