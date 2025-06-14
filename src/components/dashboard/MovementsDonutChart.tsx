@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { RefreshCw } from "lucide-react";
@@ -34,7 +33,7 @@ export const MovementsDonutChart = ({ entries, exits }: MovementsDonutChartProps
         {/* Main total number */}
         <text 
           x={cx} 
-          y={cy - 8} 
+          y={cy} 
           fill="#1e293b" 
           textAnchor="middle"
           dominantBaseline="central"
@@ -42,18 +41,6 @@ export const MovementsDonutChart = ({ entries, exits }: MovementsDonutChartProps
           style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
         >
           {total.toLocaleString()}
-        </text>
-        {/* Subtitle */}
-        <text 
-          x={cx} 
-          y={cy + 16} 
-          fill="#64748b" 
-          textAnchor="middle"
-          dominantBaseline="central"
-          className="text-xs md:text-sm font-medium"
-          style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
-        >
-          Total de Movimentações
         </text>
       </g>
     );
