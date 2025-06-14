@@ -34,12 +34,14 @@ const OrderBatchForm = ({ order, isOpen, onClose, onSave }: OrderBatchFormProps)
     const { id, value } = e.target;
     
     if (id === 'received_quantity') {
-      const quantity = parseInt(value);
-      // Ensure quantity doesn't exceed max
-      setFormData(prev => ({
-        ...prev,
-        [id]: isNaN(quantity) ? 0 : Math.min(quantity, order.quantity)
-      }));
+      // Allow empty string or valid positive numbers, but don't exceed order quantity
+      if (value === '' || (/^\d+$/.test(value) && parseInt(value) >= 0)) {
+        const quantity = value === '' ? 0 : parseInt(value);
+        setFormData(prev => ({
+          ...prev,
+          [id]: Math.min(quantity, order.quantity)
+        }));
+      }
     } else {
       setFormData(prev => ({
         ...prev,
@@ -77,10 +79,10 @@ const OrderBatchForm = ({ order, isOpen, onClose, onSave }: OrderBatchFormProps)
               <Label htmlFor="received_quantity">Quantidade Recebida</Label>
               <Input
                 id="received_quantity"
-                type="number"
-                min="1"
+                type="text"
+                placeholder="Quantidade recebida"
                 max={order.quantity}
-                value={formData.received_quantity}
+                value={formData.received_quantity || ''}
                 onChange={handleInputChange}
               />
               <p className="text-xs text-muted-foreground">

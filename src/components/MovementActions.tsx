@@ -40,7 +40,7 @@ const MovementActions = ({ movement, equipment, allEquipment, onSuccess }: Movem
   const [formData, setFormData] = useState({
     equipment_id: movement.equipment_id,
     movement_type: movement.movement_type,
-    quantity: movement.quantity,
+    quantity: movement.quantity.toString(),
     movement_date: movement.movement_date ? new Date(movement.movement_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
     notes: movement.notes || ''
   });
@@ -51,10 +51,13 @@ const MovementActions = ({ movement, equipment, allEquipment, onSuccess }: Movem
     const { id, value } = e.target;
     
     if (id === 'quantity') {
-      setFormData(prev => ({
-        ...prev,
-        [id]: value === '' ? 1 : parseInt(value)
-      }));
+      // Allow empty string or positive integers
+      if (value === '' || (/^\d+$/.test(value) && parseInt(value) > 0)) {
+        setFormData(prev => ({
+          ...prev,
+          [id]: value
+        }));
+      }
     } else {
       setFormData(prev => ({
         ...prev,
@@ -71,7 +74,13 @@ const MovementActions = ({ movement, equipment, allEquipment, onSuccess }: Movem
   };
 
   const handleUpdateMovement = async () => {
-    const result = await updateMovement(movement.id, formData);
+    // Convert quantity back to number for submission
+    const dataToUpdate = {
+      ...formData,
+      quantity: formData.quantity ? parseInt(formData.quantity) : 1
+    };
+    
+    const result = await updateMovement(movement.id, dataToUpdate);
     if (result) {
       setIsEditDialogOpen(false);
       onSuccess();
@@ -177,8 +186,8 @@ const MovementActions = ({ movement, equipment, allEquipment, onSuccess }: Movem
                 <Label htmlFor="quantity">Quantidade</Label>
                 <Input 
                   id="quantity" 
-                  type="number"
-                  min="1"
+                  type="text"
+                  placeholder="Quantidade"
                   value={formData.quantity}
                   onChange={handleInputChange}
                 />
@@ -222,7 +231,11 @@ const MovementActions = ({ movement, equipment, allEquipment, onSuccess }: Movem
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               Cancelar
             </Button>
-            <Button className="bg-zuq-blue hover:bg-zuq-blue/80" onClick={handleUpdateMovement}>
+            <Button 
+              className="bg-zuq-blue hover:bg-zuq-blue/80" 
+              onClick={handleUpdateMovement}
+              disabled={!formData.quantity || parseInt(formData.quantity) <= 0}
+            >
               Atualizar
             </Button>
           </DialogFooter>

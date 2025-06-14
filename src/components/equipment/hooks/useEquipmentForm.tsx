@@ -30,10 +30,10 @@ export const useEquipmentForm = (onSuccess: () => void) => {
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     
-    // Handle numeric fields specially to prevent the bug
+    // Handle numeric fields - allow empty values and valid numbers
     if (id === 'average_price' || id === 'min_stock' || id === 'initial_stock') {
-      // Allow empty values and numeric values
-      if (value === '' || (!isNaN(Number(value)) && Number(value) >= 0)) {
+      // Allow empty string or valid numbers (including decimal for average_price)
+      if (value === '' || (id === 'average_price' ? /^\d*\.?\d*$/.test(value) : /^\d*$/.test(value))) {
         setFormData(prev => ({
           ...prev,
           [id]: value

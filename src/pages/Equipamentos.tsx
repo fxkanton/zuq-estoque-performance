@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -79,19 +78,19 @@ const Equipamentos = () => {
       );
     }
     
-    if (categoryFilter && categoryFilter !== 'all') {
+    if (categoryFilter && categoryFilter !== '') {
       filtered = filtered.filter(item => 
         item.category.toLowerCase() === categoryFilter.toLowerCase()
       );
     }
     
-    if (qualityFilter && qualityFilter !== 'all') {
+    if (qualityFilter && qualityFilter !== '') {
       filtered = filtered.filter(item => 
         item.quality_status === qualityFilter
       );
     }
     
-    if (supplierFilter && supplierFilter !== 'all') {
+    if (supplierFilter && supplierFilter !== '') {
       filtered = filtered.filter(item => 
         item.supplier_id === supplierFilter
       );
