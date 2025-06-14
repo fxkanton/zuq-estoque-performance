@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback, useRef } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -373,9 +372,11 @@ const Dashboard = () => {
         onChange={handleDateRangeChange}
       />
       
-      {/* New layout: Equipment balance on left, entries and exits stacked on right */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
-        <div className="lg:col-span-1">
+      {/* New layout: Left side with stacked cards, right side with task reminders */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Left column - Stacked cards */}
+        <div className="space-y-6">
+          {/* Equipment Balance */}
           <StatsCard 
             title="Saldo de Equipamentos" 
             value={equipmentBalance.toString()} 
@@ -386,8 +387,8 @@ const Dashboard = () => {
             borderColor="border-blue-100"
             iconBg="bg-blue-100"
           />
-        </div>
-        <div className="lg:col-span-1 space-y-4">
+          
+          {/* Entries */}
           <StatsCard 
             title="Entradas no Período" 
             value={monthlyMovements.entries.toString()} 
@@ -398,6 +399,8 @@ const Dashboard = () => {
             borderColor="border-green-100"
             iconBg="bg-green-100"
           />
+          
+          {/* Exits */}
           <StatsCard 
             title="Saídas no Período" 
             value={monthlyMovements.exits.toString()} 
@@ -408,21 +411,21 @@ const Dashboard = () => {
             borderColor="border-orange-100"
             iconBg="bg-orange-100"
           />
+          
+          {/* Movements Chart */}
+          <MovementsDonutChart 
+            entries={monthlyMovements.entries} 
+            exits={monthlyMovements.exits} 
+          />
         </div>
-        <div className="lg:col-span-2">
+        
+        {/* Right column - Task Reminders */}
+        <div className="h-full">
           <TaskReminders />
         </div>
       </div>
 
-      {/* Donut chart in full width */}
-      <div className="mb-8">
-        <MovementsDonutChart 
-          entries={monthlyMovements.entries} 
-          exits={monthlyMovements.exits} 
-        />
-      </div>
-
-      {/* Equipment inventory component with increased height */}
+      {/* Equipment inventory component */}
       <EquipmentInventory startDate={startDate.toISOString().split('T')[0]} endDate={endDate.toISOString().split('T')[0]} />
       
       {/* Daily movements chart */}
