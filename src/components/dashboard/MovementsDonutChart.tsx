@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { ArrowDown, ArrowUp } from "lucide-react";
@@ -22,7 +21,7 @@ export const MovementsDonutChart = ({ entries, exits }: MovementsDonutChartProps
         x={cx} 
         y={cy} 
         fill="#374151" 
-        textAnchor={cx > 200 ? 'start' : 'end'} 
+        textAnchor="middle"
         dominantBaseline="central"
         className="text-2xl md:text-3xl font-bold"
       >
