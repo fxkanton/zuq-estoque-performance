@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -6,8 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Package, Truck, CheckCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { OrderBatchForm } from "@/components/OrderBatchForm";
-import { OrderBatchDetails } from "@/components/OrderBatchDetails";
+import OrderBatchForm from "@/components/OrderBatchForm";
+import OrderBatchDetails from "@/components/OrderBatchDetails";
 
 // Mock data for orders
 const mockOrders = [
