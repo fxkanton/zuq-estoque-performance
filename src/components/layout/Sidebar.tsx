@@ -35,17 +35,16 @@ const AppSidebarComponent = () => {
   const logoSmallRef = useRef<HTMLImageElement>(null);
   const location = useLocation();
 
-  // Memoizar as URLs das imagens para evitar recriação
+  // Novo logo para ambas versões (full e small)
   const logoUrls = useMemo(() => ({
-    full: "/lovable-uploads/d23c7cfe-f31c-48e7-853d-9336a829189d.png",
-    small: "/lovable-uploads/b063f862-dfa6-4ec2-bf1e-f6ba630f97b6.png"
+    full: "/lovable-uploads/b796a5d7-8133-46ff-9b97-024bf392cec8.png",
+    small: "/lovable-uploads/b796a5d7-8133-46ff-9b97-024bf392cec8.png"
   }), []);
 
   // Preload apenas uma vez
   useEffect(() => {
     const logoFullImg = new Image();
     logoFullImg.src = logoUrls.full;
-    
     const logoSmallImg = new Image();
     logoSmallImg.src = logoUrls.small;
   }, [logoUrls]);
@@ -69,8 +68,9 @@ const AppSidebarComponent = () => {
           ref={logoSmallRef}
           src={logoUrls.small}
           alt="ZUQ Performance" 
-          className="w-8 h-8 brightness-0 invert"
+          className="w-8 h-8"
           loading="eager"
+          style={{ objectFit: "contain" }}
         />
       );
     } else {
@@ -80,8 +80,9 @@ const AppSidebarComponent = () => {
           ref={logoFullRef}
           src={logoUrls.full}
           alt="ZUQ Performance" 
-          className="w-36 brightness-0 invert"
+          className="w-32"
           loading="eager"
+          style={{ objectFit: "contain" }}
         />
       );
     }
@@ -89,19 +90,17 @@ const AppSidebarComponent = () => {
 
   return (
     <Sidebar
-      className={`transition-all duration-300 ease-in-out ${isCollapsed ? "w-14" : "w-60"} bg-sidebar border-sidebar-border`}
+      className={`transition-all duration-300 ease-in-out ${isCollapsed ? "w-14" : "w-60"} bg-white/95 border-r border-gray-200 shadow-sm`}
       collapsible="icon"
     >
-      <SidebarContent className="bg-sidebar">
-        {/* Trigger também dentro do sidebar (visível só no mobile/mini) */}
+      <SidebarContent>
         <div className="flex items-center justify-between my-6 px-2 md:px-6">
           {logoElement}
-          {/* SidebarTrigger sempre visível em mobile/mini para expandir/recolher */}
-          <SidebarTrigger className="ml-auto md:hidden" />
+          <SidebarTrigger className="ml-auto md:hidden"/>
         </div>
 
         <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/70 font-medium text-xs uppercase tracking-wider">
+          <SidebarGroupLabel className="text-gray-400 font-medium text-xs uppercase tracking-wider">
             {!isCollapsed && "Principal"}
           </SidebarGroupLabel>
 
@@ -178,10 +177,7 @@ const AppSidebarComponent = () => {
   );
 };
 
-// Apply memo wrapper and set display name
-const AppSidebar = memo(AppSidebarComponent);
-AppSidebar.displayName = "AppSidebar";
-
+// Custom hover for menu items: leve azul #00B3DA de fundo, borda no hover
 type NavItemProps = {
   to: string;
   icon: React.ReactNode;
@@ -197,19 +193,29 @@ const NavItem = memo(({ to, icon, label, isCollapsed, onClick }: NavItemProps) =
         <NavLink
           to={to}
           className={({ isActive }) =>
-            `flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 ${
-              isActive
-                ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
-                : "hover:bg-sidebar-accent text-sidebar-foreground hover:text-sidebar-accent-foreground"
-            }`
+            // Estilo base + active + hover customizado
+            `flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 border-2 
+             ${
+               isActive
+                 ? "bg-[#00B3DA1A] border-[#00B3DA] text-[#00B3DA] font-semibold shadow-sm"
+                 : "hover:bg-[#00B3DA1A] hover:border-[#00B3DA] hover:text-[#00B3DA] border-transparent text-gray-700"
+             }
+            `
           }
           end
           onClick={onClick}
+          style={{
+            // Efeito para círculo sutil na borda do ícone ao hover também
+            alignItems: "center",
+            gap: isCollapsed ? 0 : '0.75rem',
+          }}
         >
-          <div className="flex items-center">
+          <div
+            className={`flex items-center justify-center ${isCollapsed ? 'w-full' : ''}`}
+          >
             {icon}
-            {!isCollapsed && <span className="ml-3 font-medium">{label}</span>}
           </div>
+          {!isCollapsed && <span className="ml-3 font-medium">{label}</span>}
         </NavLink>
       </SidebarMenuButton>
     </SidebarMenuItem>
