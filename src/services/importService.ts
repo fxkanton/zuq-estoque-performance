@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import * as XLSX from 'xlsx';
 
@@ -6,6 +5,10 @@ export interface ImportRecord {
   [key: string]: any;
   _hasErrors?: boolean;
   _errors?: string[];
+  _isDuplicate?: boolean;
+  _duplicateInfo?: string[];
+  _duplicateId?: string;
+  _userApproved?: boolean;
 }
 
 export const processImportFile = async (file: File, dataType: string): Promise<ImportRecord[]> => {
@@ -42,7 +45,7 @@ export const processImportFile = async (file: File, dataType: string): Promise<I
           jsonData = XLSX.utils.sheet_to_json(worksheet);
         }
 
-        // Validar dados
+        // Validar dados e verificar duplicatas
         const validatedData = await validateImportData(jsonData, dataType);
         resolve(validatedData);
       } catch (error) {
@@ -83,8 +86,16 @@ const validateEquipmentData = async (data: any[]): Promise<ImportRecord[]> => {
   const requiredFields = ['marca', 'modelo', 'categoria'];
   const validCategories = ['Leitora', 'Sensor', 'Rastreador', 'Acessório'];
 
+  // Buscar equipamentos existentes
+  const { data: existingEquipment } = await supabase
+    .from('equipment')
+    .select('id, brand, model, category');
+
   return data.map(record => {
     const errors: string[] = [];
+    const duplicateInfo: string[] = [];
+    let isDuplicate = false;
+    let duplicateId = '';
     
     // Verificar campos obrigatórios
     requiredFields.forEach(field => {
@@ -109,10 +120,29 @@ const validateEquipmentData = async (data: any[]): Promise<ImportRecord[]> => {
       errors.push('Estoque inicial deve ser um número');
     }
 
+    // Verificar duplicatas
+    if (record.marca && record.modelo && record.categoria && existingEquipment) {
+      const duplicate = existingEquipment.find(eq => 
+        eq.brand?.toLowerCase() === record.marca.toLowerCase() &&
+        eq.model?.toLowerCase() === record.modelo.toLowerCase() &&
+        eq.category === record.categoria
+      );
+      
+      if (duplicate) {
+        isDuplicate = true;
+        duplicateId = duplicate.id;
+        duplicateInfo.push(`Equipamento já existe: ${duplicate.brand} ${duplicate.model} (${duplicate.category})`);
+      }
+    }
+
     return {
       ...record,
       _hasErrors: errors.length > 0,
-      _errors: errors
+      _errors: errors,
+      _isDuplicate: isDuplicate,
+      _duplicateInfo: duplicateInfo,
+      _duplicateId: duplicateId,
+      _userApproved: false
     };
   });
 };
@@ -120,8 +150,16 @@ const validateEquipmentData = async (data: any[]): Promise<ImportRecord[]> => {
 const validateSupplierData = async (data: any[]): Promise<ImportRecord[]> => {
   const requiredFields = ['nome', 'cnpj'];
 
+  // Buscar fornecedores existentes
+  const { data: existingSuppliers } = await supabase
+    .from('suppliers')
+    .select('id, name, cnpj');
+
   return data.map(record => {
     const errors: string[] = [];
+    const duplicateInfo: string[] = [];
+    let isDuplicate = false;
+    let duplicateId = '';
     
     // Verificar campos obrigatórios
     requiredFields.forEach(field => {
@@ -145,10 +183,32 @@ const validateSupplierData = async (data: any[]): Promise<ImportRecord[]> => {
       errors.push('Dias de entrega deve ser um número');
     }
 
+    // Verificar duplicatas
+    if (record.cnpj && existingSuppliers) {
+      const duplicateByCnpj = existingSuppliers.find(sup => sup.cnpj === record.cnpj);
+      const duplicateByName = existingSuppliers.find(sup => 
+        sup.name?.toLowerCase() === record.nome.toLowerCase()
+      );
+      
+      if (duplicateByCnpj) {
+        isDuplicate = true;
+        duplicateId = duplicateByCnpj.id;
+        duplicateInfo.push(`CNPJ já cadastrado: ${duplicateByCnpj.cnpj} (${duplicateByCnpj.name})`);
+      } else if (duplicateByName) {
+        isDuplicate = true;
+        duplicateId = duplicateByName.id;
+        duplicateInfo.push(`Nome já cadastrado: ${duplicateByName.name}`);
+      }
+    }
+
     return {
       ...record,
       _hasErrors: errors.length > 0,
-      _errors: errors
+      _errors: errors,
+      _isDuplicate: isDuplicate,
+      _duplicateInfo: duplicateInfo,
+      _duplicateId: duplicateId,
+      _userApproved: false
     };
   });
 };
@@ -158,8 +218,16 @@ const validateReaderData = async (data: any[]): Promise<ImportRecord[]> => {
   const validStatuses = ['Disponível', 'Em Uso', 'Em Manutenção'];
   const validConditions = ['Novo', 'Recondicionado'];
 
+  // Buscar leitoras existentes
+  const { data: existingReaders } = await supabase
+    .from('readers')
+    .select('id, code');
+
   return data.map(record => {
     const errors: string[] = [];
+    const duplicateInfo: string[] = [];
+    let isDuplicate = false;
+    let duplicateId = '';
     
     // Verificar campos obrigatórios
     requiredFields.forEach(field => {
@@ -183,10 +251,25 @@ const validateReaderData = async (data: any[]): Promise<ImportRecord[]> => {
       errors.push('Data de aquisição deve estar no formato DD/MM/AAAA');
     }
 
+    // Verificar duplicatas
+    if (record.codigo && existingReaders) {
+      const duplicate = existingReaders.find(reader => reader.code === record.codigo);
+      
+      if (duplicate) {
+        isDuplicate = true;
+        duplicateId = duplicate.id;
+        duplicateInfo.push(`Código já cadastrado: ${duplicate.code}`);
+      }
+    }
+
     return {
       ...record,
       _hasErrors: errors.length > 0,
-      _errors: errors
+      _errors: errors,
+      _isDuplicate: isDuplicate,
+      _duplicateInfo: duplicateInfo,
+      _duplicateId: duplicateId,
+      _userApproved: false
     };
   });
 };
@@ -195,8 +278,26 @@ const validateMovementData = async (data: any[]): Promise<ImportRecord[]> => {
   const requiredFields = ['equipamento_marca', 'equipamento_modelo', 'tipo_movimento', 'quantidade'];
   const validMovementTypes = ['Entrada', 'Saída'];
 
+  // Buscar movimentações existentes (últimos 30 dias para performance)
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  
+  const { data: existingMovements } = await supabase
+    .from('inventory_movements')
+    .select(`
+      id, 
+      movement_type, 
+      quantity, 
+      movement_date,
+      equipment!inner(brand, model)
+    `)
+    .gte('movement_date', thirtyDaysAgo.toISOString());
+
   return data.map(record => {
     const errors: string[] = [];
+    const duplicateInfo: string[] = [];
+    let isDuplicate = false;
+    let duplicateId = '';
     
     // Verificar campos obrigatórios
     requiredFields.forEach(field => {
@@ -220,10 +321,34 @@ const validateMovementData = async (data: any[]): Promise<ImportRecord[]> => {
       errors.push('Data deve estar no formato DD/MM/AAAA');
     }
 
+    // Verificar duplicatas
+    if (record.equipamento_marca && record.equipamento_modelo && record.tipo_movimento && 
+        record.quantidade && record.data && existingMovements) {
+      
+      const recordDate = convertDateString(record.data);
+      const duplicate = existingMovements.find(mov => 
+        mov.equipment?.brand?.toLowerCase() === record.equipamento_marca.toLowerCase() &&
+        mov.equipment?.model?.toLowerCase() === record.equipamento_modelo.toLowerCase() &&
+        mov.movement_type === record.tipo_movimento &&
+        mov.quantity === Number(record.quantidade) &&
+        mov.movement_date?.split('T')[0] === recordDate.split('T')[0]
+      );
+      
+      if (duplicate) {
+        isDuplicate = true;
+        duplicateId = duplicate.id;
+        duplicateInfo.push(`Movimentação similar já existe para esta data`);
+      }
+    }
+
     return {
       ...record,
       _hasErrors: errors.length > 0,
-      _errors: errors
+      _errors: errors,
+      _isDuplicate: isDuplicate,
+      _duplicateInfo: duplicateInfo,
+      _duplicateId: duplicateId,
+      _userApproved: false
     };
   });
 };
@@ -231,8 +356,26 @@ const validateMovementData = async (data: any[]): Promise<ImportRecord[]> => {
 const validateOrderData = async (data: any[]): Promise<ImportRecord[]> => {
   const requiredFields = ['equipamento_marca', 'equipamento_modelo', 'fornecedor_nome', 'quantidade'];
 
+  // Buscar pedidos existentes (últimos 90 dias)
+  const ninetyDaysAgo = new Date();
+  ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
+  
+  const { data: existingOrders } = await supabase
+    .from('orders')
+    .select(`
+      id,
+      quantity,
+      expected_arrival_date,
+      equipment!inner(brand, model),
+      suppliers!inner(name)
+    `)
+    .gte('created_at', ninetyDaysAgo.toISOString());
+
   return data.map(record => {
     const errors: string[] = [];
+    const duplicateInfo: string[] = [];
+    let isDuplicate = false;
+    let duplicateId = '';
     
     // Verificar campos obrigatórios
     requiredFields.forEach(field => {
@@ -251,10 +394,33 @@ const validateOrderData = async (data: any[]): Promise<ImportRecord[]> => {
       errors.push('Data de chegada deve estar no formato DD/MM/AAAA');
     }
 
+    // Verificar duplicatas
+    if (record.equipamento_marca && record.equipamento_modelo && 
+        record.fornecedor_nome && record.data_chegada_esperada && existingOrders) {
+      
+      const recordDate = convertDateString(record.data_chegada_esperada);
+      const duplicate = existingOrders.find(order => 
+        order.equipment?.brand?.toLowerCase() === record.equipamento_marca.toLowerCase() &&
+        order.equipment?.model?.toLowerCase() === record.equipamento_modelo.toLowerCase() &&
+        order.suppliers?.name?.toLowerCase() === record.fornecedor_nome.toLowerCase() &&
+        order.expected_arrival_date === recordDate.split('T')[0]
+      );
+      
+      if (duplicate) {
+        isDuplicate = true;
+        duplicateId = duplicate.id;
+        duplicateInfo.push(`Pedido similar já existe para esta data`);
+      }
+    }
+
     return {
       ...record,
       _hasErrors: errors.length > 0,
-      _errors: errors
+      _errors: errors,
+      _isDuplicate: isDuplicate,
+      _duplicateInfo: duplicateInfo,
+      _duplicateId: duplicateId,
+      _userApproved: false
     };
   });
 };
@@ -272,6 +438,11 @@ export const saveImportData = async (dataType: string, data: ImportRecord[], fil
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) throw new Error('Usuário não autenticado');
 
+  // Filtrar apenas registros aprovados (válidos ou duplicatas aprovadas pelo usuário)
+  const approvedData = data.filter(record => 
+    !record._hasErrors && (!record._isDuplicate || record._userApproved)
+  );
+
   // Registrar no histórico
   const { data: historyRecord, error: historyError } = await supabase
     .from('import_history')
@@ -281,7 +452,7 @@ export const saveImportData = async (dataType: string, data: ImportRecord[], fil
       original_filename: filename,
       total_records: data.length,
       processed_records: 0,
-      failed_records: 0,
+      failed_records: data.length - approvedData.length,
       status: 'pending'
     })
     .select()
@@ -291,13 +462,13 @@ export const saveImportData = async (dataType: string, data: ImportRecord[], fil
 
   try {
     // Salvar dados específicos baseado no tipo
-    await saveDataByType(dataType, data, user.id);
+    await saveDataByType(dataType, approvedData, user.id);
 
     // Atualizar histórico como sucesso
     await supabase
       .from('import_history')
       .update({
-        processed_records: data.length,
+        processed_records: approvedData.length,
         status: 'completed',
         completed_at: new Date().toISOString()
       })
