@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/components/ui/sonner';
 
@@ -30,6 +29,22 @@ export const fetchSuppliers = async (): Promise<Supplier[]> => {
   }
 
   return data || [];
+};
+
+export const fetchSupplier = async (id: string): Promise<Supplier | null> => {
+  const { data, error } = await supabase
+    .from('suppliers')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    console.error('Error fetching supplier:', error);
+    toast.error('Erro ao carregar fornecedor');
+    return null;
+  }
+
+  return data;
 };
 
 export const createSupplier = async (supplierData: Omit<Supplier, 'id' | 'created_at' | 'updated_at' | 'created_by'>): Promise<Supplier | null> => {
