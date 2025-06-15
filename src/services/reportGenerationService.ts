@@ -1,4 +1,3 @@
-
 import { supabase } from '@/integrations/supabase/client';
 
 export interface ReportData {
@@ -102,16 +101,18 @@ function calculateKPIs(data: any) {
   // Calcular estoque atual para cada equipamento
   const stockData = equipment.map((item: any) => {
     const itemMovements = movements.filter((m: any) => m.equipment_id === item.id);
-    const stock = itemMovements.reduce((stock: number, movement: any) => {
+    const stockFromMovements = itemMovements.reduce((stock: number, movement: any) => {
       return movement.movement_type === 'Entrada' 
         ? stock + movement.quantity 
         : stock - movement.quantity;
     }, 0);
+
+    const currentStock = (item.initial_stock || 0) + stockFromMovements;
     
     return {
       ...item,
-      currentStock: stock,
-      isLowStock: stock < (item.min_stock || 0)
+      currentStock: currentStock,
+      isLowStock: currentStock < (item.min_stock || 0)
     };
   });
 
@@ -232,7 +233,7 @@ function generateHTMLReport(data: any, reportName: string, startDate: string, en
   const generatedAt = today.toLocaleDateString('pt-BR') + ' às ' + today.toLocaleTimeString('pt-BR');
 
   // ZUQ Logo em base64 como fallback
-  const zuqLogoBase64 = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwIiBoZWlnaHQ9IjQwIiB2aWV3Qm94PSIwIDAgMTIwIDQwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iMTIwIiBoZWlnaHQ9IjQwIiBmaWxsPSIjMWUzYzcyIiByeD0iNSIvPgo8dGV4dCB4PSI2MCIgeT0iMjUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IndoaXRlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjAiIGZvbnQtd2VpZ2h0PSJib2xkIj5aVVE8L3RleHQ+Cjwvc3ZnPgo=";
+  const zuqLogoBase64 = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTIwIiBoZWlnaHQ9IjQwIiB2aWV3Qm94PSIwIDAgMTIwIDQwIiBmaWxsPSJub25lIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPgo8cmVjdCB3aWR0aD0iMTIwIiBoZWlnaHQ9IjQwIiBmaWxsPSJjZjMzZjIzIiByeD0iNSIvPgo8dGV4dCB4PSI2MCIgeT0iMjUiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IndoaXRlIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMjAiIGZvbnQtd2VpZ2h0PSJib2xkIj5aVVE8L3RleHQ+Cjwvc3ZnPgo=";
 
   return `<!DOCTYPE html>
 <html lang="pt-BR">

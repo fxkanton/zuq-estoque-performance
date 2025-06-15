@@ -1,8 +1,7 @@
-
 import React, { useState } from 'react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Calendar, FileText, Loader2 } from 'lucide-react';
+import { Calendar, FileText, Loader2, Zap } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -47,6 +46,21 @@ export const ReportModal = ({ isOpen, onClose }: ReportModalProps) => {
   const [endDate, setEndDate] = useState<Date>();
   const [selectedKpis, setSelectedKpis] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleGenerateGeneralReport = () => {
+    const today = new Date();
+    // Data inicial bem antiga para pegar todo o histórico
+    setStartDate(new Date('1970-01-01'));
+    setEndDate(today);
+    setReportName(`Relatório Geral - ${format(today, 'dd/MM/yyyy')}`);
+    // Seleciona todos os KPIs disponíveis
+    setSelectedKpis(AVAILABLE_KPIS.map(kpi => kpi.id));
+    
+    toast({
+      title: 'Modo de Relatório Geral Ativado',
+      description: 'As datas e os KPIs foram preenchidos. Clique em "Gerar Relatório" para continuar.',
+    });
+  };
 
   const handleKpiToggle = (kpiId: string) => {
     setSelectedKpis(prev => 
@@ -127,6 +141,17 @@ export const ReportModal = ({ isOpen, onClose }: ReportModalProps) => {
             Gerar Relatório HTML
           </DialogTitle>
         </DialogHeader>
+
+        <div className="border-b pb-4">
+          <Button
+            variant="secondary"
+            className="w-full"
+            onClick={handleGenerateGeneralReport}
+          >
+            <Zap className="mr-2 h-4 w-4" />
+            Clique aqui para um relatório geral (até a data de hoje)
+          </Button>
+        </div>
 
         <div className="space-y-6">
           {/* Nome do Relatório */}
