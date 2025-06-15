@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -32,7 +31,7 @@ const Movimentacoes = () => {
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [equipmentList, setEquipmentList] = useState<Equipment[]>([]);
-  const [selectedEquipmentId, setSelectedEquipmentId] = useState('');
+  const [selectedEquipmentId, setSelectedEquipmentId] = useState('all');
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
   const [selectedBrand, setSelectedBrand] = useState('');
@@ -233,7 +232,7 @@ const Movimentacoes = () => {
 
   // Filter movements based on search term
   useEffect(() => {
-    if (!searchTerm && !selectedEquipmentId && !startDate && !endDate) {
+    if (!searchTerm && selectedEquipmentId === 'all' && !startDate && !endDate) {
       setFilteredMovements(movements);
       return;
     }
@@ -250,7 +249,7 @@ const Movimentacoes = () => {
       });
     }
     
-    if (selectedEquipmentId) {
+    if (selectedEquipmentId && selectedEquipmentId !== 'all') {
       filtered = filtered.filter(movement => movement.equipment_id === selectedEquipmentId);
     }
 
@@ -354,7 +353,7 @@ const Movimentacoes = () => {
                   className="flex-1"
                   onClick={() => {
                     setSearchTerm('');
-                    setSelectedEquipmentId('');
+                    setSelectedEquipmentId('all');
                     setStartDate(new Date());
                     setEndDate(new Date());
                     loadMovements();
