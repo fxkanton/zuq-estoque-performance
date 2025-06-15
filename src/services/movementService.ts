@@ -51,7 +51,7 @@ export const fetchMovements = async (): Promise<MovementWithEquipment[]> => {
   }));
 };
 
-export const createMovement = async (movementData: Omit<Movement, 'id' | 'created_at' | 'updated_at' | 'created_by'>): Promise<Movement | null> => {
+export const createMovement = async (movementData: Omit<Movement, 'id' | 'created_at' | 'updated_at' | 'created_by'>): Promise<MovementWithEquipment | null> => {
   const { data: { user } } = await supabase.auth.getUser();
   
   const { data, error } = await supabase
@@ -60,7 +60,15 @@ export const createMovement = async (movementData: Omit<Movement, 'id' | 'create
       ...movementData,
       created_by: user?.id
     })
-    .select()
+    .select(`
+      *,
+      equipment:equipment_id (
+        id,
+        brand,
+        model,
+        category
+      )
+    `)
     .single();
 
   if (error) {
@@ -76,12 +84,20 @@ export const createMovement = async (movementData: Omit<Movement, 'id' | 'create
   };
 };
 
-export const updateMovement = async (id: string, movementData: Partial<Movement>): Promise<Movement | null> => {
+export const updateMovement = async (id: string, movementData: Partial<Movement>): Promise<MovementWithEquipment | null> => {
   const { data, error } = await supabase
     .from('inventory_movements')
     .update(movementData)
     .eq('id', id)
-    .select()
+    .select(`
+      *,
+      equipment:equipment_id (
+        id,
+        brand,
+        model,
+        category
+      )
+    `)
     .single();
 
   if (error) {

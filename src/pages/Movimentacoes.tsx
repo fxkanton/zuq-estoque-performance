@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -15,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Plus, Search, Edit, Trash2, Package, ArrowUp, ArrowDown, Download } from "lucide-react";
-import { fetchMovements, createMovement, updateMovement, deleteMovement, Movement } from "@/services/movementService";
+import { fetchMovements, createMovement, updateMovement, deleteMovement, MovementWithEquipment } from "@/services/movementService";
 import { supabase } from "@/integrations/supabase/client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { fetchEquipment, Equipment } from "@/services/equipmentService";
@@ -24,8 +23,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { MovementExportDialog } from "@/components/export/MovementExportDialog";
 
 const Movimentacoes = () => {
-  const [movements, setMovements] = useState<Movement[]>([]);
-  const [filteredMovements, setFilteredMovements] = useState<Movement[]>([]);
+  const [movements, setMovements] = useState<MovementWithEquipment[]>([]);
+  const [filteredMovements, setFilteredMovements] = useState<MovementWithEquipment[]>([]);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -40,7 +39,7 @@ const Movimentacoes = () => {
   const [availableModels, setAvailableModels] = useState<Equipment[]>([]);
 
   // Form state
-  const [currentMovement, setCurrentMovement] = useState<Movement | null>(null);
+  const [currentMovement, setCurrentMovement] = useState<MovementWithEquipment | null>(null);
   const [formData, setFormData] = useState({
     equipment_id: '',
     movement_type: 'Entrada' as 'Entrada' | 'Saída',
@@ -71,7 +70,7 @@ const Movimentacoes = () => {
     loadMovements();
     loadEquipment();
 
-    // Subscribe to realtime updates
+    // Subscribe to realtime updates for other users' changes
     const channel = supabase
       .channel('inventory-movements-realtime')
       .on(
@@ -83,7 +82,11 @@ const Movimentacoes = () => {
         },
         (payload) => {
           console.log('Realtime change received on inventory_movements:', payload);
-          loadMovements();
+          // Only reload if the change wasn't made by current user (to avoid double updates)
+          const { data: { user } } = supabase.auth.getUser();
+          if (payload.new?.created_by !== user?.id) {
+            loadMovements();
+          }
         }
       )
       .subscribe();
@@ -159,7 +162,7 @@ const Movimentacoes = () => {
     setIsAddDialogOpen(true);
   };
 
-  const handleOpenEditDialog = (item: Movement) => {
+  const handleOpenEditDialog = (item: MovementWithEquipment) => {
     setCurrentMovement(item);
     const equipment = equipmentList.find(eq => eq.id === item.equipment_id);
     if (equipment) {
@@ -176,7 +179,7 @@ const Movimentacoes = () => {
     setIsEditDialogOpen(true);
   };
 
-  const handleOpenDeleteDialog = (item: Movement) => {
+  const handleOpenDeleteDialog = (item: MovementWithEquipment) => {
     setCurrentMovement(item);
     setIsDeleteDialogOpen(true);
   };
@@ -189,11 +192,17 @@ const Movimentacoes = () => {
         return;
       }
       
-      await createMovement({
+      const newMovement = await createMovement({
         ...formData,
         equipment_id: equipmentId,
         quantity: parseInt(formData.quantity, 10) || 0
       });
+      
+      if (newMovement) {
+        // Add the new movement to the beginning of the list for smooth update
+        setMovements(prev => [newMovement, ...prev]);
+      }
+      
       setIsAddDialogOpen(false);
       resetForm();
     } catch (error) {
@@ -211,11 +220,19 @@ const Movimentacoes = () => {
         return;
       }
       
-      await updateMovement(currentMovement.id, {
+      const updatedMovement = await updateMovement(currentMovement.id, {
         ...formData,
         equipment_id: equipmentId,
         quantity: parseInt(formData.quantity, 10) || 0,
       });
+      
+      if (updatedMovement) {
+        // Update the movement in the list for smooth update
+        setMovements(prev => prev.map(movement => 
+          movement.id === currentMovement.id ? updatedMovement : movement
+        ));
+      }
+      
       setIsEditDialogOpen(false);
       resetForm();
     } catch (error) {
@@ -227,7 +244,11 @@ const Movimentacoes = () => {
     if (!currentMovement) return;
     
     try {
-      await deleteMovement(currentMovement.id);
+      const success = await deleteMovement(currentMovement.id);
+      if (success) {
+        // Remove the movement from the list for smooth update
+        setMovements(prev => prev.filter(movement => movement.id !== currentMovement.id));
+      }
       setIsDeleteDialogOpen(false);
       resetForm();
     } catch (error) {
@@ -277,7 +298,7 @@ const Movimentacoes = () => {
     setFilteredMovements(filtered);
   }, [searchTerm, movements, selectedEquipmentId, equipmentList, startDate, endDate]);
 
-  const EditDeleteButtons = ({ item }: { item: Movement }) => {
+  const EditDeleteButtons = ({ item }: { item: MovementWithEquipment }) => {
     return (
       <div className="flex gap-2">
         <Button
@@ -408,7 +429,7 @@ const Movimentacoes = () => {
                     return (
                       <TableRow key={item.id}>
                         <TableCell>
-                          {equipment ? `${equipment.brand} ${equipment.model}` : 'N/A'}
+                          {item.equipment ? `${item.equipment.brand} ${item.equipment.model}` : 'N/A'}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
