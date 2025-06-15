@@ -78,7 +78,6 @@ const Equipamentos = () => {
       );
     }
 
-    // Corrige: só filtra se o valor for não vazio
     if (categoryFilter) {
       filtered = filtered.filter(item =>
         item.category.toLowerCase() === categoryFilter.toLowerCase()
