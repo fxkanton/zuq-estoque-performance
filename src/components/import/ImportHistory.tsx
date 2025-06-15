@@ -8,14 +8,16 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CalendarDays, Search, Download, FileText } from "lucide-react";
-import { getImportHistory } from "@/services/importService";
+import { getImportHistory, downloadImportReport } from "@/services/importService";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { toast } from "sonner";
 
 export const ImportHistory = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dataTypeFilter, setDataTypeFilter] = useState<string>("all");
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   const { data: importHistory = [], isLoading } = useQuery({
     queryKey: ['import-history'],
@@ -31,16 +33,16 @@ export const ImportHistory = () => {
     return matchesSearch && matchesStatus && matchesDataType;
   });
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return <Badge variant="default">Concluído</Badge>;
-      case 'pending':
-        return <Badge variant="secondary">Pendente</Badge>;
-      case 'error':
-        return <Badge variant="destructive">Erro</Badge>;
-      default:
-        return <Badge variant="outline">{status}</Badge>;
+  const handleDownloadReport = async (importId: string, filename: string) => {
+    setDownloadingId(importId);
+    try {
+      await downloadImportReport(importId, filename);
+      toast.success('Relatório baixado com sucesso!');
+    } catch (error) {
+      toast.error('Erro ao baixar relatório');
+      console.error('Erro ao baixar relatório:', error);
+    } finally {
+      setDownloadingId(null);
     }
   };
 
@@ -166,7 +168,12 @@ export const ImportHistory = () => {
                         {format(new Date(item.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}
                       </TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="sm">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          onClick={() => handleDownloadReport(item.id, item.original_filename)}
+                          disabled={downloadingId === item.id}
+                        >
                           <Download className="h-4 w-4" />
                         </Button>
                       </TableCell>

@@ -705,3 +705,79 @@ export const generateTemplate = async (dataType: string) => {
   // Download do arquivo
   XLSX.writeFile(wb, `template_${dataType}.xlsx`);
 };
+
+export const downloadImportReport = async (importId: string, filename: string) => {
+  try {
+    // Buscar os detalhes da importação
+    const { data: importData, error } = await supabase
+      .from('import_history')
+      .select('*')
+      .eq('id', importId)
+      .single();
+
+    if (error) {
+      throw new Error('Erro ao buscar dados da importação');
+    }
+
+    // Gerar relatório em formato CSV
+    const reportContent = generateImportReport(importData);
+    
+    // Criar e baixar o arquivo
+    const blob = new Blob([reportContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    
+    link.setAttribute('href', url);
+    link.setAttribute('download', `relatorio-importacao-${filename}-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error('Erro ao baixar relatório:', error);
+    throw error;
+  }
+};
+
+const generateImportReport = (importData: any) => {
+  const headers = [
+    'Arquivo',
+    'Tipo de Dados',
+    'Status',
+    'Total de Registros',
+    'Registros Processados',
+    'Registros com Erro',
+    'Data de Criação',
+    'Data de Conclusão'
+  ].join(',');
+
+  const dataTypeLabels: { [key: string]: string } = {
+    equipamentos: 'Equipamentos',
+    fornecedores: 'Fornecedores',
+    leitoras: 'Leitoras',
+    movimentacoes: 'Movimentações',
+    pedidos: 'Pedidos'
+  };
+
+  const statusLabels: { [key: string]: string } = {
+    completed: 'Concluído',
+    pending: 'Pendente',
+    error: 'Erro'
+  };
+
+  const row = [
+    `"${importData.original_filename}"`,
+    `"${dataTypeLabels[importData.data_type] || importData.data_type}"`,
+    `"${statusLabels[importData.status] || importData.status}"`,
+    importData.total_records,
+    importData.processed_records,
+    importData.failed_records,
+    `"${new Date(importData.created_at).toLocaleString('pt-BR')}"`,
+    importData.completed_at ? `"${new Date(importData.completed_at).toLocaleString('pt-BR')}"` : '""'
+  ].join(',');
+
+  return `${headers}\n${row}`;
+};
