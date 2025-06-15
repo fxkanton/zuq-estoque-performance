@@ -8,17 +8,19 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Search, Package, FileText } from "lucide-react";
-import { fetchOrders, OrderWithDetails } from "@/services/orderService";
+import { fetchOrders, OrderWithDetails, getOrderTotalReceived } from "@/services/orderService";
 import { useAuth } from "@/contexts/AuthContext";
 import { isMemberOrManager } from "@/utils/permissions";
 import { DataExportDialog } from "@/components/export/DataExportDialog";
 import OrderViewDialog from "@/components/orders/OrderViewDialog";
 import OrderFormDialog from "@/components/orders/OrderFormDialog";
+import OrderProgressBadge from "@/components/orders/OrderProgressBadge";
 
 const Pedidos = () => {
   const { profile } = useAuth();
   const [orders, setOrders] = useState<OrderWithDetails[]>([]);
   const [filteredOrders, setFilteredOrders] = useState<OrderWithDetails[]>([]);
+  const [orderProgress, setOrderProgress] = useState<Record<string, number>>({});
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -29,11 +31,33 @@ const Pedidos = () => {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
+  const loadOrderProgress = async (orderIds: string[]) => {
+    const progressData: Record<string, number> = {};
+    
+    await Promise.all(
+      orderIds.map(async (orderId) => {
+        try {
+          const received = await getOrderTotalReceived(orderId);
+          progressData[orderId] = received;
+        } catch (error) {
+          console.error(`Error loading progress for order ${orderId}:`, error);
+          progressData[orderId] = 0;
+        }
+      })
+    );
+    
+    setOrderProgress(progressData);
+  };
+
   const loadOrders = async () => {
     try {
       const data = await fetchOrders();
       setOrders(data);
       setFilteredOrders(data);
+      
+      // Load progress for all orders
+      const orderIds = data.map(order => order.id);
+      await loadOrderProgress(orderIds);
     } catch (error) {
       console.error("Error loading orders:", error);
     } finally {
@@ -68,9 +92,9 @@ const Pedidos = () => {
     switch (status) {
       case 'Pendente':
         return 'bg-yellow-100 text-yellow-800 border-yellow-300';
-      case 'Enviado':
+      case 'Parcialmente Recebido':
         return 'bg-blue-100 text-blue-800 border-blue-300';
-      case 'Entregue':
+      case 'Recebido':
         return 'bg-green-100 text-green-800 border-green-300';
       case 'Cancelado':
         return 'bg-red-100 text-red-800 border-red-300';
@@ -177,8 +201,8 @@ const Pedidos = () => {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Pendente">Pendente</SelectItem>
-                    <SelectItem value="Enviado">Enviado</SelectItem>
-                    <SelectItem value="Entregue">Entregue</SelectItem>
+                    <SelectItem value="Parcialmente Recebido">Parcialmente Recebido</SelectItem>
+                    <SelectItem value="Recebido">Recebido</SelectItem>
                     <SelectItem value="Cancelado">Cancelado</SelectItem>
                   </SelectContent>
                 </Select>
@@ -198,6 +222,7 @@ const Pedidos = () => {
                   <TableHead>Equipamento</TableHead>
                   <TableHead>Fornecedor</TableHead>
                   <TableHead>Quantidade</TableHead>
+                  <TableHead>Progresso</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Data Prevista</TableHead>
                   <TableHead>Nota Fiscal</TableHead>
@@ -207,7 +232,7 @@ const Pedidos = () => {
               <TableBody>
                 {filteredOrders.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-10">
+                    <TableCell colSpan={8} className="text-center py-10">
                       <Package className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                       <p className="text-gray-500">Nenhum pedido encontrado</p>
                     </TableCell>
@@ -234,6 +259,12 @@ const Pedidos = () => {
                         {order.supplier?.name || 'Fornecedor não encontrado'}
                       </TableCell>
                       <TableCell>{order.quantity}</TableCell>
+                      <TableCell>
+                        <OrderProgressBadge
+                          totalQuantity={order.quantity}
+                          receivedQuantity={orderProgress[order.id] || 0}
+                        />
+                      </TableCell>
                       <TableCell>
                         <Badge 
                           variant="outline" 
@@ -284,6 +315,7 @@ const Pedidos = () => {
           order={selectedOrder}
           isOpen={isViewDialogOpen}
           onClose={handleCloseViewDialog}
+          onOrderUpdate={handleOrderUpdated}
         />
 
         <OrderFormDialog
