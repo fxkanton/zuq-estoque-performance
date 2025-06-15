@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -7,15 +6,15 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, Package2, FileText } from "lucide-react";
-import { fetchReaders, Reader } from "@/services/readerService";
+import { fetchReaders, ReaderWithEquipment } from "@/services/readerService";
 import { useAuth } from "@/contexts/AuthContext";
 import { isMemberOrManager } from "@/utils/permissions";
 import { DataExportDialog } from "@/components/export/DataExportDialog";
 
 const Leitoras = () => {
   const { profile } = useAuth();
-  const [readers, setReaders] = useState<Reader[]>([]);
-  const [filteredReaders, setFilteredReaders] = useState<Reader[]>([]);
+  const [readers, setReaders] = useState<ReaderWithEquipment[]>([]);
+  const [filteredReaders, setFilteredReaders] = useState<ReaderWithEquipment[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
