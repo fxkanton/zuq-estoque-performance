@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect, memo, useMemo } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { 
@@ -95,7 +96,7 @@ const AppSidebarComponent = () => {
         </div>
 
         <SidebarGroup>
-          <SidebarGroupLabel className="text-[#1F2A47]/80 font-medium text-xs uppercase tracking-wider">
+          <SidebarGroupLabel className="text-[#212A5C]/80 font-medium text-xs uppercase tracking-wider">
             {!isCollapsed && "Principal"}
           </SidebarGroupLabel>
 
@@ -193,16 +194,16 @@ const NavItem = memo(({ to, icon, label, isCollapsed, onClick }: NavItemProps) =
           className={({ isActive }) =>
             `flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 group ${
               isActive
-                ? "bg-[#eafeff] text-[#00B3DA] shadow-sm"
-                : "hover:bg-[#eafeff] hover:text-[#00B3DA] text-[#1F2A47]"
+                ? "bg-[#eafeff] text-[#212A5C] shadow-sm"
+                : "hover:bg-[#eafeff] hover:text-[#212A5C] text-[#212A5C]"
             }`
           }
           end
           onClick={onClick}
         >
           <div className="flex items-center">
-            {/* Ícone: muda para azul turquesa quando ativo ou hover */}
-            <span className="transition-colors duration-200 group-hover:text-[#00B3DA] group-active:text-[#00B3DA]">
+            {/* Ícone: permanece sempre azul turquesa */}
+            <span className="transition-colors duration-200">
               {icon}
             </span>
             {!isCollapsed && <span className="ml-3 font-medium">{label}</span>}
