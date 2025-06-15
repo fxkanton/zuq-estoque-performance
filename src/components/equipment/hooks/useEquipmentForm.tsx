@@ -23,9 +23,8 @@ export const useEquipmentForm = (onSuccess: () => void) => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [categories] = useState<string[]>(['Leitora', 'Sensor', 'Rastreador', 'Acessório']);
-  const [newCategory, setNewCategory] = useState('');
-  const [showNewCategoryInput, setShowNewCategoryInput] = useState(false);
+  const [categories, setCategories] = useState<string[]>(['Leitora', 'Sensor', 'Rastreador', 'Acessório']);
+  const [isAddCategoryModalOpen, setIsAddCategoryModalOpen] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -49,7 +48,7 @@ export const useEquipmentForm = (onSuccess: () => void) => {
 
   const handleSelectChange = (field: string, value: string) => {
     if (field === 'category' && value === 'new') {
-      setShowNewCategoryInput(true);
+      setIsAddCategoryModalOpen(true);
       return;
     }
     
@@ -57,6 +56,16 @@ export const useEquipmentForm = (onSuccess: () => void) => {
       ...prev,
       [field]: value
     }));
+  };
+
+  const handleAddCategory = (newCategory: string) => {
+    const updatedCategories = [...categories, newCategory];
+    setCategories(updatedCategories);
+    setFormData(prev => ({
+      ...prev,
+      category: newCategory as EquipmentCategory
+    }));
+    toast.success('Categoria adicionada com sucesso!');
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -83,8 +92,7 @@ export const useEquipmentForm = (onSuccess: () => void) => {
     });
     setImageFile(null);
     setImagePreview(null);
-    setShowNewCategoryInput(false);
-    setNewCategory('');
+    setIsAddCategoryModalOpen(false);
     
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -190,18 +198,17 @@ export const useEquipmentForm = (onSuccess: () => void) => {
     imagePreview,
     isUploading,
     categories,
-    newCategory,
-    showNewCategoryInput,
+    isAddCategoryModalOpen,
     fileInputRef,
     handleInputChange,
     handleSelectChange,
+    handleAddCategory,
     handleFileChange,
     resetForm,
     setFormDataFromEquipment,
     handleSaveEquipment,
     handleUpdateEquipment,
     removeImage,
-    setNewCategory,
-    setShowNewCategoryInput
+    setIsAddCategoryModalOpen
   };
 };
