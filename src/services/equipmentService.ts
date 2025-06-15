@@ -1,4 +1,3 @@
-
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 
@@ -216,23 +215,7 @@ export const uploadEquipmentImage = async (file: File): Promise<string | null> =
     
     console.log("Uploading file to path:", filePath);
     
-    // First check if bucket exists and is accessible
-    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
-    if (bucketsError) {
-      console.error("Error checking buckets:", bucketsError);
-      toast.error('Erro ao verificar storage');
-      return null;
-    }
-    
-    const equipmentBucket = buckets?.find(bucket => bucket.id === 'equipment');
-    if (!equipmentBucket) {
-      console.error("Equipment bucket not found");
-      toast.error('Bucket de equipamentos não encontrado');
-      return null;
-    }
-    
-    console.log("Equipment bucket found:", equipmentBucket);
-    
+    // Upload file directly to storage
     const { data, error } = await supabase.storage
       .from('equipment')
       .upload(filePath, file, {
