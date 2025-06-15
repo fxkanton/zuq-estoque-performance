@@ -185,7 +185,7 @@ export const ImportPreview = ({ dataType, file, data, onBack }: ImportPreviewPro
                 <Checkbox
                   id="import-duplicates"
                   checked={importDuplicates}
-                  onCheckedChange={setImportDuplicates}
+                  onCheckedChange={(checked) => setImportDuplicates(checked === true)}
                 />
                 <label htmlFor="import-duplicates" className="text-sm font-medium">
                   Permitir importação de duplicatas selecionadas
@@ -254,7 +254,7 @@ export const ImportPreview = ({ dataType, file, data, onBack }: ImportPreviewPro
                           <Checkbox
                             checked={record._userApproved || false}
                             onCheckedChange={(checked) => 
-                              handleDuplicateApproval(index, checked as boolean)
+                              handleDuplicateApproval(index, checked === true)
                             }
                           />
                         )}
