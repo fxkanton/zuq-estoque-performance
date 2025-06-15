@@ -103,63 +103,63 @@ const AppSidebarComponent = () => {
             <SidebarMenu className="space-y-1">
               <NavItem
                 to="/dashboard"
-                icon={<BarChart3 className="h-5 w-5 text-[#1F2A47]" />}
+                icon={<BarChart3 className="h-5 w-5 text-[#00B3DA] transition-colors duration-150" />}
                 label="Dashboard"
                 isCollapsed={isCollapsed}
                 onClick={handleNavClick}
               />
               <NavItem
                 to="/equipamentos"
-                icon={<Package2 className="h-5 w-5 text-[#1F2A47]" />}
+                icon={<Package2 className="h-5 w-5 text-[#00B3DA] transition-colors duration-150" />}
                 label="Equipamentos"
                 isCollapsed={isCollapsed}
                 onClick={handleNavClick}
               />
               <NavItem
                 to="/fornecedores"
-                icon={<Users className="h-5 w-5 text-[#1F2A47]" />}
+                icon={<Users className="h-5 w-5 text-[#00B3DA] transition-colors duration-150" />}
                 label="Fornecedores"
                 isCollapsed={isCollapsed}
                 onClick={handleNavClick}
               />
               <NavItem
                 to="/movimentacoes"
-                icon={<ArrowDownUp className="h-5 w-5 text-[#1F2A47]" />}
+                icon={<ArrowDownUp className="h-5 w-5 text-[#00B3DA] transition-colors duration-150" />}
                 label="Entradas e Saídas"
                 isCollapsed={isCollapsed}
                 onClick={handleNavClick}
               />
               <NavItem
                 to="/leitoras"
-                icon={<Database className="h-5 w-5 text-[#1F2A47]" />}
+                icon={<Database className="h-5 w-5 text-[#00B3DA] transition-colors duration-150" />}
                 label="Leitoras"
                 isCollapsed={isCollapsed}
                 onClick={handleNavClick}
               />
               <NavItem
                 to="/pedidos"
-                icon={<ClipboardCheck className="h-5 w-5 text-[#1F2A47]" />}
+                icon={<ClipboardCheck className="h-5 w-5 text-[#00B3DA] transition-colors duration-150" />}
                 label="Pedidos"
                 isCollapsed={isCollapsed}
                 onClick={handleNavClick}
               />
               <NavItem
                 to="/fluxo-tarefas"
-                icon={<Kanban className="h-5 w-5 text-[#1F2A47]" />}
+                icon={<Kanban className="h-5 w-5 text-[#00B3DA] transition-colors duration-150" />}
                 label="Fluxo de Tarefas"
                 isCollapsed={isCollapsed}
                 onClick={handleNavClick}
               />
               <NavItem
                 to="/importacao"
-                icon={<Upload className="h-5 w-5 text-[#1F2A47]" />}
+                icon={<Upload className="h-5 w-5 text-[#00B3DA] transition-colors duration-150" />}
                 label="Importar Dados"
                 isCollapsed={isCollapsed}
                 onClick={handleNavClick}
               />
               <NavItem
                 to="/manutencao"
-                icon={<Settings className="h-5 w-5 text-[#1F2A47]" />}
+                icon={<Settings className="h-5 w-5 text-[#00B3DA] transition-colors duration-150" />}
                 label="Manutenção"
                 isCollapsed={isCollapsed}
                 onClick={handleNavClick}
@@ -191,17 +191,20 @@ const NavItem = memo(({ to, icon, label, isCollapsed, onClick }: NavItemProps) =
         <NavLink
           to={to}
           className={({ isActive }) =>
-            `flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 ${
+            `flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 group ${
               isActive
-                ? "bg-sidebar-primary text-[#1F2A47] shadow-sm"
-                : "hover:bg-sidebar-accent text-[#1F2A47] hover:text-[#1F2A47]"
+                ? "bg-[#eafeff] text-[#00B3DA] shadow-sm"
+                : "hover:bg-[#eafeff] hover:text-[#00B3DA] text-[#1F2A47]"
             }`
           }
           end
           onClick={onClick}
         >
           <div className="flex items-center">
-            {icon}
+            {/* Ícone: muda para azul turquesa quando ativo ou hover */}
+            <span className="transition-colors duration-200 group-hover:text-[#00B3DA] group-active:text-[#00B3DA]">
+              {icon}
+            </span>
             {!isCollapsed && <span className="ml-3 font-medium">{label}</span>}
           </div>
         </NavLink>
