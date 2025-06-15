@@ -35,10 +35,10 @@ const AppSidebarComponent = () => {
   const logoSmallRef = useRef<HTMLImageElement>(null);
   const location = useLocation();
 
-  // Memoizar as URLs das imagens para evitar recriação
+  // Memoizar as URLs da nova logo (apenas colorida)
   const logoUrls = useMemo(() => ({
-    full: "/lovable-uploads/d23c7cfe-f31c-48e7-853d-9336a829189d.png",
-    small: "/lovable-uploads/b063f862-dfa6-4ec2-bf1e-f6ba630f97b6.png"
+    full: "/lovable-uploads/7eed547e-bcee-40b1-a5b3-f19168f2b23d.png",
+    small: "/lovable-uploads/7eed547e-bcee-40b1-a5b3-f19168f2b23d.png"
   }), []);
 
   // Preload apenas uma vez
@@ -69,7 +69,7 @@ const AppSidebarComponent = () => {
           ref={logoSmallRef}
           src={logoUrls.small}
           alt="ZUQ Performance" 
-          className="w-8 h-8 brightness-0 invert"
+          className="w-8 h-8"
           loading="eager"
         />
       );
@@ -80,7 +80,7 @@ const AppSidebarComponent = () => {
           ref={logoFullRef}
           src={logoUrls.full}
           alt="ZUQ Performance" 
-          className="w-36 brightness-0 invert"
+          className="w-36"
           loading="eager"
         />
       );
@@ -89,10 +89,10 @@ const AppSidebarComponent = () => {
 
   return (
     <Sidebar
-      className={`transition-all duration-300 ease-in-out ${isCollapsed ? "w-14" : "w-60"} bg-sidebar border-sidebar-border`}
+      className={`transition-all duration-300 ease-in-out ${isCollapsed ? "w-14" : "w-60"} bg-white border-sidebar-border`}
       collapsible="icon"
     >
-      <SidebarContent className="bg-sidebar">
+      <SidebarContent className="bg-white">
         {/* Trigger também dentro do sidebar (visível só no mobile/mini) */}
         <div className="flex items-center justify-between my-6 px-2 md:px-6">
           {logoElement}
@@ -101,7 +101,7 @@ const AppSidebarComponent = () => {
         </div>
 
         <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/70 font-medium text-xs uppercase tracking-wider">
+          <SidebarGroupLabel className="text-[#1F2A47]/80 font-medium text-xs uppercase tracking-wider">
             {!isCollapsed && "Principal"}
           </SidebarGroupLabel>
 
@@ -109,63 +109,63 @@ const AppSidebarComponent = () => {
             <SidebarMenu className="space-y-1">
               <NavItem
                 to="/dashboard"
-                icon={<BarChart3 className="h-5 w-5" />}
+                icon={<BarChart3 className="h-5 w-5 text-[#1F2A47]" />}
                 label="Dashboard"
                 isCollapsed={isCollapsed}
                 onClick={handleNavClick}
               />
               <NavItem
                 to="/equipamentos"
-                icon={<Package2 className="h-5 w-5" />}
+                icon={<Package2 className="h-5 w-5 text-[#1F2A47]" />}
                 label="Equipamentos"
                 isCollapsed={isCollapsed}
                 onClick={handleNavClick}
               />
               <NavItem
                 to="/fornecedores"
-                icon={<Users className="h-5 w-5" />}
+                icon={<Users className="h-5 w-5 text-[#1F2A47]" />}
                 label="Fornecedores"
                 isCollapsed={isCollapsed}
                 onClick={handleNavClick}
               />
               <NavItem
                 to="/movimentacoes"
-                icon={<ArrowDownUp className="h-5 w-5" />}
+                icon={<ArrowDownUp className="h-5 w-5 text-[#1F2A47]" />}
                 label="Entradas e Saídas"
                 isCollapsed={isCollapsed}
                 onClick={handleNavClick}
               />
               <NavItem
                 to="/leitoras"
-                icon={<Database className="h-5 w-5" />}
+                icon={<Database className="h-5 w-5 text-[#1F2A47]" />}
                 label="Leitoras"
                 isCollapsed={isCollapsed}
                 onClick={handleNavClick}
               />
               <NavItem
                 to="/pedidos"
-                icon={<ClipboardCheck className="h-5 w-5" />}
+                icon={<ClipboardCheck className="h-5 w-5 text-[#1F2A47]" />}
                 label="Pedidos"
                 isCollapsed={isCollapsed}
                 onClick={handleNavClick}
               />
               <NavItem
                 to="/fluxo-tarefas"
-                icon={<Kanban className="h-5 w-5" />}
+                icon={<Kanban className="h-5 w-5 text-[#1F2A47]" />}
                 label="Fluxo de Tarefas"
                 isCollapsed={isCollapsed}
                 onClick={handleNavClick}
               />
               <NavItem
                 to="/importacao"
-                icon={<Upload className="h-5 w-5" />}
+                icon={<Upload className="h-5 w-5 text-[#1F2A47]" />}
                 label="Importar Dados"
                 isCollapsed={isCollapsed}
                 onClick={handleNavClick}
               />
               <NavItem
                 to="/manutencao"
-                icon={<Settings className="h-5 w-5" />}
+                icon={<Settings className="h-5 w-5 text-[#1F2A47]" />}
                 label="Manutenção"
                 isCollapsed={isCollapsed}
                 onClick={handleNavClick}
@@ -199,8 +199,8 @@ const NavItem = memo(({ to, icon, label, isCollapsed, onClick }: NavItemProps) =
           className={({ isActive }) =>
             `flex items-center px-3 py-2.5 rounded-lg transition-all duration-200 ${
               isActive
-                ? "bg-sidebar-primary text-sidebar-primary-foreground shadow-sm"
-                : "hover:bg-sidebar-accent text-sidebar-foreground hover:text-sidebar-accent-foreground"
+                ? "bg-sidebar-primary text-[#1F2A47] shadow-sm"
+                : "hover:bg-sidebar-accent text-[#1F2A47] hover:text-[#1F2A47]"
             }`
           }
           end
