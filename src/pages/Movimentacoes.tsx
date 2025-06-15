@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -52,7 +53,6 @@ const Movimentacoes = () => {
     try {
       const data = await fetchMovements();
       setMovements(data);
-      setFilteredMovements(data);
     } catch (error) {
       console.error("Error loading movements:", error);
     }
@@ -73,14 +73,19 @@ const Movimentacoes = () => {
 
     // Subscribe to realtime updates
     const channel = supabase
-      .channel('public:inventory_movements')
-      .on('postgres_changes', {
-        event: '*', 
-        schema: 'public',
-        table: 'inventory_movements'
-      }, () => {
-        loadMovements();
-      })
+      .channel('inventory-movements-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'inventory_movements',
+        },
+        (payload) => {
+          console.log('Realtime change received on inventory_movements:', payload);
+          loadMovements();
+        }
+      )
       .subscribe();
 
     return () => {
