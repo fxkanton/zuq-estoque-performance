@@ -347,13 +347,13 @@ const Movimentacoes = () => {
           </div>
         </div>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle>Filtrar Movimentações</CardTitle>
+        <Card className="mb-4 md:mb-6">
+          <CardHeader className="pb-3 px-4 md:px-6">
+            <CardTitle className="text-base md:text-lg">Filtrar Movimentações</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="mb-4 md:mb-0">
+          <CardContent className="px-4 md:px-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+              <div className="sm:col-span-2 lg:col-span-1">
                 <SearchInput
                   placeholder="Pesquisar por equipamento..."
                   className="w-full"
@@ -363,13 +363,10 @@ const Movimentacoes = () => {
                 />
               </div>
 
-              <div className="mb-4 md:mb-0">
-                <Label htmlFor="equipment" className="block text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
-                  Equipamento
-                </Label>
+              <div>
                 <Select onValueChange={setSelectedEquipmentId} value={selectedEquipmentId}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Selecione um equipamento" />
+                  <SelectTrigger>
+                    <SelectValue placeholder="Equipamento" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Todos os equipamentos</SelectItem>
