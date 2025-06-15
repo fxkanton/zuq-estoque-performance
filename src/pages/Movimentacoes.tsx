@@ -90,7 +90,7 @@ const Movimentacoes = () => {
 
   // Get unique brands
   const getUniqueBrands = () => {
-    const brands = equipmentList.map(eq => eq.brand);
+    const brands = equipmentList.map(eq => eq.brand).filter(brand => brand);
     return [...new Set(brands)].sort();
   };
 
@@ -470,7 +470,7 @@ const Movimentacoes = () => {
                     <SelectValue placeholder="Selecione o modelo" />
                   </SelectTrigger>
                   <SelectContent>
-                    {availableModels.map((equipment) => (
+                    {availableModels.filter(eq => eq.model).map((equipment) => (
                       <SelectItem key={equipment.id} value={equipment.model}>
                         {equipment.model}
                       </SelectItem>
@@ -594,7 +594,7 @@ const Movimentacoes = () => {
                     <SelectValue placeholder="Selecione o modelo" />
                   </SelectTrigger>
                   <SelectContent>
-                    {availableModels.map((equipment) => (
+                    {availableModels.filter(eq => eq.model).map((equipment) => (
                       <SelectItem key={equipment.id} value={equipment.model}>
                         {equipment.model}
                       </SelectItem>
