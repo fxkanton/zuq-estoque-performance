@@ -1,3 +1,4 @@
+
 import { useState, useRef } from "react";
 import { Equipment, EquipmentCategory, createEquipment, updateEquipment, uploadEquipmentImage } from "@/services/equipmentService";
 import { toast } from "@/components/ui/sonner";
@@ -87,10 +88,18 @@ export const useEquipmentForm = (onSuccess: () => void) => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
+      console.log("File selected:", file.name, "Size:", file.size);
+      
       setImageFile(file);
       
       const previewUrl = URL.createObjectURL(file);
       setImagePreview(previewUrl);
+      
+      // Clear the current image_url when a new file is selected
+      setFormData(prev => ({
+        ...prev,
+        image_url: '' // This will be updated after successful upload
+      }));
     }
   };
 
@@ -118,6 +127,7 @@ export const useEquipmentForm = (onSuccess: () => void) => {
   };
 
   const setFormDataFromEquipment = (equipment: Equipment) => {
+    console.log("Setting form data from equipment:", equipment);
     setFormData({
       brand: equipment.brand,
       model: equipment.model,
@@ -131,23 +141,50 @@ export const useEquipmentForm = (onSuccess: () => void) => {
       created_by: equipment.created_by || '',
       created_at: equipment.created_at || '',
     });
+    
+    // Set preview to existing image URL, clear selected file
     if (equipment.image_url) {
       setImagePreview(equipment.image_url);
+      console.log("Setting image preview to existing URL:", equipment.image_url);
     } else {
       setImagePreview(null);
+    }
+    
+    // Clear any selected file when editing existing equipment
+    setImageFile(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
     }
   };
 
   const handleSaveEquipment = async () => {
     try {
       setIsUploading(true);
+      console.log("Starting equipment save process...");
       
-      let imageUrl = formData.image_url;
+      let finalImageUrl = formData.image_url;
+      
+      // Only upload if there's a new file selected
       if (imageFile) {
+        console.log("Uploading new image file...");
         const uploadedUrl = await uploadEquipmentImage(imageFile);
+        
         if (uploadedUrl) {
-          imageUrl = uploadedUrl;
+          finalImageUrl = uploadedUrl;
+          console.log("Image uploaded successfully:", uploadedUrl);
+          
+          // Update form data with the new URL
+          setFormData(prev => ({
+            ...prev,
+            image_url: uploadedUrl
+          }));
+        } else {
+          console.error("Image upload failed - no URL returned");
+          toast.error("Erro ao fazer upload da imagem");
+          return;
         }
+      } else {
+        console.log("No new image file to upload, using existing URL:", finalImageUrl);
       }
       
       const dataToSave = {
@@ -155,14 +192,22 @@ export const useEquipmentForm = (onSuccess: () => void) => {
         average_price: formData.average_price ? parseFloat(formData.average_price) : 0,
         min_stock: formData.min_stock ? parseInt(formData.min_stock) : 0,
         initial_stock: formData.initial_stock ? parseInt(formData.initial_stock) : 0,
-        image_url: imageUrl,
+        image_url: finalImageUrl,
         created_by: profile?.id
       };
       
       console.log("Saving equipment data:", dataToSave);
-      await createEquipment(dataToSave);
-      resetForm();
-      onSuccess();
+      const result = await createEquipment(dataToSave);
+      
+      if (result) {
+        console.log("Equipment saved successfully:", result.id);
+        toast.success("Equipamento criado com sucesso!");
+        resetForm();
+        onSuccess();
+      } else {
+        console.error("Equipment save failed - no result returned");
+        toast.error("Erro ao criar equipamento");
+      }
     } catch (error) {
       console.error("Error creating equipment:", error);
       toast.error("Erro ao criar equipamento");
@@ -174,13 +219,25 @@ export const useEquipmentForm = (onSuccess: () => void) => {
   const handleUpdateEquipment = async (equipmentId: string) => {
     try {
       setIsUploading(true);
+      console.log("Starting equipment update process for ID:", equipmentId);
       
-      let imageUrl = formData.image_url;
+      let finalImageUrl = formData.image_url;
+      
+      // Only upload if there's a new file selected
       if (imageFile) {
+        console.log("Uploading new image file for update...");
         const uploadedUrl = await uploadEquipmentImage(imageFile);
+        
         if (uploadedUrl) {
-          imageUrl = uploadedUrl;
+          finalImageUrl = uploadedUrl;
+          console.log("New image uploaded successfully:", uploadedUrl);
+        } else {
+          console.error("Image upload failed during update - no URL returned");
+          toast.error("Erro ao fazer upload da nova imagem");
+          return;
         }
+      } else {
+        console.log("No new image file to upload during update, keeping existing URL:", finalImageUrl);
       }
       
       const dataToUpdate = {
@@ -188,12 +245,21 @@ export const useEquipmentForm = (onSuccess: () => void) => {
         average_price: formData.average_price ? parseFloat(formData.average_price) : 0,
         min_stock: formData.min_stock ? parseInt(formData.min_stock) : 0,
         initial_stock: formData.initial_stock ? parseInt(formData.initial_stock) : 0,
-        image_url: imageUrl
+        image_url: finalImageUrl
       };
       
-      await updateEquipment(equipmentId, dataToUpdate);
-      resetForm();
-      onSuccess();
+      console.log("Updating equipment with data:", dataToUpdate);
+      const result = await updateEquipment(equipmentId, dataToUpdate);
+      
+      if (result) {
+        console.log("Equipment updated successfully:", result.id);
+        toast.success("Equipamento atualizado com sucesso!");
+        resetForm();
+        onSuccess();
+      } else {
+        console.error("Equipment update failed - no result returned");
+        toast.error("Erro ao atualizar equipamento");
+      }
     } catch (error) {
       console.error("Error updating equipment:", error);
       toast.error("Erro ao atualizar equipamento");
@@ -203,6 +269,7 @@ export const useEquipmentForm = (onSuccess: () => void) => {
   };
 
   const removeImage = () => {
+    console.log("Removing image...");
     setImagePreview(null);
     setImageFile(null);
     setFormData(prev => ({ ...prev, image_url: '' }));

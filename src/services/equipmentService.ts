@@ -56,7 +56,15 @@ export const getEquipmentById = async (id: string): Promise<Equipment | null> =>
 };
 
 export const createEquipment = async (equipment: Omit<Equipment, 'id' | 'created_at' | 'updated_at'>): Promise<Equipment | null> => {
-  console.log("Creating equipment:", equipment);
+  console.log("Creating equipment with data:", equipment);
+  
+  // Validate that required fields are present
+  if (!equipment.brand || !equipment.model) {
+    console.error("Missing required fields: brand or model");
+    toast.error('Marca e modelo são obrigatórios');
+    return null;
+  }
+  
   const { data, error } = await supabase
     .from('equipment')
     .insert(equipment)
@@ -71,16 +79,23 @@ export const createEquipment = async (equipment: Omit<Equipment, 'id' | 'created
     return null;
   }
 
-  console.log("Equipment created:", data);
-  toast.success('Equipamento criado com sucesso');
+  console.log("Equipment created successfully:", data);
   return data;
 };
 
 export const updateEquipment = async (id: string, equipment: Partial<Equipment>): Promise<Equipment | null> => {
-  console.log("Updating equipment:", id, equipment);
+  console.log("Updating equipment ID:", id, "with data:", equipment);
+  
+  // Remove undefined values to avoid overwriting with null
+  const cleanedEquipment = Object.fromEntries(
+    Object.entries(equipment).filter(([_, value]) => value !== undefined)
+  );
+  
+  console.log("Cleaned equipment data for update:", cleanedEquipment);
+  
   const { data, error } = await supabase
     .from('equipment')
-    .update(equipment)
+    .update(cleanedEquipment)
     .eq('id', id)
     .select()
     .single();
@@ -93,8 +108,7 @@ export const updateEquipment = async (id: string, equipment: Partial<Equipment>)
     return null;
   }
 
-  console.log("Equipment updated:", data);
-  toast.success('Equipamento atualizado com sucesso');
+  console.log("Equipment updated successfully:", data);
   return data;
 };
 
@@ -176,30 +190,69 @@ export const enableEquipmentRealtime = () => {
 // Upload equipment image to Supabase storage
 export const uploadEquipmentImage = async (file: File): Promise<string | null> => {
   try {
+    console.log("Starting image upload for file:", file.name, "Size:", file.size);
+    
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      console.error("File too large:", file.size);
+      toast.error('Arquivo muito grande. Máximo 5MB permitido.');
+      return null;
+    }
+    
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      console.error("Invalid file type:", file.type);
+      toast.error('Tipo de arquivo não permitido. Use JPEG, PNG ou WebP.');
+      return null;
+    }
+    
     // Create a unique filename
-    const fileExt = file.name.split('.').pop();
+    const fileExt = file.name.split('.').pop()?.toLowerCase();
     const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
     const filePath = `equipment/${fileName}`;
     
+    console.log("Uploading file to path:", filePath);
+    
     const { data, error } = await supabase.storage
       .from('equipment')
-      .upload(filePath, file);
+      .upload(filePath, file, {
+        cacheControl: '3600',
+        upsert: false
+      });
     
     if (error) {
+      console.error("Storage upload error:", error);
       toast.error('Erro ao fazer upload da imagem', {
         description: error.message
       });
       return null;
     }
     
+    console.log("File uploaded successfully:", data.path);
+    
     // Get public URL
     const { data: publicUrlData } = supabase.storage
       .from('equipment')
       .getPublicUrl(filePath);
     
-    return publicUrlData.publicUrl;
+    const publicUrl = publicUrlData.publicUrl;
+    console.log("Generated public URL:", publicUrl);
+    
+    // Verify the URL is accessible
+    if (!publicUrl || !publicUrl.includes('supabase')) {
+      console.error("Invalid public URL generated:", publicUrl);
+      toast.error('Erro ao gerar URL pública da imagem');
+      return null;
+    }
+    
+    toast.success('Imagem enviada com sucesso!');
+    return publicUrl;
+    
   } catch (error: any) {
-    toast.error('Erro ao fazer upload da imagem', {
+    console.error("Unexpected error during image upload:", error);
+    toast.error('Erro inesperado ao fazer upload da imagem', {
       description: error.message
     });
     return null;
