@@ -26,7 +26,8 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-const AppSidebar = memo(() => {
+// Component definition without memo wrapper first
+const AppSidebarComponent = () => {
   const { state, isMobile, setOpenMobile } = useSidebar();
   const isCollapsed = state === "collapsed";
   const logoFullRef = useRef<HTMLImageElement>(null);
@@ -167,8 +168,10 @@ const AppSidebar = memo(() => {
       </SidebarContent>
     </Sidebar>
   );
-});
+};
 
+// Apply memo wrapper and set display name
+const AppSidebar = memo(AppSidebarComponent);
 AppSidebar.displayName = "AppSidebar";
 
 type NavItemProps = {
