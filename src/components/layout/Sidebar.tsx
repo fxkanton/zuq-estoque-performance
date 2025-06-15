@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from "react";
+
+import { useState, useRef, useEffect, memo, useMemo } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { 
   Package2, 
@@ -25,21 +26,27 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 
-export function AppSidebar() {
-  const { state, isMobile, setOpenMobile } = useSidebar(); // novo
+const AppSidebar = memo(() => {
+  const { state, isMobile, setOpenMobile } = useSidebar();
   const isCollapsed = state === "collapsed";
   const logoFullRef = useRef<HTMLImageElement>(null);
   const logoSmallRef = useRef<HTMLImageElement>(null);
   const location = useLocation();
 
+  // Memoizar as URLs das imagens para evitar recriação
+  const logoUrls = useMemo(() => ({
+    full: "/lovable-uploads/d23c7cfe-f31c-48e7-853d-9336a829189d.png",
+    small: "/lovable-uploads/b063f862-dfa6-4ec2-bf1e-f6ba630f97b6.png"
+  }), []);
+
+  // Preload apenas uma vez
   useEffect(() => {
-    // Preload images to prevent flashing
     const logoFullImg = new Image();
-    logoFullImg.src = "/lovable-uploads/d23c7cfe-f31c-48e7-853d-9336a829189d.png";
+    logoFullImg.src = logoUrls.full;
     
     const logoSmallImg = new Image();
-    logoSmallImg.src = "/lovable-uploads/b063f862-dfa6-4ec2-bf1e-f6ba630f97b6.png";
-  }, []);
+    logoSmallImg.src = logoUrls.small;
+  }, [logoUrls]);
 
   // Sempre que a rota mudar, fecha o menu no mobile
   useEffect(() => {
@@ -51,6 +58,33 @@ export function AppSidebar() {
     if (isMobile) setOpenMobile(false);
   };
 
+  // Memoizar o logo para evitar re-renderização
+  const logoElement = useMemo(() => {
+    if (isCollapsed) {
+      return (
+        <img 
+          key="logo-small"
+          ref={logoSmallRef}
+          src={logoUrls.small}
+          alt="ZUQ Performance" 
+          className="w-8 h-8 brightness-0 invert"
+          loading="eager"
+        />
+      );
+    } else {
+      return (
+        <img 
+          key="logo-full"
+          ref={logoFullRef}
+          src={logoUrls.full}
+          alt="ZUQ Performance" 
+          className="w-36 brightness-0 invert"
+          loading="eager"
+        />
+      );
+    }
+  }, [isCollapsed, logoUrls]);
+
   return (
     <Sidebar
       className={`transition-all duration-300 ease-in-out ${isCollapsed ? "w-14" : "w-60"} bg-sidebar border-sidebar-border`}
@@ -59,23 +93,7 @@ export function AppSidebar() {
       <SidebarContent className="bg-sidebar">
         {/* Trigger também dentro do sidebar (visível só no mobile/mini) */}
         <div className="flex items-center justify-between my-6 px-2 md:px-6">
-          {isCollapsed ? (
-            <img 
-              ref={logoSmallRef}
-              src="/lovable-uploads/b063f862-dfa6-4ec2-bf1e-f6ba630f97b6.png" 
-              alt="ZUQ Performance" 
-              className="w-8 h-8 brightness-0 invert"
-              loading="eager"
-            />
-          ) : (
-            <img 
-              ref={logoFullRef}
-              src="/lovable-uploads/d23c7cfe-f31c-48e7-853d-9336a829189d.png" 
-              alt="ZUQ Performance" 
-              className="w-36 brightness-0 invert"
-              loading="eager"
-            />
-          )}
+          {logoElement}
           {/* SidebarTrigger sempre visível em mobile/mini para expandir/recolher */}
           <SidebarTrigger className="ml-auto md:hidden" />
         </div>
@@ -149,17 +167,19 @@ export function AppSidebar() {
       </SidebarContent>
     </Sidebar>
   );
-}
+});
+
+AppSidebar.displayName = "AppSidebar";
 
 type NavItemProps = {
   to: string;
   icon: React.ReactNode;
   label: string;
   isCollapsed: boolean;
-  onClick?: () => void; // novo
+  onClick?: () => void;
 };
 
-const NavItem = ({ to, icon, label, isCollapsed, onClick }: NavItemProps) => {
+const NavItem = memo(({ to, icon, label, isCollapsed, onClick }: NavItemProps) => {
   return (
     <SidebarMenuItem>
       <SidebarMenuButton asChild>
@@ -183,4 +203,8 @@ const NavItem = ({ to, icon, label, isCollapsed, onClick }: NavItemProps) => {
       </SidebarMenuButton>
     </SidebarMenuItem>
   );
-};
+});
+
+NavItem.displayName = "NavItem";
+
+export { AppSidebar };
