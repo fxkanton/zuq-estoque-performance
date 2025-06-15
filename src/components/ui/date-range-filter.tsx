@@ -75,10 +75,10 @@ export default function DateRangeFilter({
 
   return (
     <Card className="bg-gradient-to-br from-white to-gray-50/30 border-gray-100 shadow-lg hover:shadow-xl transition-all duration-300">
-      <CardHeader className="bg-gradient-to-r from-gray-50 to-slate-50 border-b border-gray-100 p-4 md:p-6">
+      <CardHeader className="bg-gradient-to-r from-blue-50/50 to-purple-50/30 border-b border-gray-100/50 p-4 md:p-6">
         <CardTitle className="text-base md:text-lg font-semibold text-zuq-darkblue flex items-center gap-3">
-          <div className="p-2 bg-gray-100 rounded-full">
-            <Filter className="h-4 w-4 md:h-5 md:w-5 text-gray-600" />
+          <div className="p-2 bg-gradient-to-r from-[#00B3DA] to-[#0099BB] rounded-xl shadow-lg">
+            <Filter className="h-4 w-4 md:h-5 md:w-5 text-white" />
           </div>
           Filtrar Período
         </CardTitle>
