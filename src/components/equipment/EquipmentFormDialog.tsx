@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -10,6 +9,9 @@ import { Equipment, EquipmentCategory } from "@/services/equipmentService";
 import { Supplier } from "@/services/supplierService";
 import { useEquipmentForm } from "./hooks/useEquipmentForm";
 import { AddCategoryModal } from "./AddCategoryModal";
+import FormFooter from "@/components/FormFooter";
+import CreatorInfo from "@/components/CreatorInfo";
+import { useCreatorInfo } from "@/hooks/useCreatorInfo";
 
 interface EquipmentFormDialogProps {
   open: boolean;
@@ -50,6 +52,11 @@ export const EquipmentFormDialog = ({
   });
 
   const isEdit = !!equipment;
+
+  // Busca dados do criador original em edição (nome)
+  const creatorId = isEdit ? (equipment?.created_by || formData.created_by) : undefined;
+  const createdAt = isEdit ? (equipment?.created_at || formData.created_at) : undefined;
+  const { creatorInfo } = useCreatorInfo(creatorId || null);
 
   // Set form data when equipment changes
   React.useEffect(() => {
@@ -241,6 +248,19 @@ export const EquipmentFormDialog = ({
             </div>
           </div>
           
+          {/* Footer do formulário mostrando o criador ou o usuário atual */}
+          <div>
+            {isEdit && creatorId && createdAt ? (
+              <CreatorInfo 
+                createdBy={creatorId}
+                createdAt={createdAt}
+                creatorName={creatorInfo.creatorName}
+              />
+            ) : (
+              <FormFooter />
+            )}
+          </div>
+
           <DialogFooter>
             <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isUploading}>
               Cancelar

@@ -16,7 +16,9 @@ export const useEquipmentForm = (onSuccess: () => void) => {
     initial_stock: '',
     supplier_id: '',
     image_url: '',
-    quality_status: 'Em Teste'
+    quality_status: 'Em Teste',
+    created_by: '',
+    created_at: ''
   });
   
   const [imageFile, setImageFile] = useState<File | null>(null);
@@ -102,7 +104,9 @@ export const useEquipmentForm = (onSuccess: () => void) => {
       initial_stock: '',
       supplier_id: '',
       image_url: '',
-      quality_status: 'Em Teste'
+      quality_status: 'Em Teste',
+      created_by: '',
+      created_at: ''
     });
     setImageFile(null);
     setImagePreview(null);
@@ -123,9 +127,10 @@ export const useEquipmentForm = (onSuccess: () => void) => {
       initial_stock: equipment.initial_stock?.toString() || '',
       supplier_id: equipment.supplier_id || '',
       image_url: equipment.image_url || '',
-      quality_status: equipment.quality_status || 'Em Teste'
+      quality_status: equipment.quality_status || 'Em Teste',
+      created_by: equipment.created_by || '',
+      created_at: equipment.created_at || '',
     });
-    
     if (equipment.image_url) {
       setImagePreview(equipment.image_url);
     } else {
