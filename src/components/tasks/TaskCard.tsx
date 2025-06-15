@@ -1,7 +1,6 @@
-
 import { Task } from "@/pages/FluxoTarefas";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, MessageCircle, Paperclip, Users, CheckSquare, User } from "lucide-react";
+import { Calendar, Paperclip, Users, CheckSquare, User } from "lucide-react";
 
 interface TaskCardProps {
   task: Task;
@@ -116,13 +115,6 @@ export const TaskCard = ({ task, onEdit }: TaskCardProps) => {
             <div className="flex items-center gap-1 text-xs text-gray-500">
               <Paperclip className="h-3 w-3" />
               <span>{task.attachments}</span>
-            </div>
-          )}
-          
-          {task.comments && task.comments > 0 && (
-            <div className="flex items-center gap-1 text-xs text-gray-500">
-              <MessageCircle className="h-3 w-3" />
-              <span>{task.comments}</span>
             </div>
           )}
         </div>

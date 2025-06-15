@@ -1,16 +1,18 @@
-
 import React, { useState, useMemo } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Calendar, List, LayoutGrid } from 'lucide-react';
+import { Plus, Calendar, List, LayoutGrid, Loader2 } from 'lucide-react';
 import { KanbanView } from '@/components/tasks/KanbanView';
 import { ListView } from '@/components/tasks/ListView';
 import { CalendarView } from '@/components/tasks/CalendarView';
 import { TaskModal } from '@/components/tasks/TaskModal';
 import TaskFilters from '@/components/tasks/TaskFilters';
 import { useAuth } from '@/contexts/AuthContext';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 export interface Task {
   id: string;
@@ -22,7 +24,6 @@ export interface Task {
   dueDate: Date | null;
   status: 'Vencidos' | 'Vence hoje' | 'Esta semana' | 'Próxima semana' | 'Sem prazo' | 'Concluídos';
   attachments: number;
-  comments: number;
   checklist: { id: string; text: string; completed: boolean }[];
   links: string[];
   createdAt: Date;
@@ -32,6 +33,8 @@ export interface Task {
 
 const FluxoTarefas = () => {
   const { profile } = useAuth();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('kanban');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
@@ -40,46 +43,28 @@ const FluxoTarefas = () => {
   const [selectedPriority, setSelectedPriority] = useState('todas');
   const [selectedAssignee, setSelectedAssignee] = useState('todos');
 
-  // Mock data for tasks com informações do criador
-  const [tasks, setTasks] = useState<Task[]>([
-    {
-      id: '1',
-      title: 'Implementar sistema de autenticação',
-      description: 'Desenvolver sistema completo de login e registro de usuários',
-      category: 'Desenvolvimento',
-      priority: 'Alta',
-      assignee: 'João Silva',
-      dueDate: new Date(2025, 4, 25), // May 25, 2025
-      status: 'Vence hoje',
-      attachments: 2,
-      comments: 5,
-      checklist: [
-        { id: '1', text: 'Criar endpoints de API', completed: true },
-        { id: '2', text: 'Implementar validação', completed: false }
-      ],
-      links: ['https://github.com/projeto'],
-      createdAt: new Date(2025, 4, 20),
-      createdBy: 'Pedro Costa',
-      completedAt: null
-    },
-    {
-      id: '2',
-      title: 'Design da página inicial',
-      description: 'Criar mockups e protótipos da página principal',
-      category: 'Qualidade',
-      priority: 'Média',
-      assignee: 'Maria Santos',
-      dueDate: new Date(2025, 4, 30),
-      status: 'Esta semana',
-      attachments: 1,
-      comments: 3,
-      checklist: [],
-      links: [],
-      createdAt: new Date(2025, 4, 22),
-      createdBy: 'Ana Oliveira',
-      completedAt: null
+  const { data: tasks = [], isLoading } = useQuery<Task[]>({
+    queryKey: ['tasks'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*, profiles(full_name)');
+      
+      if (error) {
+        toast({ title: "Erro ao buscar tarefas", description: error.message, variant: "destructive" });
+        throw new Error(error.message);
+      }
+      
+      return data.map((task: any) => ({
+        ...task,
+        dueDate: task.due_date ? new Date(task.due_date) : null,
+        createdAt: new Date(task.created_at),
+        completedAt: task.completed_at ? new Date(task.completed_at) : null,
+        createdBy: task.profiles?.full_name || 'Usuário Desconhecido',
+        attachments: 0,
+      }));
     }
-  ]);
+  });
 
   const filteredTasks = useMemo(() => {
     return tasks.filter(task => {
@@ -94,6 +79,65 @@ const FluxoTarefas = () => {
     });
   }, [tasks, searchTerm, selectedCategory, selectedPriority, selectedAssignee]);
 
+  const createTaskMutation = useMutation({
+    mutationFn: async (taskData: Partial<Task>) => {
+      const { dueDate, ...rest } = taskData;
+      const { data, error } = await supabase.from('tasks').insert({
+        ...rest,
+        due_date: dueDate ? dueDate.toISOString() : null,
+        created_by: profile?.id,
+      }).select().single();
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      toast({ title: "Tarefa criada com sucesso!" });
+      setIsModalOpen(false);
+    },
+    onError: (error) => {
+      toast({ title: "Erro ao criar tarefa", description: error.message, variant: "destructive" });
+    }
+  });
+
+  const updateTaskMutation = useMutation({
+    mutationFn: async (taskData: Partial<Task>) => {
+      const { id, dueDate, ...rest } = taskData;
+      const { data, error } = await supabase.from('tasks').update({
+        ...rest,
+        due_date: dueDate ? dueDate.toISOString() : null,
+        completed_at: taskData.status === 'Concluídos' ? new Date().toISOString() : null,
+      }).eq('id', id!);
+
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      toast({ title: "Tarefa atualizada com sucesso!" });
+      setIsModalOpen(false);
+    },
+    onError: (error) => {
+      toast({ title: "Erro ao atualizar tarefa", description: error.message, variant: "destructive" });
+    }
+  });
+
+  const deleteTaskMutation = useMutation({
+    mutationFn: async (taskId: string) => {
+      const { error } = await supabase.from('tasks').delete().eq('id', taskId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      toast({ title: "Tarefa excluída com sucesso!" });
+      setIsModalOpen(false);
+    },
+    onError: (error) => {
+      toast({ title: "Erro ao excluir tarefa", description: error.message, variant: "destructive" });
+    }
+  });
+
   const handleCreateTask = () => {
     setSelectedTask(null);
     setIsModalOpen(true);
@@ -106,16 +150,9 @@ const FluxoTarefas = () => {
 
   const handleSaveTask = (taskData: Partial<Task>) => {
     if (selectedTask) {
-      // Edit existing task
-      setTasks(prev => prev.map(task => 
-        task.id === selectedTask.id 
-          ? { ...task, ...taskData }
-          : task
-      ));
+      updateTaskMutation.mutate({ ...selectedTask, ...taskData });
     } else {
-      // Create new task
-      const newTask: Task = {
-        id: Math.random().toString(36).substr(2, 9),
+      createTaskMutation.mutate({
         title: taskData.title || '',
         description: taskData.description || '',
         category: taskData.category || 'Desenvolvimento',
@@ -123,33 +160,18 @@ const FluxoTarefas = () => {
         assignee: taskData.assignee || '',
         dueDate: taskData.dueDate || null,
         status: taskData.status || 'Sem prazo',
-        attachments: 0,
-        comments: 0,
         checklist: [],
         links: [],
-        createdAt: new Date(),
-        createdBy: profile?.full_name || 'Usuário',
-        completedAt: null
-      };
-      setTasks(prev => [...prev, newTask]);
+      });
     }
-    setIsModalOpen(false);
   };
 
   const handleDeleteTask = (taskId: string) => {
-    setTasks(prev => prev.filter(task => task.id !== taskId));
+    deleteTaskMutation.mutate(taskId);
   };
 
   const handleMoveTask = (taskId: string, newStatus: Task['status']) => {
-    setTasks(prev => prev.map(task => 
-      task.id === taskId 
-        ? { 
-            ...task, 
-            status: newStatus,
-            completedAt: newStatus === 'Concluídos' ? new Date() : null
-          }
-        : task
-    ));
+    updateTaskMutation.mutate({ id: taskId, status: newStatus });
   };
 
   const clearFilters = () => {
@@ -206,28 +228,36 @@ const FluxoTarefas = () => {
                     Calendário
                   </TabsTrigger>
                 </TabsList>
+                
+                {isLoading ? (
+                  <div className="flex items-center justify-center h-96">
+                    <Loader2 className="h-8 w-8 animate-spin text-zuq-blue" />
+                  </div>
+                ) : (
+                  <>
+                    <TabsContent value="kanban" className="space-y-4">
+                      <KanbanView 
+                        tasks={filteredTasks}
+                        onTaskEdit={handleEditTask}
+                        onMoveTask={handleMoveTask}
+                      />
+                    </TabsContent>
 
-                <TabsContent value="kanban" className="space-y-4">
-                  <KanbanView 
-                    tasks={filteredTasks}
-                    onTaskEdit={handleEditTask}
-                    onMoveTask={handleMoveTask}
-                  />
-                </TabsContent>
+                    <TabsContent value="list" className="space-y-4">
+                      <ListView 
+                        tasks={filteredTasks}
+                        onTaskEdit={handleEditTask}
+                      />
+                    </TabsContent>
 
-                <TabsContent value="list" className="space-y-4">
-                  <ListView 
-                    tasks={filteredTasks}
-                    onTaskEdit={handleEditTask}
-                  />
-                </TabsContent>
-
-                <TabsContent value="calendar" className="space-y-4">
-                  <CalendarView 
-                    tasks={filteredTasks}
-                    onTaskEdit={handleEditTask}
-                  />
-                </TabsContent>
+                    <TabsContent value="calendar" className="space-y-4">
+                      <CalendarView 
+                        tasks={filteredTasks}
+                        onTaskEdit={handleEditTask}
+                      />
+                    </TabsContent>
+                  </>
+                )}
               </Tabs>
             </CardContent>
           </Card>
@@ -237,6 +267,7 @@ const FluxoTarefas = () => {
             onClose={() => setIsModalOpen(false)}
             task={selectedTask}
             onSave={handleSaveTask}
+            onDelete={handleDeleteTask}
           />
         </div>
       </div>

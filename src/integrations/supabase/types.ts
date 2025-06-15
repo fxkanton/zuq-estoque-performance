@@ -553,6 +553,62 @@ export type Database = {
         }
         Relationships: []
       }
+      tasks: {
+        Row: {
+          assignee: string | null
+          category: string | null
+          checklist: Json | null
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          due_date: string | null
+          id: string
+          links: Json | null
+          priority: Database["public"]["Enums"]["task_priority"]
+          status: Database["public"]["Enums"]["task_status"]
+          title: string
+        }
+        Insert: {
+          assignee?: string | null
+          category?: string | null
+          checklist?: Json | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          links?: Json | null
+          priority?: Database["public"]["Enums"]["task_priority"]
+          status?: Database["public"]["Enums"]["task_status"]
+          title: string
+        }
+        Update: {
+          assignee?: string | null
+          category?: string | null
+          checklist?: Json | null
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          links?: Json | null
+          priority?: Database["public"]["Enums"]["task_priority"]
+          status?: Database["public"]["Enums"]["task_status"]
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tasks_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -587,6 +643,14 @@ export type Database = {
         | "Parcialmente Recebido"
         | "Recebido"
         | "Arquivado"
+      task_priority: "Baixa" | "Média" | "Alta" | "Urgente"
+      task_status:
+        | "Vencidos"
+        | "Vence hoje"
+        | "Esta semana"
+        | "Próxima semana"
+        | "Sem prazo"
+        | "Concluídos"
       user_role: "intruso" | "membro" | "gerente"
     }
     CompositeTypes: {
@@ -711,6 +775,15 @@ export const Constants = {
         "Parcialmente Recebido",
         "Recebido",
         "Arquivado",
+      ],
+      task_priority: ["Baixa", "Média", "Alta", "Urgente"],
+      task_status: [
+        "Vencidos",
+        "Vence hoje",
+        "Esta semana",
+        "Próxima semana",
+        "Sem prazo",
+        "Concluídos",
       ],
       user_role: ["intruso", "membro", "gerente"],
     },

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Task } from "@/pages/FluxoTarefas";
 import {
@@ -7,13 +6,24 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Save, X, Upload, FileText, Image } from "lucide-react";
+import { CalendarIcon, Save, X, Upload, FileText, Image, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useQuery } from "@tanstack/react-query";
@@ -26,6 +36,7 @@ interface TaskModalProps {
   onClose: () => void;
   task: Task | null;
   onSave: (taskData: Partial<Task>) => void;
+  onDelete?: (taskId: string) => void;
 }
 
 interface Profile {
@@ -44,7 +55,7 @@ interface TaskAttachment {
   created_at: string;
 }
 
-export const TaskModal = ({ isOpen, onClose, task, onSave }: TaskModalProps) => {
+export const TaskModal = ({ isOpen, onClose, task, onSave, onDelete }: TaskModalProps) => {
   const { toast } = useToast();
   const { profile } = useAuth();
   const [formData, setFormData] = useState({
@@ -453,15 +464,46 @@ export const TaskModal = ({ isOpen, onClose, task, onSave }: TaskModalProps) => 
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-3 pt-4 border-t">
-            <Button type="button" variant="outline" onClick={onClose}>
-              <X className="h-4 w-4 mr-2" />
-              Cancelar
-            </Button>
-            <Button type="submit" className="btn-primary">
-              <Save className="h-4 w-4 mr-2" />
-              {task ? "Salvar" : "Criar"}
-            </Button>
+          <div className="flex justify-between items-center gap-3 pt-4 border-t">
+            <div>
+              {task && onDelete && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button type="button" variant="outline" className="text-red-600 border-red-200 hover:bg-red-50 hover:text-red-700 flex items-center gap-2">
+                      <Trash2 className="h-4 w-4" />
+                      Excluir
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Você tem certeza?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Esta ação não pode ser desfeita. Isso excluirá permanentemente a tarefa e todos os seus dados.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                      <AlertDialogAction 
+                        onClick={() => onDelete(task.id)}
+                        className="bg-red-600 hover:bg-red-700"
+                      >
+                        Sim, excluir
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
+            <div className="flex justify-end gap-3">
+              <Button type="button" variant="outline" onClick={onClose}>
+                <X className="h-4 w-4 mr-2" />
+                Cancelar
+              </Button>
+              <Button type="submit" className="btn-primary">
+                <Save className="h-4 w-4 mr-2" />
+                {task ? "Salvar" : "Criar"}
+              </Button>
+            </div>
           </div>
         </form>
       </DialogContent>
