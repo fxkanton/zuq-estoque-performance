@@ -1,3 +1,4 @@
+
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/components/ui/sonner";
 
@@ -215,6 +216,23 @@ export const uploadEquipmentImage = async (file: File): Promise<string | null> =
     
     console.log("Uploading file to path:", filePath);
     
+    // First check if bucket exists and is accessible
+    const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+    if (bucketsError) {
+      console.error("Error checking buckets:", bucketsError);
+      toast.error('Erro ao verificar storage');
+      return null;
+    }
+    
+    const equipmentBucket = buckets?.find(bucket => bucket.id === 'equipment');
+    if (!equipmentBucket) {
+      console.error("Equipment bucket not found");
+      toast.error('Bucket de equipamentos não encontrado');
+      return null;
+    }
+    
+    console.log("Equipment bucket found:", equipmentBucket);
+    
     const { data, error } = await supabase.storage
       .from('equipment')
       .upload(filePath, file, {
@@ -224,10 +242,48 @@ export const uploadEquipmentImage = async (file: File): Promise<string | null> =
     
     if (error) {
       console.error("Storage upload error:", error);
-      toast.error('Erro ao fazer upload da imagem', {
-        description: error.message
-      });
-      return null;
+      
+      // Handle specific error cases
+      if (error.message.includes('duplicate')) {
+        // If file already exists, try with a different name
+        const newFileName = `${Date.now()}-${Math.random().toString(36).substring(2)}-retry.${fileExt}`;
+        const newFilePath = `equipment/${newFileName}`;
+        
+        console.log("Retrying upload with new filename:", newFilePath);
+        
+        const { data: retryData, error: retryError } = await supabase.storage
+          .from('equipment')
+          .upload(newFilePath, file, {
+            cacheControl: '3600',
+            upsert: true
+          });
+        
+        if (retryError) {
+          console.error("Retry upload failed:", retryError);
+          toast.error('Erro ao fazer upload da imagem', {
+            description: retryError.message
+          });
+          return null;
+        }
+        
+        console.log("Retry upload successful:", retryData.path);
+        
+        // Get public URL for retry
+        const { data: retryPublicUrlData } = supabase.storage
+          .from('equipment')
+          .getPublicUrl(newFilePath);
+        
+        const retryPublicUrl = retryPublicUrlData.publicUrl;
+        console.log("Generated public URL (retry):", retryPublicUrl);
+        
+        toast.success('Imagem enviada com sucesso!');
+        return retryPublicUrl;
+      } else {
+        toast.error('Erro ao fazer upload da imagem', {
+          description: error.message
+        });
+        return null;
+      }
     }
     
     console.log("File uploaded successfully:", data.path);
@@ -240,7 +296,7 @@ export const uploadEquipmentImage = async (file: File): Promise<string | null> =
     const publicUrl = publicUrlData.publicUrl;
     console.log("Generated public URL:", publicUrl);
     
-    // Verify the URL is accessible
+    // Verify the URL is valid
     if (!publicUrl || !publicUrl.includes('supabase')) {
       console.error("Invalid public URL generated:", publicUrl);
       toast.error('Erro ao gerar URL pública da imagem');

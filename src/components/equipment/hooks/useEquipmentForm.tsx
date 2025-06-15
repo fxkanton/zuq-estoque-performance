@@ -88,12 +88,35 @@ export const useEquipmentForm = (onSuccess: () => void) => {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0];
-      console.log("File selected:", file.name, "Size:", file.size);
+      console.log("File selected:", file.name, "Size:", file.size, "Type:", file.type);
+      
+      // Validate file type immediately
+      const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+      if (!allowedTypes.includes(file.type)) {
+        console.error("Invalid file type selected:", file.type);
+        toast.error('Tipo de arquivo não permitido. Use JPEG, PNG ou WebP.');
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        return;
+      }
+      
+      // Validate file size immediately
+      const maxSize = 5 * 1024 * 1024; // 5MB
+      if (file.size > maxSize) {
+        console.error("File too large:", file.size);
+        toast.error('Arquivo muito grande. Máximo 5MB permitido.');
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+        return;
+      }
       
       setImageFile(file);
       
       const previewUrl = URL.createObjectURL(file);
       setImagePreview(previewUrl);
+      console.log("Image preview set:", previewUrl);
       
       // Clear the current image_url when a new file is selected
       setFormData(prev => ({
@@ -161,12 +184,16 @@ export const useEquipmentForm = (onSuccess: () => void) => {
     try {
       setIsUploading(true);
       console.log("Starting equipment save process...");
+      console.log("Current form data:", formData);
+      console.log("Image file to upload:", imageFile);
       
       let finalImageUrl = formData.image_url;
       
       // Only upload if there's a new file selected
       if (imageFile) {
         console.log("Uploading new image file...");
+        toast.info("Fazendo upload da imagem...");
+        
         const uploadedUrl = await uploadEquipmentImage(imageFile);
         
         if (uploadedUrl) {
@@ -180,7 +207,7 @@ export const useEquipmentForm = (onSuccess: () => void) => {
           }));
         } else {
           console.error("Image upload failed - no URL returned");
-          toast.error("Erro ao fazer upload da imagem");
+          toast.error("Erro ao fazer upload da imagem. Tente novamente.");
           return;
         }
       } else {
@@ -220,12 +247,16 @@ export const useEquipmentForm = (onSuccess: () => void) => {
     try {
       setIsUploading(true);
       console.log("Starting equipment update process for ID:", equipmentId);
+      console.log("Current form data:", formData);
+      console.log("Image file to upload:", imageFile);
       
       let finalImageUrl = formData.image_url;
       
       // Only upload if there's a new file selected
       if (imageFile) {
         console.log("Uploading new image file for update...");
+        toast.info("Fazendo upload da nova imagem...");
+        
         const uploadedUrl = await uploadEquipmentImage(imageFile);
         
         if (uploadedUrl) {
@@ -233,7 +264,7 @@ export const useEquipmentForm = (onSuccess: () => void) => {
           console.log("New image uploaded successfully:", uploadedUrl);
         } else {
           console.error("Image upload failed during update - no URL returned");
-          toast.error("Erro ao fazer upload da nova imagem");
+          toast.error("Erro ao fazer upload da nova imagem. Tente novamente.");
           return;
         }
       } else {
