@@ -8,19 +8,26 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Search, Package, FileText } from "lucide-react";
-import { fetchOrders, Order } from "@/services/orderService";
+import { fetchOrders, OrderWithDetails } from "@/services/orderService";
 import { useAuth } from "@/contexts/AuthContext";
 import { isMemberOrManager } from "@/utils/permissions";
 import { DataExportDialog } from "@/components/export/DataExportDialog";
+import OrderViewDialog from "@/components/orders/OrderViewDialog";
+import OrderFormDialog from "@/components/orders/OrderFormDialog";
 
 const Pedidos = () => {
   const { profile } = useAuth();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [filteredOrders, setFilteredOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<OrderWithDetails[]>([]);
+  const [filteredOrders, setFilteredOrders] = useState<OrderWithDetails[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  
+  // Estados para os dialogs
+  const [selectedOrder, setSelectedOrder] = useState<OrderWithDetails | null>(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const loadOrders = async () => {
     try {
@@ -77,6 +84,36 @@ const Pedidos = () => {
     setStatusFilter('');
   };
 
+  // Handlers para os dialogs
+  const handleViewOrder = (order: OrderWithDetails) => {
+    setSelectedOrder(order);
+    setIsViewDialogOpen(true);
+  };
+
+  const handleEditOrder = (order: OrderWithDetails) => {
+    setSelectedOrder(order);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleNewOrder = () => {
+    setSelectedOrder(null);
+    setIsEditDialogOpen(true);
+  };
+
+  const handleOrderUpdated = () => {
+    loadOrders();
+  };
+
+  const handleCloseViewDialog = () => {
+    setIsViewDialogOpen(false);
+    setSelectedOrder(null);
+  };
+
+  const handleCloseEditDialog = () => {
+    setIsEditDialogOpen(false);
+    setSelectedOrder(null);
+  };
+
   if (!isMemberOrManager(profile?.role)) {
     return (
       <MainLayout title="Pedidos">
@@ -103,7 +140,10 @@ const Pedidos = () => {
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <h1 className="text-2xl font-bold text-zuq-darkblue">Pedidos</h1>
           <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-            <Button className="bg-zuq-blue hover:bg-zuq-blue/80">
+            <Button 
+              className="bg-zuq-blue hover:bg-zuq-blue/80"
+              onClick={handleNewOrder}
+            >
               <Plus className="h-4 w-4 mr-2" /> Novo Pedido
             </Button>
             <Button 
@@ -211,10 +251,18 @@ const Pedidos = () => {
                       <TableCell>{order.invoice_number || 'N/A'}</TableCell>
                       <TableCell>
                         <div className="flex gap-2">
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleViewOrder(order)}
+                          >
                             Ver
                           </Button>
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleEditOrder(order)}
+                          >
                             Editar
                           </Button>
                         </div>
@@ -230,6 +278,19 @@ const Pedidos = () => {
         <DataExportDialog
           open={isExportDialogOpen}
           onOpenChange={setIsExportDialogOpen}
+        />
+
+        <OrderViewDialog
+          order={selectedOrder}
+          isOpen={isViewDialogOpen}
+          onClose={handleCloseViewDialog}
+        />
+
+        <OrderFormDialog
+          order={selectedOrder}
+          isOpen={isEditDialogOpen}
+          onClose={handleCloseEditDialog}
+          onSuccess={handleOrderUpdated}
         />
       </div>
     </MainLayout>

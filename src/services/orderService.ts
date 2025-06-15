@@ -90,6 +90,38 @@ export const fetchOrders = async (showArchived: boolean = false): Promise<OrderW
   })) as OrderWithDetails[];
 };
 
+export const fetchOrder = async (id: string): Promise<OrderWithDetails | null> => {
+  const { data, error } = await supabase
+    .from('orders')
+    .select(`
+      *,
+      equipment:equipment_id (
+        id,
+        brand,
+        model,
+        category
+      ),
+      supplier:supplier_id (
+        id,
+        name,
+        cnpj
+      )
+    `)
+    .eq('id', id)
+    .single();
+
+  if (error) {
+    console.error('Error fetching order:', error);
+    toast.error('Erro ao carregar pedido');
+    return null;
+  }
+
+  return {
+    ...data,
+    status: data.status as OrderStatus
+  } as OrderWithDetails;
+};
+
 export const createOrder = async (orderData: Omit<Order, 'id' | 'created_at' | 'updated_at' | 'created_by' | 'equipment' | 'supplier'>): Promise<Order | null> => {
   const { data: { user } } = await supabase.auth.getUser();
   
