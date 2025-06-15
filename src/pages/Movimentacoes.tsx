@@ -80,11 +80,18 @@ const Movimentacoes = () => {
           schema: 'public',
           table: 'inventory_movements',
         },
-        (payload) => {
+        async (payload) => {
           console.log('Realtime change received on inventory_movements:', payload);
           // Only reload if the change wasn't made by current user (to avoid double updates)
-          const { data: { user } } = supabase.auth.getUser();
-          if (payload.new?.created_by !== user?.id) {
+          try {
+            const { data: { user } } = await supabase.auth.getUser();
+            const payloadData = payload.new as any;
+            if (payloadData && payloadData.created_by !== user?.id) {
+              loadMovements();
+            }
+          } catch (error) {
+            console.error('Error checking user in realtime update:', error);
+            // If we can't check the user, just reload to be safe
             loadMovements();
           }
         }
@@ -478,7 +485,7 @@ const Movimentacoes = () => {
                     <SelectValue placeholder="Selecione a marca" />
                   </SelectTrigger>
                   <SelectContent>
-                    {getUniqueBrands().map((brand) => (
+                    {getUniqueBrands().filter(brand => brand.trim() !== '').map((brand) => (
                       <SelectItem key={brand} value={brand}>{brand}</SelectItem>
                     ))}
                   </SelectContent>
@@ -496,7 +503,7 @@ const Movimentacoes = () => {
                     <SelectValue placeholder="Selecione o modelo" />
                   </SelectTrigger>
                   <SelectContent>
-                    {availableModels.filter(eq => eq.model).map((equipment) => (
+                    {availableModels.filter(eq => eq.model && eq.model.trim() !== '').map((equipment) => (
                       <SelectItem key={equipment.id} value={equipment.model}>
                         {equipment.model}
                       </SelectItem>
@@ -602,7 +609,7 @@ const Movimentacoes = () => {
                     <SelectValue placeholder="Selecione a marca" />
                   </SelectTrigger>
                   <SelectContent>
-                    {getUniqueBrands().map((brand) => (
+                    {getUniqueBrands().filter(brand => brand.trim() !== '').map((brand) => (
                       <SelectItem key={brand} value={brand}>{brand}</SelectItem>
                     ))}
                   </SelectContent>
@@ -620,7 +627,7 @@ const Movimentacoes = () => {
                     <SelectValue placeholder="Selecione o modelo" />
                   </SelectTrigger>
                   <SelectContent>
-                    {availableModels.filter(eq => eq.model).map((equipment) => (
+                    {availableModels.filter(eq => eq.model && eq.model.trim() !== '').map((equipment) => (
                       <SelectItem key={equipment.id} value={equipment.model}>
                         {equipment.model}
                       </SelectItem>
