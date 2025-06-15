@@ -23,6 +23,7 @@ export interface ReaderWithEquipment extends Reader {
     brand: string;
     model: string;
     category: string;
+    image_url?: string;
   };
 }
 
@@ -35,7 +36,8 @@ export const fetchReaders = async (): Promise<ReaderWithEquipment[]> => {
         id,
         brand,
         model,
-        category
+        category,
+        image_url
       )
     `)
     .order('code');
