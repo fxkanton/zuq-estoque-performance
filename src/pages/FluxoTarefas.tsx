@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo } from 'react';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { Button } from '@/components/ui/button';
@@ -12,6 +13,7 @@ import TaskFilters from '@/components/tasks/TaskFilters';
 import { useAuth } from '@/contexts/AuthContext';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import { useToast } from '@/hooks/use-toast';
 
 export interface Task {
@@ -30,6 +32,9 @@ export interface Task {
   createdBy: string;
   completedAt: Date | null;
 }
+
+type TablesInsert<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Insert'];
+type TablesUpdate<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Update'];
 
 const FluxoTarefas = () => {
   const { profile } = useAuth();
@@ -81,12 +86,32 @@ const FluxoTarefas = () => {
 
   const createTaskMutation = useMutation({
     mutationFn: async (taskData: Partial<Task>) => {
-      const { dueDate, ...rest } = taskData;
-      const { data, error } = await supabase.from('tasks').insert({
-        ...rest,
+      const {
+        title,
+        description,
+        category,
+        priority,
+        assignee,
+        dueDate,
+        status,
+        checklist,
+        links,
+      } = taskData;
+
+      const payload: TablesInsert<'tasks'> = {
+        title: title!,
+        description: description || null,
+        category: category || null,
+        priority: priority || 'Média',
+        assignee: assignee || null,
+        status: status || 'Sem prazo',
+        checklist: checklist || [],
+        links: links || [],
         due_date: dueDate ? dueDate.toISOString() : null,
-        created_by: profile?.id,
-      }).select().single();
+        created_by: profile?.id || null,
+      };
+
+      const { data, error } = await supabase.from('tasks').insert(payload).select().single();
 
       if (error) throw error;
       return data;
@@ -103,12 +128,33 @@ const FluxoTarefas = () => {
 
   const updateTaskMutation = useMutation({
     mutationFn: async (taskData: Partial<Task>) => {
-      const { id, dueDate, ...rest } = taskData;
-      const { data, error } = await supabase.from('tasks').update({
-        ...rest,
+      const {
+        id,
+        title,
+        description,
+        category,
+        priority,
+        assignee,
+        dueDate,
+        status,
+        checklist,
+        links,
+      } = taskData;
+      
+      const payload: TablesUpdate<'tasks'> = {
+        title,
+        description,
+        category,
+        priority,
+        assignee,
+        status,
+        checklist,
+        links,
         due_date: dueDate ? dueDate.toISOString() : null,
         completed_at: taskData.status === 'Concluídos' ? new Date().toISOString() : null,
-      }).eq('id', id!);
+      };
+      
+      const { data, error } = await supabase.from('tasks').update(payload).eq('id', id!);
 
       if (error) throw error;
       return data;
@@ -276,3 +322,4 @@ const FluxoTarefas = () => {
 };
 
 export default FluxoTarefas;
+
