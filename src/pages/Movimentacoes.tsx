@@ -13,13 +13,14 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Plus, Search, Edit, Trash2, Package, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Search, Edit, Trash2, Package, ArrowUp, ArrowDown, Download } from "lucide-react";
 import { fetchMovements, createMovement, updateMovement, deleteMovement, Movement } from "@/services/movementService";
 import { supabase } from "@/integrations/supabase/client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { fetchEquipment, Equipment } from "@/services/equipmentService";
 import DateRangeFilter from "@/components/ui/date-range-filter";
 import { Textarea } from "@/components/ui/textarea";
+import { MovementExportDialog } from "@/components/export/MovementExportDialog";
 
 const Movimentacoes = () => {
   const [movements, setMovements] = useState<Movement[]>([]);
@@ -27,6 +28,7 @@ const Movimentacoes = () => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [equipmentList, setEquipmentList] = useState<Equipment[]>([]);
   const [selectedEquipmentId, setSelectedEquipmentId] = useState('');
@@ -299,9 +301,16 @@ const Movimentacoes = () => {
         <div className="space-y-4">
           <h1 className="text-xl md:text-2xl font-bold text-zuq-darkblue">Controle de Movimentações</h1>
           
-          <div className="flex justify-start">
-            <Button className="bg-zuq-blue hover:bg-zuq-blue/80 w-full sm:w-auto" onClick={handleOpenAddDialog}>
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <Button className="bg-zuq-blue hover:bg-zuq-blue/80 flex-1 sm:flex-none" onClick={handleOpenAddDialog}>
               <Plus className="h-4 w-4 mr-2" /> Nova Movimentação
+            </Button>
+            <Button 
+              variant="outline" 
+              className="flex-1 sm:flex-none"
+              onClick={() => setIsExportDialogOpen(true)}
+            >
+              <Download className="h-4 w-4 mr-2" /> Exportar
             </Button>
           </div>
         </div>
@@ -695,6 +704,12 @@ const Movimentacoes = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Movement Export Dialog */}
+      <MovementExportDialog 
+        open={isExportDialogOpen}
+        onOpenChange={setIsExportDialogOpen}
+      />
     </MainLayout>
   );
 };
