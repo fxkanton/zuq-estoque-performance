@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect, memo, useMemo } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { 
@@ -35,32 +34,27 @@ const AppSidebarComponent = () => {
   const logoSmallRef = useRef<HTMLImageElement>(null);
   const location = useLocation();
 
-  // Memoizar as URLs da nova logo (apenas colorida)
+  // Memoizar as URLs da nova logo (uma única imagem colorida agora)
   const logoUrls = useMemo(() => ({
-    full: "/lovable-uploads/7eed547e-bcee-40b1-a5b3-f19168f2b23d.png",
-    small: "/lovable-uploads/7eed547e-bcee-40b1-a5b3-f19168f2b23d.png"
+    full: "/lovable-uploads/c260e98d-cc0b-4d2c-917e-8cad1270954e.png",
+    small: "/lovable-uploads/c260e98d-cc0b-4d2c-917e-8cad1270954e.png"
   }), []);
 
-  // Preload apenas uma vez
   useEffect(() => {
     const logoFullImg = new Image();
     logoFullImg.src = logoUrls.full;
-    
     const logoSmallImg = new Image();
     logoSmallImg.src = logoUrls.small;
   }, [logoUrls]);
 
-  // Sempre que a rota mudar, fecha o menu no mobile
   useEffect(() => {
     if (isMobile) setOpenMobile(false);
   }, [location, isMobile, setOpenMobile]);
 
-  // Handler para navegação nos itens do menu - fecha sidebar no mobile
   const handleNavClick = () => {
     if (isMobile) setOpenMobile(false);
   };
 
-  // Memoizar o logo para evitar re-renderização
   const logoElement = useMemo(() => {
     if (isCollapsed) {
       return (
