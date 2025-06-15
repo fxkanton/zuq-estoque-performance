@@ -1,7 +1,8 @@
+
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, FileText } from "lucide-react";
 import { Equipment, updateEquipment } from "@/services/equipmentService";
 import { toast } from "@/components/ui/sonner";
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,6 +13,7 @@ import { EquipmentTable } from "@/components/equipment/EquipmentTable";
 import { EquipmentFormDialog } from "@/components/equipment/EquipmentFormDialog";
 import { EquipmentViewDialog } from "@/components/equipment/EquipmentViewDialog";
 import { EquipmentDeleteDialog } from "@/components/equipment/EquipmentDeleteDialog";
+import { DataExportDialog } from "@/components/export/DataExportDialog";
 
 const Equipamentos = () => {
   const { profile } = useAuth();
@@ -25,6 +27,7 @@ const Equipamentos = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
   const [currentEquipment, setCurrentEquipment] = useState<Equipment | null>(null);
   
   // Filter states
@@ -137,12 +140,19 @@ const Equipamentos = () => {
         <div className="space-y-4">
           <h1 className="text-xl md:text-2xl font-bold text-zuq-darkblue">Equipamentos</h1>
           
-          <div className="flex justify-start">
+          <div className="flex flex-col sm:flex-row gap-3 justify-start">
             <Button 
               className="bg-zuq-blue hover:bg-zuq-blue/80 w-full sm:w-auto"
               onClick={handleOpenAddDialog}
             >
               <Plus className="h-4 w-4 mr-2" /> Novo Equipamento
+            </Button>
+            <Button 
+              variant="outline"
+              className="w-full sm:w-auto"
+              onClick={() => setIsExportDialogOpen(true)}
+            >
+              <FileText className="h-4 w-4 mr-2" /> Exportar Dados
             </Button>
           </div>
         </div>
@@ -196,6 +206,11 @@ const Equipamentos = () => {
           onOpenChange={setIsDeleteDialogOpen}
           equipment={currentEquipment}
           onSuccess={loadData}
+        />
+
+        <DataExportDialog
+          open={isExportDialogOpen}
+          onOpenChange={setIsExportDialogOpen}
         />
       </div>
     </MainLayout>

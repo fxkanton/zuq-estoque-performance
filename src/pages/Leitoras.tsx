@@ -1,268 +1,129 @@
+
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Database, Plus, Search, Edit, Trash2 } from "lucide-react";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogDescription 
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { SearchInput } from "@/components/ui/search-input";
-import { 
-  Select, 
-  SelectTrigger, 
-  SelectValue, 
-  SelectContent, 
-  SelectItem 
-} from "@/components/ui/select";
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
-import { 
-  fetchReaders, 
-  createReader, 
-  updateReader, 
-  deleteReader,
-  adoptReader,
-  ReaderWithEquipment, 
-  EquipmentCondition, 
-  EquipmentStatus 
-} from "@/services/readerService";
-import { fetchEquipment, Equipment } from "@/services/equipmentService";
-import { supabase } from "@/integrations/supabase/client";
-import { useCreatorInfo } from "@/hooks/useCreatorInfo";
-import CreatorInfo from "@/components/CreatorInfo";
-import AdoptButton from "@/components/AdoptButton";
+import { Plus, Search, Package2, FileText } from "lucide-react";
+import { fetchReaders, Reader } from "@/services/readerService";
+import { useAuth } from "@/contexts/AuthContext";
+import { isMemberOrManager } from "@/utils/permissions";
+import { DataExportDialog } from "@/components/export/DataExportDialog";
 
 const Leitoras = () => {
-  const [readers, setReaders] = useState<ReaderWithEquipment[]>([]);
-  const [filteredReaders, setFilteredReaders] = useState<ReaderWithEquipment[]>([]);
-  const [equipment, setEquipment] = useState<Equipment[]>([]);
-  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const { profile } = useAuth();
+  const [readers, setReaders] = useState<Reader[]>([]);
+  const [filteredReaders, setFilteredReaders] = useState<Reader[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  
-  // Form state
-  const [currentReader, setCurrentReader] = useState<ReaderWithEquipment | null>(null);
-  const [formData, setFormData] = useState({
-    code: '',
-    equipment_id: '',
-    status: 'Disponível' as EquipmentStatus,
-    condition: 'Novo' as EquipmentCondition,
-    acquisition_date: new Date().toISOString().split('T')[0]
-  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
 
-  const { creatorInfo } = useCreatorInfo(currentReader?.created_by);
-
-  const loadData = async () => {
+  const loadReaders = async () => {
     try {
-      const readersData = await fetchReaders();
-      setReaders(readersData);
-      setFilteredReaders(readersData);
-      
-      // Only load equipment that are leitoras
-      const equipmentData = await fetchEquipment();
-      setEquipment(equipmentData.filter(item => item.category === 'Leitora'));
+      const data = await fetchReaders();
+      setReaders(data);
+      setFilteredReaders(data);
     } catch (error) {
-      console.error("Error loading readers data:", error);
+      console.error("Error loading readers:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    loadData();
-
-    // Subscribe to realtime updates
-    const readersChannel = supabase
-      .channel('public:readers')
-      .on('postgres_changes', {
-        event: '*',
-        schema: 'public',
-        table: 'readers'
-      }, () => {
-        loadData();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(readersChannel);
-    };
+    loadReaders();
   }, []);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [id]: value
-    }));
-  };
-
-  const handleSelectChange = (field: string, value: string) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-  };
-
-  const resetForm = () => {
-    setFormData({
-      code: '',
-      equipment_id: '',
-      status: 'Disponível',
-      condition: 'Novo',
-      acquisition_date: new Date().toISOString().split('T')[0]
-    });
-    setCurrentReader(null);
-  };
-
-  const handleOpenAddDialog = () => {
-    resetForm();
-    setIsAddDialogOpen(true);
-  };
-
-  const handleOpenEditDialog = (reader: ReaderWithEquipment) => {
-    setCurrentReader(reader);
-    setFormData({
-      code: reader.code,
-      equipment_id: reader.equipment_id,
-      status: reader.status,
-      condition: reader.condition,
-      acquisition_date: reader.acquisition_date || new Date().toISOString().split('T')[0]
-    });
-    setIsEditDialogOpen(true);
-  };
-
-  const handleOpenDeleteDialog = (reader: ReaderWithEquipment) => {
-    setCurrentReader(reader);
-    setIsDeleteDialogOpen(true);
-  };
-
-  const handleSaveReader = async () => {
-    try {
-      await createReader(formData);
-      setIsAddDialogOpen(false);
-      resetForm();
-    } catch (error) {
-      console.error("Error creating reader:", error);
-    }
-  };
-
-  const handleUpdateReader = async () => {
-    if (!currentReader) return;
-    
-    try {
-      await updateReader(currentReader.id, formData);
-      setIsEditDialogOpen(false);
-      resetForm();
-    } catch (error) {
-      console.error("Error updating reader:", error);
-    }
-  };
-
-  const handleDeleteReader = async () => {
-    if (!currentReader) return;
-    
-    try {
-      await deleteReader(currentReader.id);
-      setIsDeleteDialogOpen(false);
-      resetForm();
-    } catch (error) {
-      console.error("Error deleting reader:", error);
-    }
-  };
-
-  const handleAdoptReader = async (readerId: string) => {
-    const result = await adoptReader(readerId);
-    if (result) {
-      loadData();
-      if (currentReader?.id === readerId) {
-        setIsEditDialogOpen(false);
-      }
-    }
-  };
-
-  // Filter readers based on search term and status
   useEffect(() => {
-    let filtered = readers;
-    
-    if (searchTerm) {
-      filtered = filtered.filter(item => 
-        item.code.toLowerCase().includes(searchTerm.toLowerCase()) || 
-        item.equipment.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.equipment.model.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-    
-    if (statusFilter && statusFilter !== 'all') {
-      filtered = filtered.filter(item => item.status === statusFilter);
-    }
-    
+    const filtered = readers.filter(reader =>
+      reader.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (reader.equipment?.brand && reader.equipment.brand.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (reader.equipment?.model && reader.equipment.model.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
     setFilteredReaders(filtered);
-  }, [searchTerm, statusFilter, readers]);
+  }, [searchTerm, readers]);
 
-  const isOrphaned = (reader: ReaderWithEquipment) => !reader.created_by;
+  const getStatusBadgeStyle = (status: string) => {
+    switch (status) {
+      case 'Disponível':
+        return 'bg-green-100 text-green-800 border-green-300';
+      case 'Em Uso':
+        return 'bg-blue-100 text-blue-800 border-blue-300';
+      case 'Manutenção':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      case 'Indisponível':
+        return 'bg-red-100 text-red-800 border-red-300';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-300';
+    }
+  };
+
+  const getConditionBadgeStyle = (condition: string) => {
+    switch (condition) {
+      case 'Novo':
+        return 'bg-green-100 text-green-800 border-green-300';
+      case 'Usado':
+        return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+      case 'Danificado':
+        return 'bg-red-100 text-red-800 border-red-300';
+      default:
+        return 'bg-gray-100 text-gray-800 border-gray-300';
+    }
+  };
+
+  if (!isMemberOrManager(profile?.role)) {
+    return (
+      <MainLayout title="Leitoras">
+        <div className="flex items-center justify-center h-64">
+          <p className="text-muted-foreground">Acesso restrito a membros e gerentes.</p>
+        </div>
+      </MainLayout>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <MainLayout title="Leitoras">
+        <div className="flex items-center justify-center h-64">
+          <p className="text-muted-foreground">Carregando leitoras...</p>
+        </div>
+      </MainLayout>
+    );
+  }
 
   return (
-    <MainLayout title="Controle de Leitoras">
-      <div className="space-y-4 md:space-y-6">
-        <div className="space-y-4">
-          <h1 className="text-xl md:text-2xl font-bold text-zuq-darkblue">Controle Individual de Leitoras</h1>
-          
-          <div className="flex justify-start">
+    <MainLayout title="Leitoras">
+      <div className="space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <h1 className="text-2xl font-bold text-zuq-darkblue">Leitoras</h1>
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            <Button className="bg-zuq-blue hover:bg-zuq-blue/80">
+              <Plus className="h-4 w-4 mr-2" /> Nova Leitora
+            </Button>
             <Button 
-              className="bg-zuq-blue hover:bg-zuq-blue/80 w-full sm:w-auto"
-              onClick={handleOpenAddDialog}
+              variant="outline"
+              onClick={() => setIsExportDialogOpen(true)}
             >
-              <Plus className="h-4 w-4 mr-2" /> Cadastrar Nova Leitora
+              <FileText className="h-4 w-4 mr-2" /> Exportar Dados
             </Button>
           </div>
         </div>
-        
+
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle>Filtrar Leitoras</CardTitle>
+          <CardHeader>
+            <CardTitle className="text-lg">Filtrar Leitoras</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <SearchInput
-                  placeholder="Pesquisar por código ou modelo..."
-                  className="w-full"
-                  icon={<Search className="h-4 w-4" />}
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-              <div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="Disponível">Disponível</SelectItem>
-                    <SelectItem value="Em Uso">Em Uso</SelectItem>
-                    <SelectItem value="Em Manutenção">Em Manutenção</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex gap-2">
-                <Button 
-                  variant="outline" 
-                  className="flex-1"
-                  onClick={() => { 
-                    setSearchTerm(''); 
-                    setStatusFilter(''); 
-                  }}
-                >
-                  Limpar
-                </Button>
-                <Button className="bg-zuq-blue hover:bg-zuq-blue/80 flex-1">Gerar Relatório</Button>
-              </div>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Pesquisar por código, marca ou modelo..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
             </div>
           </CardContent>
         </Card>
@@ -272,8 +133,9 @@ const Leitoras = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Código</TableHead>
                   <TableHead>Equipamento</TableHead>
+                  <TableHead>Código</TableHead>
+                  <TableHead>Marca/Modelo</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Condição</TableHead>
                   <TableHead>Data de Aquisição</TableHead>
@@ -283,57 +145,66 @@ const Leitoras = () => {
               <TableBody>
                 {filteredReaders.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-10 text-muted-foreground">
-                      Nenhuma leitora encontrada
+                    <TableCell colSpan={7} className="text-center py-10">
+                      <Package2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                      <p className="text-gray-500">Nenhuma leitora encontrada</p>
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredReaders.map((reader) => (
                     <TableRow key={reader.id}>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          <div className="bg-zuq-gray/30 p-2 rounded-md">
-                            <Database className="h-4 w-4 text-zuq-blue" />
-                          </div>
-                          {reader.code}
+                        <div className="flex items-center gap-3">
+                          {reader.equipment?.image_url ? (
+                            <img 
+                              src={reader.equipment.image_url} 
+                              alt={`${reader.equipment.brand} ${reader.equipment.model}`}
+                              className="h-12 w-12 object-cover rounded-md"
+                            />
+                          ) : (
+                            <div className="bg-gray-100 p-2 h-12 w-12 flex items-center justify-center rounded-md">
+                              <Package2 className="h-6 w-6 text-zuq-blue" />
+                            </div>
+                          )}
                         </div>
                       </TableCell>
-                      <TableCell>{reader.equipment.brand} {reader.equipment.model}</TableCell>
+                      <TableCell className="font-medium">{reader.code}</TableCell>
                       <TableCell>
-                        <span className={`px-2 py-1 rounded-full text-xs ${getStatusBadgeStyle(reader.status)}`}>
-                          {reader.status}
-                        </span>
+                        {reader.equipment ? 
+                          `${reader.equipment.brand} ${reader.equipment.model}` : 
+                          'Equipamento não encontrado'
+                        }
                       </TableCell>
                       <TableCell>
-                        <span className={`px-2 py-1 rounded-full text-xs ${getConditionBadgeStyle(reader.condition)}`}>
-                          {reader.condition}
-                        </span>
+                        <Badge 
+                          variant="outline" 
+                          className={getStatusBadgeStyle(reader.status || 'Disponível')}
+                        >
+                          {reader.status || 'Disponível'}
+                        </Badge>
                       </TableCell>
                       <TableCell>
-                        {reader.acquisition_date ? new Date(reader.acquisition_date).toLocaleDateString('pt-BR') : 'N/A'}
+                        <Badge 
+                          variant="outline" 
+                          className={getConditionBadgeStyle(reader.condition || 'Novo')}
+                        >
+                          {reader.condition || 'Novo'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {reader.acquisition_date ? 
+                          new Date(reader.acquisition_date).toLocaleDateString('pt-BR') : 
+                          'N/A'
+                        }
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleOpenEditDialog(reader)}
-                          >
-                            <Edit className="h-4 w-4" />
+                          <Button variant="outline" size="sm">
+                            Ver
                           </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="text-red-500"
-                            onClick={() => handleOpenDeleteDialog(reader)}
-                          >
-                            <Trash2 className="h-4 w-4" />
+                          <Button variant="outline" size="sm">
+                            Editar
                           </Button>
-                          <AdoptButton
-                            isOrphaned={isOrphaned(reader)}
-                            onAdopt={() => handleAdoptReader(reader.id)}
-                            size="icon"
-                          />
                         </div>
                       </TableCell>
                     </TableRow>
@@ -344,253 +215,13 @@ const Leitoras = () => {
           </CardContent>
         </Card>
 
-        {/* Add Reader Dialog */}
-        <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>Cadastrar Nova Leitora</DialogTitle>
-              <DialogDescription>
-                Informe os detalhes da leitora para cadastro
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="code">Código da Leitora</Label>
-                <Input 
-                  id="code" 
-                  placeholder="Insira o código único" 
-                  value={formData.code}
-                  onChange={handleInputChange}
-                />
-              </div>
-              
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="equipment_id">Modelo de Equipamento</Label>
-                <Select 
-                  value={formData.equipment_id} 
-                  onValueChange={(value) => handleSelectChange('equipment_id', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o modelo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {equipment.map(item => (
-                      <SelectItem key={item.id} value={item.id}>
-                        {item.brand} {item.model}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="acquisition_date">Data de Aquisição</Label>
-                <Input 
-                  id="acquisition_date" 
-                  type="date" 
-                  value={formData.acquisition_date}
-                  onChange={handleInputChange}
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="status">Status</Label>
-                  <Select 
-                    value={formData.status} 
-                    onValueChange={(value) => handleSelectChange('status', value as EquipmentStatus)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Disponível">Disponível</SelectItem>
-                      <SelectItem value="Em Uso">Em Uso</SelectItem>
-                      <SelectItem value="Em Manutenção">Em Manutenção</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="condition">Condição</Label>
-                  <Select 
-                    value={formData.condition} 
-                    onValueChange={(value) => handleSelectChange('condition', value as EquipmentCondition)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Condição" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Novo">Novo</SelectItem>
-                      <SelectItem value="Recondicionado">Recondicionado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancelar</Button>
-              <Button className="bg-zuq-blue hover:bg-zuq-blue/80" onClick={handleSaveReader}>Salvar</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Edit Reader Dialog */}
-        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>Editar Leitora</DialogTitle>
-              <DialogDescription>
-                Atualize as informações da leitora
-              </DialogDescription>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="code">Código da Leitora</Label>
-                <Input 
-                  id="code" 
-                  placeholder="Insira o código único" 
-                  value={formData.code}
-                  onChange={handleInputChange}
-                />
-              </div>
-              
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="equipment_id">Modelo de Equipamento</Label>
-                <Select 
-                  value={formData.equipment_id} 
-                  onValueChange={(value) => handleSelectChange('equipment_id', value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o modelo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {equipment.map(item => (
-                      <SelectItem key={item.id} value={item.id}>
-                        {item.brand} {item.model}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="acquisition_date">Data de Aquisição</Label>
-                <Input 
-                  id="acquisition_date" 
-                  type="date" 
-                  value={formData.acquisition_date}
-                  onChange={handleInputChange}
-                />
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="status">Status</Label>
-                  <Select 
-                    value={formData.status} 
-                    onValueChange={(value) => handleSelectChange('status', value as EquipmentStatus)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Disponível">Disponível</SelectItem>
-                      <SelectItem value="Em Uso">Em Uso</SelectItem>
-                      <SelectItem value="Em Manutenção">Em Manutenção</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="condition">Condição</Label>
-                  <Select 
-                    value={formData.condition} 
-                    onValueChange={(value) => handleSelectChange('condition', value as EquipmentCondition)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Condição" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Novo">Novo</SelectItem>
-                      <SelectItem value="Recondicionado">Recondicionado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              {currentReader && (
-                <>
-                  <AdoptButton
-                    isOrphaned={isOrphaned(currentReader)}
-                    onAdopt={() => handleAdoptReader(currentReader.id)}
-                    className="self-start"
-                  />
-                  <CreatorInfo
-                    createdBy={currentReader.created_by}
-                    createdAt={currentReader.created_at}
-                    creatorName={creatorInfo.creatorName}
-                  />
-                </>
-              )}
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancelar</Button>
-              <Button className="bg-zuq-blue hover:bg-zuq-blue/80" onClick={handleUpdateReader}>Salvar</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Delete Confirmation Dialog */}
-        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>Confirmar Exclusão</DialogTitle>
-              <DialogDescription>
-                Tem certeza que deseja excluir esta leitora? Esta ação não pode ser desfeita.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="py-4">
-              {currentReader && (
-                <div className="border-l-4 border-red-500 pl-4">
-                  <p className="font-medium">Código: {currentReader.code}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {currentReader.equipment.brand} {currentReader.equipment.model}
-                  </p>
-                </div>
-              )}
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>Cancelar</Button>
-              <Button variant="destructive" onClick={handleDeleteReader}>Excluir</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+        <DataExportDialog
+          open={isExportDialogOpen}
+          onOpenChange={setIsExportDialogOpen}
+        />
       </div>
     </MainLayout>
   );
-};
-
-const getStatusBadgeStyle = (status: string) => {
-  switch (status) {
-    case 'Disponível':
-      return 'bg-green-100 text-green-800';
-    case 'Em Uso':
-      return 'bg-blue-100 text-blue-800';
-    case 'Em Manutenção':
-      return 'bg-red-100 text-red-800';
-    default:
-      return 'bg-gray-100 text-gray-800';
-  }
-};
-
-const getConditionBadgeStyle = (condition: string) => {
-  switch (condition) {
-    case 'Novo':
-      return 'bg-purple-100 text-purple-800';
-    case 'Recondicionado':
-      return 'bg-amber-100 text-amber-800';
-    default:
-      return 'bg-gray-100 text-gray-800';
-  }
 };
 
 export default Leitoras;
