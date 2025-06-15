@@ -22,6 +22,7 @@ import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import Users from "./pages/Users";
 import NotFound from "./pages/NotFound";
+import Importacao from "./pages/Importacao";
 
 // Auth Pages
 import Login from "./pages/auth/Login";
@@ -109,6 +110,14 @@ const App = () => (
               element={
                 <ProtectedRoute requireMember>
                   <FluxoTarefas />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/importacao" 
+              element={
+                <ProtectedRoute requireMember>
+                  <Importacao />
                 </ProtectedRoute>
               } 
             />

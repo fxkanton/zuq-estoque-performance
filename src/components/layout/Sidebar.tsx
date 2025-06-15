@@ -10,7 +10,8 @@ import {
   Settings, 
   Package, 
   BarChart3,
-  Kanban
+  Kanban,
+  Upload
 } from "lucide-react";
 
 import {
@@ -152,6 +153,13 @@ const AppSidebarComponent = () => {
                 to="/fluxo-tarefas"
                 icon={<Kanban className="h-5 w-5" />}
                 label="Fluxo de Tarefas"
+                isCollapsed={isCollapsed}
+                onClick={handleNavClick}
+              />
+              <NavItem
+                to="/importacao"
+                icon={<Upload className="h-5 w-5" />}
+                label="Importar Dados"
                 isCollapsed={isCollapsed}
                 onClick={handleNavClick}
               />

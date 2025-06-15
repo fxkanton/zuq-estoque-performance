@@ -65,6 +65,48 @@ export type Database = {
           },
         ]
       }
+      import_history: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          data_type: string
+          error_details: Json | null
+          failed_records: number
+          id: string
+          original_filename: string
+          processed_records: number
+          status: string
+          total_records: number
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          data_type: string
+          error_details?: Json | null
+          failed_records?: number
+          id?: string
+          original_filename: string
+          processed_records?: number
+          status?: string
+          total_records?: number
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          data_type?: string
+          error_details?: Json | null
+          failed_records?: number
+          id?: string
+          original_filename?: string
+          processed_records?: number
+          status?: string
+          total_records?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       inventory_movements: {
         Row: {
           created_at: string | null
