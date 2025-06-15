@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback, useRef } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +10,7 @@ import { getReadersByStatus, EquipmentStatus } from "@/services/readerService";
 import { getMaintenceCount } from "@/services/maintenanceService";
 import { supabase } from "@/integrations/supabase/client";
 import EquipmentInventory from "@/components/EquipmentInventory";
+import CategoryInventory from "@/components/CategoryInventory";
 import { 
   BarChart,
   Bar,
@@ -439,6 +439,9 @@ const Dashboard = () => {
       {/* Equipment inventory component */}
       <EquipmentInventory startDate={startDate.toISOString().split('T')[0]} endDate={endDate.toISOString().split('T')[0]} />
       
+      {/* Category inventory component */}
+      <CategoryInventory startDate={startDate.toISOString().split('T')[0]} endDate={endDate.toISOString().split('T')[0]} />
+
       {/* Daily movements chart with horizontal scroll on mobile */}
       <div className="grid grid-cols-1 mb-8">
         <Card className="bg-gradient-to-br from-white to-purple-50/30 border-purple-100 shadow-lg hover:shadow-xl transition-all duration-300 relative">
