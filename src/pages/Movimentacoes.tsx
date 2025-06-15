@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { Button } from "@/components/ui/button";
@@ -32,7 +33,6 @@ const Movimentacoes = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [equipmentList, setEquipmentList] = useState<Equipment[]>([]);
   const [selectedEquipmentId, setSelectedEquipmentId] = useState('');
-  const [movementType, setMovementType] = useState<'Entrada' | 'Saída'>('Entrada');
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
   const [selectedBrand, setSelectedBrand] = useState('');
@@ -335,13 +335,14 @@ const Movimentacoes = () => {
                 <Label htmlFor="equipment" className="block text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
                   Equipamento
                 </Label>
-                <Select onValueChange={setSelectedEquipmentId}>
+                <Select onValueChange={setSelectedEquipmentId} value={selectedEquipmentId}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Selecione um equipamento" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="all">Todos os equipamentos</SelectItem>
                     {equipmentList.map((equipment) => (
-                      <SelectItem key={equipment.id} value={equipment.id}>{equipment.brand}</SelectItem>
+                      <SelectItem key={equipment.id} value={equipment.id}>{equipment.brand} {equipment.model}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -481,7 +482,7 @@ const Movimentacoes = () => {
               
               <div className="flex flex-col gap-2">
                 <Label htmlFor="movement_type" className="text-sm font-medium">Tipo *</Label>
-                <Select onValueChange={(value) => setFormData(prev => ({ ...prev, movement_type: value as 'Entrada' | 'Saída' }))}>
+                <Select onValueChange={(value) => setFormData(prev => ({ ...prev, movement_type: value as 'Entrada' | 'Saída' }))} value={formData.movement_type}>
                   <SelectTrigger className="w-full">
                     <SelectValue placeholder="Tipo de movimento" />
                   </SelectTrigger>
