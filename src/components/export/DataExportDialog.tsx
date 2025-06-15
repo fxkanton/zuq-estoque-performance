@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -100,9 +99,37 @@ export const DataExportDialog = ({ open, onOpenChange }: DataExportDialogProps) 
 
   const fetchTableData = async (tableName: string) => {
     try {
-      const { data, error } = await supabase
-        .from(tableName)
-        .select('*');
+      let query;
+      
+      // Type-safe table queries
+      switch (tableName) {
+        case 'equipment':
+          query = supabase.from('equipment').select('*');
+          break;
+        case 'suppliers':
+          query = supabase.from('suppliers').select('*');
+          break;
+        case 'orders':
+          query = supabase.from('orders').select('*');
+          break;
+        case 'inventory_movements':
+          query = supabase.from('inventory_movements').select('*');
+          break;
+        case 'maintenance_records':
+          query = supabase.from('maintenance_records').select('*');
+          break;
+        case 'readers':
+          query = supabase.from('readers').select('*');
+          break;
+        case 'profiles':
+          query = supabase.from('profiles').select('*');
+          break;
+        default:
+          console.error(`Tabela não suportada: ${tableName}`);
+          return [];
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       return data || [];
