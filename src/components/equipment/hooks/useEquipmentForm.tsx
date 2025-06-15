@@ -1,4 +1,3 @@
-
 import { useState, useRef } from "react";
 import { Equipment, EquipmentCategory, createEquipment, updateEquipment, uploadEquipmentImage } from "@/services/equipmentService";
 import { toast } from "@/components/ui/sonner";
@@ -66,6 +65,21 @@ export const useEquipmentForm = (onSuccess: () => void) => {
       category: newCategory as EquipmentCategory
     }));
     toast.success('Categoria adicionada com sucesso!');
+  };
+
+  const handleDeleteCategory = (categoryToDelete: string) => {
+    const updatedCategories = categories.filter(cat => cat !== categoryToDelete);
+    setCategories(updatedCategories);
+    
+    // Se a categoria atual foi excluída, volta para a primeira categoria disponível
+    if (formData.category === categoryToDelete && updatedCategories.length > 0) {
+      setFormData(prev => ({
+        ...prev,
+        category: updatedCategories[0] as EquipmentCategory
+      }));
+    }
+    
+    toast.success('Categoria excluída com sucesso!');
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -203,6 +217,7 @@ export const useEquipmentForm = (onSuccess: () => void) => {
     handleInputChange,
     handleSelectChange,
     handleAddCategory,
+    handleDeleteCategory,
     handleFileChange,
     resetForm,
     setFormDataFromEquipment,

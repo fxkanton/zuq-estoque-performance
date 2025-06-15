@@ -36,6 +36,7 @@ export const EquipmentFormDialog = ({
     handleInputChange,
     handleSelectChange,
     handleAddCategory,
+    handleDeleteCategory,
     handleFileChange,
     resetForm,
     setFormDataFromEquipment,
@@ -255,6 +256,7 @@ export const EquipmentFormDialog = ({
         open={isAddCategoryModalOpen}
         onOpenChange={setIsAddCategoryModalOpen}
         onAddCategory={handleAddCategory}
+        onDeleteCategory={handleDeleteCategory}
         existingCategories={categories}
       />
     </>
