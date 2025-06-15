@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect, memo, useMemo } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import { 
@@ -224,4 +223,4 @@ const NavItem = memo(({ to, icon, label, isCollapsed, onClick }: NavItemProps) =
 
 NavItem.displayName = "NavItem";
 
-export { AppSidebar };
+export { AppSidebarComponent as AppSidebar };
