@@ -39,34 +39,40 @@ const Importacao = () => {
 
   return (
     <MainLayout title="Importar Dados">
-      <div className="space-y-6 p-6">
+      <div className="space-y-4 md:space-y-6 p-4 md:p-6">
         <div>
-          <h1 className="text-3xl font-bold">Importar Dados</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-2xl md:text-3xl font-bold">Importar Dados</h1>
+          <p className="text-sm md:text-base text-muted-foreground">
             Importe dados em massa usando arquivos CSV ou Excel
           </p>
         </div>
 
-        <Tabs defaultValue="upload" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="upload">Upload de Arquivo</TabsTrigger>
-            <TabsTrigger value="templates">Guias e Templates</TabsTrigger>
-            <TabsTrigger value="history">Histórico de Importações</TabsTrigger>
+        <Tabs defaultValue="upload" className="space-y-4 md:space-y-6">
+          <TabsList className="grid w-full grid-cols-3 h-auto">
+            <TabsTrigger value="upload" className="text-xs md:text-sm px-2 md:px-3 py-2">
+              Upload
+            </TabsTrigger>
+            <TabsTrigger value="templates" className="text-xs md:text-sm px-2 md:px-3 py-2">
+              Templates
+            </TabsTrigger>
+            <TabsTrigger value="history" className="text-xs md:text-sm px-2 md:px-3 py-2">
+              Histórico
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="upload" className="space-y-6">
+          <TabsContent value="upload" className="space-y-4 md:space-y-6">
             {!showPreview ? (
               <>
                 {/* Seleção do tipo de dados */}
                 <Card>
-                  <CardHeader>
-                    <CardTitle>Selecione o tipo de dados</CardTitle>
-                    <CardDescription>
+                  <CardHeader className="pb-3 md:pb-6">
+                    <CardTitle className="text-lg md:text-xl">Selecione o tipo de dados</CardTitle>
+                    <CardDescription className="text-sm">
                       Escolha o tipo de dados que você deseja importar
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4">
                       {dataTypes.map((type) => (
                         <Card
                           key={type.key}
@@ -77,14 +83,14 @@ const Importacao = () => {
                           }`}
                           onClick={() => setSelectedDataType(type.key as ImportDataType)}
                         >
-                          <CardHeader className="pb-3">
+                          <CardHeader className="pb-2 md:pb-3 p-3 md:p-6">
                             <div className="flex items-center justify-between">
-                              <CardTitle className="text-lg">{type.label}</CardTitle>
+                              <CardTitle className="text-base md:text-lg">{type.label}</CardTitle>
                               {selectedDataType === type.key && (
-                                <Badge variant="default">Selecionado</Badge>
+                                <Badge variant="default" className="text-xs">Selecionado</Badge>
                               )}
                             </div>
-                            <CardDescription>{type.description}</CardDescription>
+                            <CardDescription className="text-xs md:text-sm">{type.description}</CardDescription>
                           </CardHeader>
                         </Card>
                       ))}
